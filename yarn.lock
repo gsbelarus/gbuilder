@@ -92,7 +92,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@types/node@npm:*, @types/node@npm:^14.14.22":
+"@types/node@npm:*":
   version: 14.14.22
   resolution: "@types/node@npm:14.14.22"
   checksum: e46e32685b4d0261779c13c10ba3ff220cfa714b5c12f8f571fd52cc309546bdbc8ffc86cbad20559ad88e7b17e66fc51c98b067d8c3766597092c05df157b9b
@@ -103,6 +103,13 @@ __metadata:
   version: 13.13.40
   resolution: "@types/node@npm:13.13.40"
   checksum: a0e9433459390329a9f0756a5bbc1e3b4ca4bb5043df6acd68ff0ca3f177222182b7dcbd3b41536dde15a8c151c64b0758bd39b4a25bbb5dd324cd2ba822d256
+  languageName: node
+  linkType: hard
+
+"@types/node@npm:^14.14.25":
+  version: 14.14.25
+  resolution: "@types/node@npm:14.14.25"
+  checksum: 64c42730f4169e49ec378870622ef06c5d820b31340e224cc1b45bf06c8b0cfa28daa587b4ae2b8ea1f712ef049bae4d9c92925b157ba9ba7cde3b22ff552513
   languageName: node
   linkType: hard
 
@@ -364,7 +371,7 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "builder@workspace:."
   dependencies:
-    "@types/node": ^14.14.22
+    "@types/node": ^14.14.25
     "@yarnpkg/pnpify": ^2.4.0
     ts-node: ^9.1.1
     tsc: ^1.20150623.0

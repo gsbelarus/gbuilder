@@ -110,3 +110,4 @@ dist
 !.yarn/versions
 .pnp.*
 .editorconfig
+/res.txt
