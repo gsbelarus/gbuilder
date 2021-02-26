@@ -1,3 +1,6 @@
+//FIXME: было бы неплохо дать краткое описание процесса компиляции. чтомы берем, откуда, для чего, что и куда помещаем
+
+
 /**
  * Текущий функционал
  *    Снятие из гита последних исходников
@@ -10,12 +13,14 @@ export interface IParams {
    * Тип компиляции: ['product', 'debug', 'lock']
    *    выбор файла конфигурации, ключей компиляции, файла архива
    */
+  //FIXME: в TS можно задать тип как 'PRODUCT' | 'DEBUG' | 'LOCK' тогда никакие другие строки компилятор не примет
   compileType: string;
 
   /**
-   * Корневая папка с полными исходниками Гедымина, включая Comp5. 
+   * Корневая папка с полными исходниками Гедымина, включая Comp5.
    * В ней находятся папки Comp5 и Gedemin.
    */
+  //FIXME: путь должен заканчиваться слэшем или не должен, или ему все равно?
   baseDir: string;
 
   /**
@@ -30,30 +35,36 @@ export interface IParams {
   binDephi: string; // Не забываем! В файлах конфигурации путь к Делфи должен быть такой же!
   binEditbin: string;
   binWinRAR: string;
-} 
+}
 
+/**
+ *
+ * @param params
+ */
 export function ug(params: IParams) {
   const { compileType, baseDir, archiveDir,
           binDephi, binEditbin, binWinRAR
   } = params;
-  
+
   /**
-   * Локальные пути 
+   * Локальные пути
    */
+  //FIXME: TS итак поймет, что это строка.
   const pathDCU: string = `${baseDir}gedemin\\DCU\\`;
   const pathCFG: string = `${baseDir}gedemin\\gedemin\\`;
   const pathEXE: string = `${baseDir}gedemin\\EXE\\`;
-    
+
   /**
    * Снимаем исходники с гита.
    * как он понимает репозиторий?
    * где логин пароль?
-   * 
+   *
    * если он берет уже из настроенного гита,
    * то надо отразить в инструкции по развертыванию,
    * что гит должен быть настроен, логин пароль введен и т.п.
    */
-  
+
+  //FIXME: а импорт не проходит?
   const { execFileSync } = require('child_process');
   const { execSync } = require('child_process');
   /**
@@ -62,6 +73,8 @@ export function ug(params: IParams) {
    * на всякий случай maxBuffer и timeout ставим больше
    * гит и прочие программы вписываются в параметры для компиляции
    */
+
+  //FIXME: почему let?
   let execOptions =
     { stdio: ['ignore', 'pipe', 'ignore'],
       maxBuffer: 1024 * 1024 * 4,
@@ -84,7 +97,7 @@ export function ug(params: IParams) {
   const strUpToDate: string = 'up to date';
   let isUpToDate: boolean = true;
   let isExist: boolean = false;
-  
+
   try {
 		resExec = execFileSync('git', ['checkout', 'master'], execOptions).toString();
   } catch(e) {
@@ -100,7 +113,7 @@ export function ug(params: IParams) {
   if (isUpToDate) {
 		return ret;
 	}
-  
+
   try {
 		resExec = execFileSync('git', ['pull', 'origin', 'master'], execOptions).toString();
 	} catch(e) {
@@ -108,7 +121,7 @@ export function ug(params: IParams) {
 		return ret;
   };
   //ret = `${ret}\n${resExec}`;
-  
+
   ret = `${ret}\n  ready to compile`;
   ret = `${ret}\n  pathDCU: ${pathDCU}`;
 
@@ -120,6 +133,9 @@ export function ug(params: IParams) {
   };
   //ret = `${ret}\n${resCmd}`;
 
+  //FIXME: есть куча библиотек, чтобы удалять файлы без вызова командной строки
+  //например, https://www.npmjs.com/package/fs-extra
+  //https://stackoverflow.com/a/54903986/55350
 	isExist = resCmd.search('.dcu') > 0;
   if (isExist) {
 		ret = `${ret}\n  dcu found`
@@ -136,6 +152,7 @@ export function ug(params: IParams) {
 
   ret = `${ret}\n  pathCFG: ${pathCFG}`;
 
+  //FIXME: аналогично для копирования
   cmdOptions.cwd = `${pathCFG}`;
   try {
     resCmd = execSync(`copy ${pathCFG}gedemin.cfg ${pathCFG}gedemin.current.cfg /y`, null, cmdOptions).toString();
@@ -146,7 +163,7 @@ export function ug(params: IParams) {
   };
   try {
     resCmd = execSync(`copy ${pathCFG}gedemin.${compileType}.cfg ${pathCFG}gedemin.cfg /y`, null, cmdOptions).toString();
-    ret = `${ret}\n  project config prepared as '${compileType}'`;    
+    ret = `${ret}\n  project config prepared as '${compileType}'`;
   } catch(e) {
     ret = `${ret}\n  ${e}`;
     return ret;
@@ -169,7 +186,7 @@ export function ug(params: IParams) {
   isExist = resCmd.search('gedemin.exe') > 0;
   if (isExist) {
 		ret = `${ret}\nError: gedemin.exe not deleted`;
-    return ret;    
+    return ret;
   } else {
     ret = `${ret}\n  gedemin.exe deleted`;
   };
@@ -197,9 +214,9 @@ export function ug(params: IParams) {
 		ret = `${ret}\n  gedemin.exe built`;
   } else {
     ret = `${ret}\nError: gedemin.exe not built`;
-    return ret;    
+    return ret;
   };
-  
+
   execOptions.cwd = `${pathEXE}`;
   try {
 		resExec = execFileSync(`${pathEXE}StripReloc.exe`, ['/b', 'gedemin.exe'], execOptions).toString();
@@ -229,7 +246,7 @@ export function ug(params: IParams) {
 		return ret;
   };
   //ret = `${ret}\n${resExec}`;
-  ret = `${ret}\n  editbin passed`;  
+  ret = `${ret}\n  editbin passed`;
 
   cmdOptions.cwd = `${pathCFG}`;
   try {
@@ -260,7 +277,7 @@ export function ug(params: IParams) {
 		return ret;
   }
   /**
-   * Синхронизация содержимого архива по файлу списка gedemin.lst 
+   * Синхронизация содержимого архива по файлу списка gedemin.lst
    *    добавление, обновление более новыми версиями по дате,
    *    а также удаление файлов, которых нет в списке
    */
@@ -273,8 +290,8 @@ export function ug(params: IParams) {
       ` @${archiveDir}gedemin.lst`,
       null,
         cmdOptions).toString();
-    //ret = `${ret}\n${resCmd}`;        
-    ret = `${ret}\n  portable version archived`;  
+    //ret = `${ret}\n${resCmd}`;
+    ret = `${ret}\n  portable version archived`;
 	} catch(e) {
 		ret = `${ret}\n  ${e}`;
 		return ret;
