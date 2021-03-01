@@ -256,13 +256,14 @@ export function ug(params: IParams) {
    *    2) в папке архива (сейчас здесь)
    */
   ret = `${ret}\n  binWinRAR: ${binWinRAR}`;
-  const archiveName = {product: 'gedemin.rar', debug: 'gedemin_debug.rar', lock: 'gedemin_lock.rar'};
+  const archiveName = {PRODUCT: 'gedemin.rar', DEBUG: 'gedemin_debug.rar', LOCK: 'gedemin_lock.rar'};
   try {
     resExec = execFileSync(`${binWinRAR}WinRAR.exe`,
       [ 'a', '-u', '-as', '-ibck',
         `${archiveDir}${archiveName[compileType]}`,
         `@${archiveDir}gedemin.lst` ],
       execOptions).toString();
+    ret = `${ret}\n  portable version archived`;        
   } catch(e) {
     ret = `${ret}\n  ${e}`;
     return ret;
