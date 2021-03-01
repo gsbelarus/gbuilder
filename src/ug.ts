@@ -7,10 +7,10 @@
 
 export interface IParams {
   /**
-   * Тип компиляции: ['product', 'debug', 'lock']
+   * Тип компиляции:
    *    выбор файла конфигурации, ключей компиляции, файла архива
    */
-  compileType: string;
+  compileType: 'PRODUCT' | 'DEBUG' | 'LOCK';
 
   /**
    * Корневая папка с полными исходниками Гедымина, включая Comp5. 
@@ -50,9 +50,9 @@ export function ug(params: IParams) {
   /**
    * Локальные пути 
    */
-  const pathDCU: string = `${baseDir}gedemin\\DCU\\`;
-  const pathCFG: string = `${baseDir}gedemin\\gedemin\\`;
-  const pathEXE: string = `${baseDir}gedemin\\EXE\\`;
+  const pathDCU = `${baseDir}gedemin\\DCU\\`;
+  const pathCFG = `${baseDir}gedemin\\gedemin\\`;
+  const pathEXE = `${baseDir}gedemin\\EXE\\`;
     
   /**
    * Снимаем исходники с гита.
@@ -168,7 +168,7 @@ export function ug(params: IParams) {
 
   ret = `${ret}\n  binDephi: ${binDephi}`;
   execOptions.cwd = `${pathCFG}`;
-  const compiler_switch = {product: '-b', debug: '-b -vt', lock: '-b'};
+  const compiler_switch = {PRODUCT: '-b', DEBUG: '-b -vt', LOCK: '-b'};
   try {
     resExec = execFileSync(`${binDephi}dcc32.exe`,
       [compiler_switch[compileType], `gedemin.dpr`],
@@ -196,7 +196,7 @@ export function ug(params: IParams) {
   //ret = `${ret}\n${resExec}`;
   ret = `${ret}\n  stripreloc passed`;
 
-  if (compileType === 'debug') {
+  if (compileType === 'DEBUG') {
     try {
       resExec = execFileSync(`${pathEXE}tdspack.exe`, ['-e -o -a', 'gedemin.exe'], execOptions).toString();
     } catch(e) {
@@ -261,11 +261,11 @@ export function ug(params: IParams) {
 }
 
 const ret_ug = ug(
-  { compileType: ['product', 'debug', 'lock'][0],
+  { compileType: 'PRODUCT',
     baseDir: 'c:\\golden\\gdc\\',
     archiveDir: 'c:\\golden\\archive\\',
     pathDelphi: 'C:\\Delphi5\\',
-    binDephi: 'C:\\Delphi5\\Bin\\',
+    //binDephi: 'C:\\Delphi5\\Bin\\',
     binEditbin: 'C:\\Program Files (x86)\\Microsoft Visual Studio\\2019\\Community\\VC\\Tools\\MSVC\\14.28.29333\\bin\\Hostx64\\x64\\'//,
     //binWinRAR: 'C:\\Program Files\\WinRAR\\'
   });
