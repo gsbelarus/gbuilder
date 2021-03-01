@@ -10,11 +10,10 @@
 
 export interface IParams {
   /**
-   * Тип компиляции: ['product', 'debug', 'lock']
+   * Тип компиляции:
    *    выбор файла конфигурации, ключей компиляции, файла архива
    */
-  //FIXME: в TS можно задать тип как 'PRODUCT' | 'DEBUG' | 'LOCK' тогда никакие другие строки компилятор не примет
-  compileType: string;
+  compileType: 'PRODUCT' | 'DEBUG' | 'LOCK';
 
   /**
    * Корневая папка с полными исходниками Гедымина, включая Comp5.
@@ -32,28 +31,37 @@ export interface IParams {
    * Полные пути к используемым программам,
    * расположенным вне каталога gedemin\EXE\ (от корневой папки)
    */
-  binDephi: string; // Не забываем! В файлах конфигурации путь к Делфи должен быть такой же!
-  binEditbin: string;
-  binWinRAR: string;
-}
+  pathDelphi?: string;
+  binDephi?: string;
+  binEditbin?: string;
+  binWinRAR?: string;
+} 
 
 /**
  *
  * @param params
  */
 export function ug(params: IParams) {
-  const { compileType, baseDir, archiveDir,
-          binDephi, binEditbin, binWinRAR
+  let { compileType, baseDir, archiveDir,
+          pathDelphi, binDephi, binEditbin, binWinRAR
   } = params;
+  
+  const pathDelphiDefault = 'c:\\program files\\borland\\delphi5\\';
+  const binEditbinDefault = '';
+  const binWinRARDefault = 'C:\\Program Files\\WinRAR\\';
 
+  if (pathDelphi === undefined) {pathDelphi = pathDelphiDefault};
+  if (binDephi === undefined) {binDephi = `${pathDelphi}bin\\`};
+  if (binEditbin === undefined) {binEditbin = binEditbinDefault};
+  if (binWinRAR === undefined) {binWinRAR = binWinRARDefault};
+  
   /**
    * Локальные пути
    */
-  //FIXME: TS итак поймет, что это строка.
-  const pathDCU: string = `${baseDir}gedemin\\DCU\\`;
-  const pathCFG: string = `${baseDir}gedemin\\gedemin\\`;
-  const pathEXE: string = `${baseDir}gedemin\\EXE\\`;
-
+  const pathDCU = `${baseDir}gedemin\\DCU\\`;
+  const pathCFG = `${baseDir}gedemin\\gedemin\\`;
+  const pathEXE = `${baseDir}gedemin\\EXE\\`;
+    
   /**
    * Снимаем исходники с гита.
    * как он понимает репозиторий?
@@ -66,7 +74,8 @@ export function ug(params: IParams) {
 
   //FIXME: а импорт не проходит?
   const { execFileSync } = require('child_process');
-  const { execSync } = require('child_process');
+  const { readdirSync, unlinkSync, copyFileSync, existsSync,
+          readFileSync, writeFileSync } = require('fs');
   /**
    * компиляция работает c maxBuffer 2M
    * время компиляции примерно 30 сек (i5 8G SSD)
@@ -74,20 +83,11 @@ export function ug(params: IParams) {
    * гит и прочие программы вписываются в параметры для компиляции
    */
 
-  //FIXME: почему let?
+  //FIXME: почему let? потому что дальше cmdOptions.cwd = ...
   let execOptions =
     { stdio: ['ignore', 'pipe', 'ignore'],
       maxBuffer: 1024 * 1024 * 4,
       timeout: 60 * 1000,
-      cwd: `${baseDir}`
-  };
-  /**
-   * на командный процессор параметры можно поменьше
-   */
-  let cmdOptions =
-    { stdio: ['ignore', 'pipe', 'ignore'],
-      maxBuffer: 1024 * 512,
-      timeout: 10 * 1000,
       cwd: `${baseDir}`
   };
 
@@ -96,13 +96,12 @@ export function ug(params: IParams) {
   let resCmd: string = '';
   const strUpToDate: string = 'up to date';
   let isUpToDate: boolean = true;
-  let isExist: boolean = false;
 
   try {
-		resExec = execFileSync('git', ['checkout', 'master'], execOptions).toString();
+    resExec = execFileSync('git', ['checkout', 'master'], execOptions).toString();
   } catch(e) {
-		ret = `${ret}\n  ${e}`;
-		return ret;
+    ret = `${ret}\n  ${e}`;
+    return ret;
   };
   //ret = `${ret}\n${resExec}`;
 
@@ -111,107 +110,89 @@ export function ug(params: IParams) {
   // comment next line for use in production code
   isUpToDate = false; ret = `${ret}\n  isUpToDate (for test): ${isUpToDate}`;
   if (isUpToDate) {
-		return ret;
-	}
-
+    return ret;
+  }
+  
   try {
-		resExec = execFileSync('git', ['pull', 'origin', 'master'], execOptions).toString();
-	} catch(e) {
-		ret = `${ret}\n  ${e}`;
-		return ret;
+    resExec = execFileSync('git', ['pull', 'origin', 'master'], execOptions).toString();
+  } catch(e) {
+    ret = `${ret}\n  ${e}`;
+    return ret;
   };
   //ret = `${ret}\n${resExec}`;
 
   ret = `${ret}\n  ready to compile`;
+
   ret = `${ret}\n  pathDCU: ${pathDCU}`;
-
-  cmdOptions.cwd = `${pathDCU}`;
   try {
-		resCmd = execSync(`dir ${pathDCU}*.dcu`, null, cmdOptions).toString();
-	} catch(e) {
-		resCmd = '';
+    resCmd = readdirSync(`${pathDCU}`).filter
+      (f => f.slice(-4).toLowerCase() === '.dcu').forEach
+      (f => unlinkSync(`${pathDCU}${f}`)) ;
+    ret = `${ret}\n  dcu deleted`;
+  } catch(e) {
+    ret = `${ret}\n  ${e}`;
+    return ret;
   };
-  //ret = `${ret}\n${resCmd}`;
+  //ret = `${ret}\n${resCmd}`
 
-  //FIXME: есть куча библиотек, чтобы удалять файлы без вызова командной строки
-  //например, https://www.npmjs.com/package/fs-extra
-  //https://stackoverflow.com/a/54903986/55350
-	isExist = resCmd.search('.dcu') > 0;
-  if (isExist) {
-		ret = `${ret}\n  dcu found`
+  ret = `${ret}\n  pathCFG: ${pathCFG}`;
+  const gdCFG = `${pathCFG}gedemin.cfg`;
+  try {
+    resCmd = copyFileSync(`${gdCFG}`, `${pathCFG}gedemin.current.cfg`);
+    ret = `${ret}\n  current project config saved`;
+  } catch(e) {
+    ret = `${ret}\n  current project config not exists`;
+  };
+
+  try {
+    resCmd = copyFileSync(`${pathCFG}gedemin.${compileType}.cfg`, `${gdCFG}`);
+    ret = `${ret}\n  project config prepared as '${compileType}'`;    
+  } catch(e) {
+    ret = `${ret}\n  ${e}`;
+    return ret;
+  };
+
+  if ( `${pathDelphiDefault}` !== `${pathDelphi}` ) {
+    ret = `${ret}\n  pathDelphi: ${pathDelphi}`;
     try {
-		  resCmd = execSync(`del ${pathDCU}*.dcu /q`, null, cmdOptions).toString();
-      ret = `${ret}\n  dcu deleted`;
+      resCmd = readFileSync(`${gdCFG}`).toString();
+      resCmd = resCmd.split(`${pathDelphiDefault}`).join(`${pathDelphi}`);
+      resCmd = writeFileSync(`${gdCFG}`, resCmd);
+      ret = `${ret}\n  project config changed`;
     } catch(e) {
       ret = `${ret}\n  ${e}`;
       return ret;
     };
-	} else {
-		ret = `${ret}\n  dcu not found`;
-	};
-
-  ret = `${ret}\n  pathCFG: ${pathCFG}`;
-
-  //FIXME: аналогично для копирования
-  cmdOptions.cwd = `${pathCFG}`;
-  try {
-    resCmd = execSync(`copy ${pathCFG}gedemin.cfg ${pathCFG}gedemin.current.cfg /y`, null, cmdOptions).toString();
-    ret = `${ret}\n  current project config saved`;
-  } catch(e) {
-    ret = `${ret}\n  ${e}`;
-    return ret;
-  };
-  try {
-    resCmd = execSync(`copy ${pathCFG}gedemin.${compileType}.cfg ${pathCFG}gedemin.cfg /y`, null, cmdOptions).toString();
-    ret = `${ret}\n  project config prepared as '${compileType}'`;
-  } catch(e) {
-    ret = `${ret}\n  ${e}`;
-    return ret;
-  };
-
+  }
+  
   ret = `${ret}\n  pathEXE: ${pathEXE}`;
-
-  cmdOptions.cwd = `${pathEXE}`;
   try {
-    resCmd = execSync(`del ${pathEXE}gedemin.exe /q`, null, cmdOptions).toString();
+    resCmd = unlinkSync(`${pathEXE}gedemin.exe`);
   } catch(e) {
-    ret = `${ret}\n  ${e}`;
-    return ret;
-  };
-  try {
-		resCmd = execSync(`dir ${pathEXE}gedemin.exe`, null, cmdOptions).toString();
-	} catch(e) {
     resCmd = '';
   };
-  isExist = resCmd.search('gedemin.exe') > 0;
-  if (isExist) {
-		ret = `${ret}\nError: gedemin.exe not deleted`;
-    return ret;
+  if ( existsSync(`${pathEXE}gedemin.exe`) ) {
+    ret = `${ret}\nError: gedemin.exe not deleted`;
+    return ret;    
   } else {
     ret = `${ret}\n  gedemin.exe deleted`;
   };
 
   ret = `${ret}\n  binDephi: ${binDephi}`;
   execOptions.cwd = `${pathCFG}`;
-  const compiler_switch = {product: '-b', debug: '-b -vt', lock: '-b'};
+  const compiler_switch = {PRODUCT: '-b', DEBUG: '-b -vt', LOCK: '-b'};
   try {
-		resExec = execFileSync(`${binDephi}dcc32.exe`,
+    resExec = execFileSync(`${binDephi}dcc32.exe`,
       [compiler_switch[compileType], `gedemin.dpr`],
       execOptions).toString();
-	} catch(e) {
-		ret = `${ret}\n  ${e}`;
-		return ret;
+  } catch(e) {
+    ret = `${ret}\n  ${e}`;
+    return ret;
   };
   //ret = `${ret}\n${resExec}`;
 
-  try {
-		resCmd = execSync(`dir ${pathEXE}gedemin.exe`, null, cmdOptions).toString();
-	} catch(e) {
-    resCmd = '';
-  };
-  isExist = resCmd.search('gedemin.exe') > 0;
-  if (isExist) {
-		ret = `${ret}\n  gedemin.exe built`;
+  if ( existsSync(`${pathEXE}gedemin.exe`) ) {
+    ret = `${ret}\n  gedemin.exe built`;
   } else {
     ret = `${ret}\nError: gedemin.exe not built`;
     return ret;
@@ -219,15 +200,15 @@ export function ug(params: IParams) {
 
   execOptions.cwd = `${pathEXE}`;
   try {
-		resExec = execFileSync(`${pathEXE}StripReloc.exe`, ['/b', 'gedemin.exe'], execOptions).toString();
-	} catch(e) {
-		ret = `${ret}\n  ${e}`;
-		return ret;
+    resExec = execFileSync(`${pathEXE}StripReloc.exe`, ['/b', 'gedemin.exe'], execOptions).toString();
+  } catch(e) {
+    ret = `${ret}\n  ${e}`;
+    return ret;
   };
   //ret = `${ret}\n${resExec}`;
   ret = `${ret}\n  stripreloc passed`;
 
-  if (compileType === 'debug') {
+  if (compileType === 'DEBUG') {
     try {
       resExec = execFileSync(`${pathEXE}tdspack.exe`, ['-e -o -a', 'gedemin.exe'], execOptions).toString();
     } catch(e) {
@@ -240,81 +221,65 @@ export function ug(params: IParams) {
 
   ret = `${ret}\n  binEditbin: ${binEditbin}`;
   try {
-		resExec = execFileSync(`${binEditbin}editbin.exe`, ['/SWAPRUN:NET', 'gedemin.exe'], execOptions).toString();
-	} catch(e) {
-		ret = `${ret}\n  ${e}`;
-		return ret;
+    resExec = execFileSync(`${binEditbin}editbin.exe`, ['/SWAPRUN:NET', 'gedemin.exe'], execOptions).toString();
+  } catch(e) {
+    ret = `${ret}\n  ${e}`;
+    return ret;
   };
   //ret = `${ret}\n${resExec}`;
-  ret = `${ret}\n  editbin passed`;
+  ret = `${ret}\n  editbin passed`;  
 
-  cmdOptions.cwd = `${pathCFG}`;
   try {
-    resCmd = execSync(`copy ${pathCFG}gedemin.current.cfg ${pathCFG}gedemin.cfg /y`, null, cmdOptions).toString();
+    resCmd = copyFileSync(`${pathCFG}gedemin.current.cfg`, `${gdCFG}`);
     ret = `${ret}\n  current project config restored`;
+    try {
+      resCmd = unlinkSync(`${pathCFG}gedemin.current.cfg`);
+    } catch(e) {
+      resCmd = '';
+    };
+    if ( existsSync(`${pathCFG}gedemin.current.cfg`) ) {
+      ret = `${ret}\n  saved project config not deleted`;
+    } else {
+      ret = `${ret}\n  saved project config deleted`;
+    };
   } catch(e) {
-    ret = `${ret}\n  ${e}`;
-    return ret;
-  };
-
-  try {
-    resCmd = execSync(`del ${pathCFG}gedemin.current.cfg /q`, null, cmdOptions).toString();
-    ret = `${ret}\n  saved project config deleted`;
-  } catch(e) {
-    ret = `${ret}\n  ${e}`;
-    return ret;
+    ret = `${ret}\n  current project config not restored`;
   };
 
   /**
-   * Обязательно chdir с последующим execSync консольной версии архиватора
-   */
-  const process_cwd: string = `${process.cwd()}`
-  try {
-    process.chdir(`${pathEXE}`);
-    ret = `${ret}\n  directory changed to ${process.cwd()}`;
-  } catch (e) {
-		ret = `${ret}\n  ${e}`;
-		return ret;
-  }
-  /**
-   * Синхронизация содержимого архива по файлу списка gedemin.lst
-   *    добавление, обновление более новыми версиями по дате,
-   *    а также удаление файлов, которых нет в списке
+   * Синхронизация содержимого архива по файлу списка gedemin.lst 
+   *    добавление файлов
+   *    обновление файлов более новыми версиями по дате
+   *    удаление файлов, которых нет в списке
+   * Вопрос: где хранить файл списка gedemin.lst
+   *    1) в папке EXE
+   *    2) в папке архива (сейчас здесь)
    */
   ret = `${ret}\n  binWinRAR: ${binWinRAR}`;
-  const archiveName = {product: 'gedemin.rar', debug: 'gedemin_debug.rar', lock: 'gedemin_lock.rar'};
+  const archiveName = {PRODUCT: 'gedemin.rar', DEBUG: 'gedemin_debug.rar', LOCK: 'gedemin_lock.rar'};
   try {
-		resCmd = execSync(`"${binWinRAR}rar.exe"` +
-      ` a -u -as` +
-      ` ${archiveDir}${archiveName[compileType]}` +
-      ` @${archiveDir}gedemin.lst`,
-      null,
-        cmdOptions).toString();
-    //ret = `${ret}\n${resCmd}`;
-    ret = `${ret}\n  portable version archived`;
-	} catch(e) {
-		ret = `${ret}\n  ${e}`;
-		return ret;
+    resExec = execFileSync(`${binWinRAR}WinRAR.exe`,
+      [ 'a', '-u', '-as', '-ibck',
+        `${archiveDir}${archiveName[compileType]}`,
+        `@${archiveDir}gedemin.lst` ],
+      execOptions).toString();
+    ret = `${ret}\n  portable version archived`;        
+  } catch(e) {
+    ret = `${ret}\n  ${e}`;
+    return ret;
   };
-
-  try {
-    process.chdir(`${process_cwd}`);
-    ret = `${ret}\n  directory changed back to ${process_cwd}`;
-  } catch (e) {
-		ret = `${ret}\n  ${e}`;
-		return ret;
-  }
 
   ret = `${ret}\nUpdate Gedemin completed!`;
   return ret;
 }
 
 const ret_ug = ug(
-  { compileType: ['product', 'debug', 'lock'][0],
+  { compileType: 'PRODUCT',
     baseDir: 'c:\\golden\\gdc\\',
     archiveDir: 'c:\\golden\\archive\\',
-    binDephi: 'C:\\Delphi5\\Bin\\',
-    binEditbin: 'C:\\Program Files (x86)\\Microsoft Visual Studio\\2019\\Community\\VC\\Tools\\MSVC\\14.28.29333\\bin\\Hostx64\\x64\\',
-    binWinRAR: 'C:\\Program Files\\WinRAR\\'
+    pathDelphi: 'C:\\Delphi5\\',
+    //binDephi: 'C:\\Delphi5\\Bin\\',
+    binEditbin: 'C:\\Program Files (x86)\\Microsoft Visual Studio\\2019\\Community\\VC\\Tools\\MSVC\\14.28.29333\\bin\\Hostx64\\x64\\'//,
+    //binWinRAR: 'C:\\Program Files\\WinRAR\\'
   });
 console.log(ret_ug);
