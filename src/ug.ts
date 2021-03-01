@@ -1,3 +1,6 @@
+//FIXME: было бы неплохо дать краткое описание процесса компиляции. чтомы берем, откуда, для чего, что и куда помещаем
+
+
 /**
  * Текущий функционал
  *    Снятие из гита последних исходников
@@ -13,9 +16,10 @@ export interface IParams {
   compileType: 'PRODUCT' | 'DEBUG' | 'LOCK';
 
   /**
-   * Корневая папка с полными исходниками Гедымина, включая Comp5. 
+   * Корневая папка с полными исходниками Гедымина, включая Comp5.
    * В ней находятся папки Comp5 и Gedemin.
    */
+  //FIXME: путь должен заканчиваться слэшем или не должен, или ему все равно?
   baseDir: string;
 
   /**
@@ -33,6 +37,10 @@ export interface IParams {
   binWinRAR?: string;
 } 
 
+/**
+ *
+ * @param params
+ */
 export function ug(params: IParams) {
   let { compileType, baseDir, archiveDir,
           pathDelphi, binDephi, binEditbin, binWinRAR
@@ -48,7 +56,7 @@ export function ug(params: IParams) {
   if (binWinRAR === undefined) {binWinRAR = binWinRARDefault};
   
   /**
-   * Локальные пути 
+   * Локальные пути
    */
   const pathDCU = `${baseDir}gedemin\\DCU\\`;
   const pathCFG = `${baseDir}gedemin\\gedemin\\`;
@@ -58,12 +66,13 @@ export function ug(params: IParams) {
    * Снимаем исходники с гита.
    * как он понимает репозиторий?
    * где логин пароль?
-   * 
+   *
    * если он берет уже из настроенного гита,
    * то надо отразить в инструкции по развертыванию,
    * что гит должен быть настроен, логин пароль введен и т.п.
    */
-  
+
+  //FIXME: а импорт не проходит?
   const { execFileSync } = require('child_process');
   const { readdirSync, unlinkSync, copyFileSync, existsSync,
           readFileSync, writeFileSync } = require('fs');
@@ -73,6 +82,8 @@ export function ug(params: IParams) {
    * на всякий случай maxBuffer и timeout ставим больше
    * гит и прочие программы вписываются в параметры для компиляции
    */
+
+  //FIXME: почему let? потому что дальше cmdOptions.cwd = ...
   let execOptions =
     { stdio: ['ignore', 'pipe', 'ignore'],
       maxBuffer: 1024 * 1024 * 4,
@@ -85,7 +96,7 @@ export function ug(params: IParams) {
   let resCmd: string = '';
   const strUpToDate: string = 'up to date';
   let isUpToDate: boolean = true;
-    
+
   try {
     resExec = execFileSync('git', ['checkout', 'master'], execOptions).toString();
   } catch(e) {
@@ -109,6 +120,7 @@ export function ug(params: IParams) {
     return ret;
   };
   //ret = `${ret}\n${resExec}`;
+
   ret = `${ret}\n  ready to compile`;
 
   ret = `${ret}\n  pathDCU: ${pathDCU}`;
@@ -183,9 +195,9 @@ export function ug(params: IParams) {
     ret = `${ret}\n  gedemin.exe built`;
   } else {
     ret = `${ret}\nError: gedemin.exe not built`;
-    return ret;    
+    return ret;
   };
-  
+
   execOptions.cwd = `${pathEXE}`;
   try {
     resExec = execFileSync(`${pathEXE}StripReloc.exe`, ['/b', 'gedemin.exe'], execOptions).toString();
