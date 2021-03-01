@@ -65,7 +65,6 @@ export function ug(params: IParams) {
    */
   
   const { execFileSync } = require('child_process');
-  const { execSync } = require('child_process');
   const { readdirSync, unlinkSync, copyFileSync, existsSync,
           readFileSync, writeFileSync } = require('fs');
   /**
