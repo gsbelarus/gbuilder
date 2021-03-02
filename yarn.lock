@@ -373,6 +373,7 @@ __metadata:
   dependencies:
     "@types/node": ^14.14.31
     "@yarnpkg/pnpify": ^2.4.0
+    dateformat: ^4.5.1
     ts-node: ^9.1.1
     tsc: ^1.20150623.0
     typescript: ^4.1.3
@@ -501,6 +502,13 @@ __metadata:
     shebang-command: ^2.0.0
     which: ^2.0.1
   checksum: 51f10036f5f1de781be98f4738d58b50c6d44f4f471069b8ab075b21605893ba1548654880f7310a29a732d6fc7cd481da6026169b9f0831cab0148a62fb397a
+  languageName: node
+  linkType: hard
+
+"dateformat@npm:^4.5.1":
+  version: 4.5.1
+  resolution: "dateformat@npm:4.5.1"
+  checksum: d5d08fd36f0987570cacada467145c722b4051285fae32969d62ef4bfc3c392f310bf6982a3ecbe62f0b42a944846d94a2bff53b8051ad1540bcaf118732fbf4
   languageName: node
   linkType: hard
 
