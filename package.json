@@ -1,7 +1,7 @@
 {
   "name": "builder",
   "scripts": {
-    "start": "node -r ts-node/register src/test_run.ts",
+    "start": "node -r ts-node/register src/test_run.ts c:/golden/gdc/params.json",
     "start2": "node -r ts-node/register src/test_run.ts c:/golden/gedemin/params.json",
     "ts": "tsc"
   },
