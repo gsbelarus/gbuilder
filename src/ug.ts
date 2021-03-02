@@ -10,6 +10,7 @@
 
 import { execFileSync, ExecFileSyncOptionsWithStringEncoding } from 'child_process';
 import { readdirSync, unlinkSync, copyFileSync, existsSync, readFileSync, writeFileSync } from 'fs';
+import path from 'path';
 
 export interface IParams {
   /**
@@ -19,11 +20,10 @@ export interface IParams {
   compileType: 'PRODUCT' | 'DEBUG' | 'LOCK';
 
   /**
-   * Корневая папка с полными исходниками Гедымина, включая Comp5.
+   * Корневая папка с полными исходниками Гедымина.
    * В ней находятся папки Comp5 и Gedemin.
    */
-  //FIXME: путь должен заканчиваться слэшем или не должен, или ему все равно?
-  baseDir: string;
+  rootGedeminDir: string;
 
   /**
    * Папка архива
@@ -32,39 +32,51 @@ export interface IParams {
 
   /**
    * Полные пути к используемым программам,
-   * расположенным вне каталога gedemin\EXE\ (от корневой папки)
+   * расположенным вне каталога gedemin\EXE\
    */
   pathDelphi?: string;
-  binDephi?: string;
+  binDelphi?: string;
   binEditbin?: string;
   binWinRAR?: string;
-} 
+};
+
+const defaultParams: Required<Pick<IParams, 'pathDelphi' | 'binDelphi' | 'binEditbin' | 'binWinRAR'>> = {
+  pathDelphi: 'c:\\Program Files\\Borland\\Delphi5\\',
+  binDelphi: 'c:\\Program Files\\Borland\\Delphi5\\Bin',
+  binEditbin: '',
+  binWinRAR: 'c:\\Program Files\\WinRAR\\'
+};
 
 /**
  *
  * @param params
  */
 export function ug(params: IParams) {
-  let { compileType, baseDir, archiveDir,
-          pathDelphi, binDephi, binEditbin, binWinRAR
-  } = params;
-  
-  const pathDelphiDefault = 'c:\\program files\\borland\\delphi5\\';
-  const binEditbinDefault = '';
-  const binWinRARDefault = 'C:\\Program Files\\WinRAR\\';
+  const {
+    compileType,
+    rootGedeminDir,
+    archiveDir,
+    pathDelphi,
+    binDelphi,
+    binEditbin,
+    binWinRAR
+  } = { ...defaultParams, ...params };
 
-  if (pathDelphi === undefined) {pathDelphi = pathDelphiDefault};
-  if (binDephi === undefined) {binDephi = `${pathDelphi}bin\\`};
-  if (binEditbin === undefined) {binEditbin = binEditbinDefault};
-  if (binWinRAR === undefined) {binWinRAR = binWinRARDefault};
-  
   /**
-   * Локальные пути
+   * В процессе компиляции DCU, DCP, BPL файлы помещаются в эту папку.
    */
-  const pathDCU = `${baseDir}gedemin\\DCU\\`;
-  const pathCFG = `${baseDir}gedemin\\gedemin\\`;
-  const pathEXE = `${baseDir}gedemin\\EXE\\`;
-    
+  const pathDCU = path.join(rootGedeminDir, 'gedemin', 'DCU');
+
+  /**
+   * Здесь находятся CFG файлы, которые мы используем в разных типах сборки проекта.
+   */
+  const pathCFG = path.join(rootGedeminDir, 'gedemin', 'gedemin');
+
+  /**
+   * Полученный экзешник и будет расположен в этой папке.
+   */
+  const pathEXE = path.join(rootGedeminDir, 'gedemin', 'EXE');
+
   /**
    * Снимаем исходники с гита.
    * как он понимает репозиторий?
@@ -74,7 +86,7 @@ export function ug(params: IParams) {
    * то надо отразить в инструкции по развертыванию,
    * что гит должен быть настроен, логин пароль введен и т.п.
    */
-  
+
   /**
    * компиляция работает c maxBuffer 2M
    * время компиляции примерно 30 сек (i5 8G SSD)
@@ -88,10 +100,10 @@ export function ug(params: IParams) {
       maxBuffer: 1024 * 1024 * 4,
       timeout: 60 * 1000,
       encoding: 'utf8',
-      cwd: `${baseDir}`
+      cwd: `${rootGedeminDir}`
   };
 
-  let ret = `Update Gedemin\n  compileType: ${compileType}\n  baseDir: ${baseDir}`
+  let ret = `Update Gedemin\n  compileType: ${compileType}\n  rootGedeminDir: ${rootGedeminDir}`
   let resExec = '';
 
   try {
@@ -111,7 +123,7 @@ export function ug(params: IParams) {
   if (isUpToDate) {
     return ret;
   }
-  
+
   try {
     resExec = execFileSync('git', ['pull', 'origin', 'master'], execOptions).toString();
   } catch(e) {
@@ -132,7 +144,7 @@ export function ug(params: IParams) {
     ret = `${ret}\n  ${e}`;
     return ret;
   };
-  
+
   ret = `${ret}\n  pathCFG: ${pathCFG}`;
   const gdCFG = `${pathCFG}gedemin.cfg`;
   try {
@@ -144,17 +156,21 @@ export function ug(params: IParams) {
 
   try {
     copyFileSync(`${pathCFG}gedemin.${compileType}.cfg`, `${gdCFG}`);
-    ret = `${ret}\n  project config prepared as '${compileType}'`;    
+    ret = `${ret}\n  project config prepared as '${compileType}'`;
   } catch(e) {
     ret = `${ret}\n  ${e}`;
     return ret;
   };
 
-  if ( `${pathDelphiDefault}` !== `${pathDelphi}` ) {
+  /**
+   * Внутри CFG файлов у нас прописан дефолтный путь к делфи.
+   * Если путь на этой машине к делфи отличается, то его следует заменить.
+   */
+  if (defaultParams.pathDelphi !== pathDelphi) {
     ret = `${ret}\n  pathDelphi: ${pathDelphi}`;
     try {
       let cfgFile = readFileSync(`${gdCFG}`).toString();
-      cfgFile = cfgFile.split(`${pathDelphiDefault}`).join(`${pathDelphi}`);
+      cfgFile = cfgFile.split(defaultParams.pathDelphi).join(`${pathDelphi}`);
       writeFileSync(`${gdCFG}`, cfgFile);
       ret = `${ret}\n  project config changed`;
     } catch(e) {
@@ -162,7 +178,7 @@ export function ug(params: IParams) {
       return ret;
     };
   }
-  
+
   ret = `${ret}\n  pathEXE: ${pathEXE}`;
   try {
     unlinkSync(`${pathEXE}gedemin.exe`);
@@ -171,16 +187,16 @@ export function ug(params: IParams) {
   };
   if ( existsSync(`${pathEXE}gedemin.exe`) ) {
     ret = `${ret}\nError: gedemin.exe not deleted`;
-    return ret;    
+    return ret;
   } else {
     ret = `${ret}\n  gedemin.exe deleted`;
   };
 
-  ret = `${ret}\n  binDephi: ${binDephi}`;
+  ret = `${ret}\n  binDephi: ${binDelphi}`;
   execOptions.cwd = `${pathCFG}`;
   const compiler_switch = {PRODUCT: '-b', DEBUG: '-b -vt', LOCK: '-b'};
   try {
-    resExec = execFileSync(`${binDephi}dcc32.exe`,
+    resExec = execFileSync(`${binDelphi}dcc32.exe`,
       [compiler_switch[compileType], `gedemin.dpr`],
       execOptions).toString();
   } catch(e) {
@@ -225,7 +241,7 @@ export function ug(params: IParams) {
     return ret;
   };
   //ret = `${ret}\n${resExec}`;
-  ret = `${ret}\n  editbin passed`;  
+  ret = `${ret}\n  editbin passed`;
 
   try {
     copyFileSync(`${pathCFG}gedemin.current.cfg`, `${gdCFG}`);
@@ -245,7 +261,7 @@ export function ug(params: IParams) {
   };
 
   /**
-   * Синхронизация содержимого архива по файлу списка gedemin.lst 
+   * Синхронизация содержимого архива по файлу списка gedemin.lst
    *    добавление файлов
    *    обновление файлов более новыми версиями по дате
    *    удаление файлов, которых нет в списке
@@ -261,7 +277,7 @@ export function ug(params: IParams) {
         `${archiveDir}${archiveName[compileType]}`,
         `@${archiveDir}gedemin.lst` ],
       execOptions).toString();
-    ret = `${ret}\n  portable version archived`;        
+    ret = `${ret}\n  portable version archived`;
   } catch(e) {
     ret = `${ret}\n  ${e}`;
     return ret;
@@ -273,7 +289,7 @@ export function ug(params: IParams) {
 
 const ret_ug = ug(
   { compileType: 'PRODUCT',
-    baseDir: 'c:\\golden\\gdc\\',
+    rootGedeminDir: 'c:\\golden\\gdc\\',
     archiveDir: 'c:\\golden\\archive\\',
     pathDelphi: 'C:\\Delphi5\\',
     //binDephi: 'C:\\Delphi5\\Bin\\',
