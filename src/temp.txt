@@ -1,0 +1,157 @@
+  let ret = `Update Gedemin\n  compileType: ${compileType}\n  rootGedeminDir: ${rootGedeminDir}`
+  let resExec = '';
+
+  ret = `${ret}\n  ready to compile`;
+
+  ret = `${ret}\n  pathDCU: ${pathDCU}`;
+  try {
+    readdirSync(`${pathDCU}`).filter
+      (f => f.slice(-4).toLowerCase() === '.dcu').forEach
+      (f => unlinkSync(`${pathDCU}${f}`)) ;
+    ret = `${ret}\n  dcu deleted`;
+  } catch(e) {
+    ret = `${ret}\n  ${e}`;
+    return ret;
+  };
+
+  ret = `${ret}\n  pathCFG: ${pathCFG}`;
+  const gdCFG = `${pathCFG}gedemin.cfg`;
+  try {
+    copyFileSync(`${gdCFG}`, `${pathCFG}gedemin.current.cfg`);
+    ret = `${ret}\n  current project config saved`;
+  } catch(e) {
+    ret = `${ret}\n  current project config not exists`;
+  };
+
+  try {
+    copyFileSync(`${pathCFG}gedemin.${compileType}.cfg`, `${gdCFG}`);
+    ret = `${ret}\n  project config prepared as '${compileType}'`;
+  } catch(e) {
+    ret = `${ret}\n  ${e}`;
+    return ret;
+  };
+
+  /**
+   * Внутри CFG файлов у нас прописан дефолтный путь к делфи.
+   * Если путь на этой машине к делфи отличается, то его следует заменить.
+   */
+  if (defaultParams.pathDelphi !== pathDelphi) {
+    ret = `${ret}\n  pathDelphi: ${pathDelphi}`;
+    try {
+      let cfgFile = readFileSync(`${gdCFG}`).toString();
+      cfgFile = cfgFile.split(defaultParams.pathDelphi).join(`${pathDelphi}`);
+      writeFileSync(`${gdCFG}`, cfgFile);
+      ret = `${ret}\n  project config changed`;
+    } catch(e) {
+      ret = `${ret}\n  ${e}`;
+      return ret;
+    };
+  }
+
+  ret = `${ret}\n  pathEXE: ${pathEXE}`;
+  try {
+    unlinkSync(`${pathEXE}gedemin.exe`);
+  } catch(e) {
+    ret = `${ret}\n  ${e}`;
+  };
+  if ( existsSync(`${pathEXE}gedemin.exe`) ) {
+    ret = `${ret}\nError: gedemin.exe not deleted`;
+    return ret;
+  } else {
+    ret = `${ret}\n  gedemin.exe deleted`;
+  };
+
+  ret = `${ret}\n  binDephi: ${binDelphi}`;
+  execOptions.cwd = `${pathCFG}`;
+  const compiler_switch = {PRODUCT: '-b', DEBUG: '-b -vt', LOCK: '-b'};
+  try {
+    resExec = execFileSync(`${binDelphi}dcc32.exe`,
+      [compiler_switch[compileType], `gedemin.dpr`],
+      execOptions).toString();
+  } catch(e) {
+    ret = `${ret}\n  ${e}`;
+    return ret;
+  };
+  //ret = `${ret}\n${resExec}`;
+
+  if ( existsSync(`${pathEXE}gedemin.exe`) ) {
+    ret = `${ret}\n  gedemin.exe built`;
+  } else {
+    ret = `${ret}\nError: gedemin.exe not built`;
+    return ret;
+  };
+
+  execOptions.cwd = `${pathEXE}`;
+  try {
+    resExec = execFileSync(`${pathEXE}StripReloc.exe`, ['/b', 'gedemin.exe'], execOptions).toString();
+  } catch(e) {
+    ret = `${ret}\n  ${e}`;
+    return ret;
+  };
+  //ret = `${ret}\n${resExec}`;
+  ret = `${ret}\n  stripreloc passed`;
+
+  if (compileType === 'DEBUG') {
+    try {
+      resExec = execFileSync(`${pathEXE}tdspack.exe`, ['-e -o -a', 'gedemin.exe'], execOptions).toString();
+    } catch(e) {
+      ret = `${ret}\n  ${e}`;
+      return ret;
+    };
+    //ret = `${ret}\n${resExec}`;
+    ret = `${ret}\n  tdspack passed`;
+  };
+
+  ret = `${ret}\n  binEditbin: ${binEditbin}`;
+  try {
+    resExec = execFileSync(`${binEditbin}editbin.exe`, ['/SWAPRUN:NET', 'gedemin.exe'], execOptions).toString();
+  } catch(e) {
+    ret = `${ret}\n  ${e}`;
+    return ret;
+  };
+  //ret = `${ret}\n${resExec}`;
+  ret = `${ret}\n  editbin passed`;
+
+  try {
+    copyFileSync(`${pathCFG}gedemin.current.cfg`, `${gdCFG}`);
+    ret = `${ret}\n  current project config restored`;
+    try {
+      unlinkSync(`${pathCFG}gedemin.current.cfg`);
+    } catch(e) {
+      ret = `${ret}\n  ${e}`;
+    };
+    if ( existsSync(`${pathCFG}gedemin.current.cfg`) ) {
+      ret = `${ret}\n  saved project config not deleted`;
+    } else {
+      ret = `${ret}\n  saved project config deleted`;
+    };
+  } catch(e) {
+    ret = `${ret}\n  current project config not restored`;
+  };
+
+  /**
+   * Синхронизация содержимого архива по файлу списка gedemin.lst
+   *    добавление файлов
+   *    обновление файлов более новыми версиями по дате
+   *    удаление файлов, которых нет в списке
+   * Вопрос: где хранить файл списка gedemin.lst
+   *    1) в папке EXE
+   *    2) в папке архива (сейчас здесь)
+   */
+  ret = `${ret}\n  binWinRAR: ${binWinRAR}`;
+  const archiveName = {PRODUCT: 'gedemin.rar', DEBUG: 'gedemin_debug.rar', LOCK: 'gedemin_lock.rar'};
+  try {
+    resExec = execFileSync(`${binWinRAR}WinRAR.exe`,
+      [ 'a', '-u', '-as', '-ibck',
+        `${archiveDir}${archiveName[compileType]}`,
+        `@${archiveDir}gedemin.lst` ],
+      execOptions).toString();
+    ret = `${ret}\n  portable version archived`;
+  } catch(e) {
+    ret = `${ret}\n  ${e}`;
+    return ret;
+  };
+
+  ret = `${ret}\nUpdate Gedemin completed!`;
+  return ret;
+}

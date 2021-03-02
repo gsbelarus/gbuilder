@@ -1,11 +1,12 @@
 {
   "name": "builder",
   "scripts": {
-    "start": "ts-node src/ug.ts",
+    "start": "node -r ts-node/register src/test_run.ts",
+    "start2": "node -r ts-node/register src/test_run.ts c:/golden/gedemin/params.json",
     "ts": "tsc"
   },
   "dependencies": {
-    "moment": "^2.29.1",
+    "dateformat": "^4.5.1",
     "ts-node": "^9.1.1",
     "tsc": "^1.20150623.0",
     "typescript": "^4.1.3"
