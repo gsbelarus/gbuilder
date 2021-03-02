@@ -8,6 +8,9 @@
  *    Формирование архива по файлу списка
  */
 
+import { execFileSync, ExecFileSyncOptionsWithStringEncoding } from 'child_process';
+import { readdirSync, unlinkSync, copyFileSync, existsSync, readFileSync, writeFileSync } from 'fs';
+
 export interface IParams {
   /**
    * Тип компиляции:
@@ -71,11 +74,7 @@ export function ug(params: IParams) {
    * то надо отразить в инструкции по развертыванию,
    * что гит должен быть настроен, логин пароль введен и т.п.
    */
-
-  //FIXME: а импорт не проходит?
-  const { execFileSync } = require('child_process');
-  const { readdirSync, unlinkSync, copyFileSync, existsSync,
-          readFileSync, writeFileSync } = require('fs');
+  
   /**
    * компиляция работает c maxBuffer 2M
    * время компиляции примерно 30 сек (i5 8G SSD)
@@ -84,18 +83,16 @@ export function ug(params: IParams) {
    */
 
   //FIXME: почему let? потому что дальше cmdOptions.cwd = ...
-  let execOptions =
+  let execOptions: ExecFileSyncOptionsWithStringEncoding =
     { stdio: ['ignore', 'pipe', 'ignore'],
       maxBuffer: 1024 * 1024 * 4,
       timeout: 60 * 1000,
+      encoding: 'utf8',
       cwd: `${baseDir}`
   };
 
-  let ret: string = `Update Gedemin\n  compileType: ${compileType}\n  baseDir: ${baseDir}`
-  let resExec: string = '';
-  let resCmd: string = '';
-  const strUpToDate: string = 'up to date';
-  let isUpToDate: boolean = true;
+  let ret = `Update Gedemin\n  compileType: ${compileType}\n  baseDir: ${baseDir}`
+  let resExec = '';
 
   try {
     resExec = execFileSync('git', ['checkout', 'master'], execOptions).toString();
@@ -105,6 +102,8 @@ export function ug(params: IParams) {
   };
   //ret = `${ret}\n${resExec}`;
 
+  const strUpToDate = 'up to date';
+  let isUpToDate = true;
   isUpToDate = resExec.search(strUpToDate) > 0;
   ret = `${ret}\n  isUpToDate: ${isUpToDate}`;
   // comment next line for use in production code
@@ -125,7 +124,7 @@ export function ug(params: IParams) {
 
   ret = `${ret}\n  pathDCU: ${pathDCU}`;
   try {
-    resCmd = readdirSync(`${pathDCU}`).filter
+    readdirSync(`${pathDCU}`).filter
       (f => f.slice(-4).toLowerCase() === '.dcu').forEach
       (f => unlinkSync(`${pathDCU}${f}`)) ;
     ret = `${ret}\n  dcu deleted`;
@@ -133,19 +132,18 @@ export function ug(params: IParams) {
     ret = `${ret}\n  ${e}`;
     return ret;
   };
-  //ret = `${ret}\n${resCmd}`
-
+  
   ret = `${ret}\n  pathCFG: ${pathCFG}`;
   const gdCFG = `${pathCFG}gedemin.cfg`;
   try {
-    resCmd = copyFileSync(`${gdCFG}`, `${pathCFG}gedemin.current.cfg`);
+    copyFileSync(`${gdCFG}`, `${pathCFG}gedemin.current.cfg`);
     ret = `${ret}\n  current project config saved`;
   } catch(e) {
     ret = `${ret}\n  current project config not exists`;
   };
 
   try {
-    resCmd = copyFileSync(`${pathCFG}gedemin.${compileType}.cfg`, `${gdCFG}`);
+    copyFileSync(`${pathCFG}gedemin.${compileType}.cfg`, `${gdCFG}`);
     ret = `${ret}\n  project config prepared as '${compileType}'`;    
   } catch(e) {
     ret = `${ret}\n  ${e}`;
@@ -155,9 +153,9 @@ export function ug(params: IParams) {
   if ( `${pathDelphiDefault}` !== `${pathDelphi}` ) {
     ret = `${ret}\n  pathDelphi: ${pathDelphi}`;
     try {
-      resCmd = readFileSync(`${gdCFG}`).toString();
-      resCmd = resCmd.split(`${pathDelphiDefault}`).join(`${pathDelphi}`);
-      resCmd = writeFileSync(`${gdCFG}`, resCmd);
+      let cfgFile = readFileSync(`${gdCFG}`).toString();
+      cfgFile = cfgFile.split(`${pathDelphiDefault}`).join(`${pathDelphi}`);
+      writeFileSync(`${gdCFG}`, cfgFile);
       ret = `${ret}\n  project config changed`;
     } catch(e) {
       ret = `${ret}\n  ${e}`;
@@ -167,9 +165,9 @@ export function ug(params: IParams) {
   
   ret = `${ret}\n  pathEXE: ${pathEXE}`;
   try {
-    resCmd = unlinkSync(`${pathEXE}gedemin.exe`);
+    unlinkSync(`${pathEXE}gedemin.exe`);
   } catch(e) {
-    resCmd = '';
+    ret = `${ret}\n  ${e}`;
   };
   if ( existsSync(`${pathEXE}gedemin.exe`) ) {
     ret = `${ret}\nError: gedemin.exe not deleted`;
@@ -230,12 +228,12 @@ export function ug(params: IParams) {
   ret = `${ret}\n  editbin passed`;  
 
   try {
-    resCmd = copyFileSync(`${pathCFG}gedemin.current.cfg`, `${gdCFG}`);
+    copyFileSync(`${pathCFG}gedemin.current.cfg`, `${gdCFG}`);
     ret = `${ret}\n  current project config restored`;
     try {
-      resCmd = unlinkSync(`${pathCFG}gedemin.current.cfg`);
+      unlinkSync(`${pathCFG}gedemin.current.cfg`);
     } catch(e) {
-      resCmd = '';
+      ret = `${ret}\n  ${e}`;
     };
     if ( existsSync(`${pathCFG}gedemin.current.cfg`) ) {
       ret = `${ret}\n  saved project config not deleted`;
