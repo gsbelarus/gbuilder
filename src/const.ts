@@ -14,6 +14,7 @@ export const gedeminSrcPath = [
   '../FastReport 4/Source/ADO',
   '../FastReport 4/FastQB',
   '../FastReport 4/Source/IBX',
+  '../FastReport 4/LibD5',
   '../setup',
   '../imports',
   '../component',
@@ -23,10 +24,10 @@ export const gedeminSrcPath = [
   '../Component/tb2k/Source',
   '../Component/SynEdit/Source',
   '../common',
-  '<<delphi>>/Source/Vcl',
-  '<<delphi>>/Source/Toolsapi',
-  '<<delphi>>/Ocx/Servers',
-  '<<delphi>>/lib',
+  '<<DELPHI>>/Source/Vcl',
+  '<<DELPHI>>/Source/Toolsapi',
+  '<<DELPHI>>/Ocx/Servers',
+  '<<DELPHI>>/lib',
   '../designer',
   '../property',
   '../transaction',
@@ -52,15 +53,15 @@ export const gedeminSrcPath = [
   '../classtree',
   '../attr',
   '../storage',
-  '../bank',
   '../newtransaction',
+  '../bank',
   '../gudf',
   '../protect',
   '../gedemin',
   '../images',
   '../tax',
   '../backup',
-  '<<delphi>>/Imports',
+  '<<DELPHI>>/Imports',
   '../component/repository/gd',
   '../test/dunit/src',
   '../test/GedeminTest'
@@ -91,8 +92,7 @@ export const gedeminCfgVariables = {
 }
 
 export const gedeminCfgTemplate =
-`
--$A+
+`-$A+
 -$B-
 -$C<<C_SWITCH>>
 -$D<<D_SWITCH>>

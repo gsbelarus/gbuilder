@@ -31,21 +31,11 @@ export interface IParams {
   /** Папка архива */
   archiveDir: string;
   /** Папка Delphi */
-  pathDelphi?: string;
-  /** Папка иполняемых файлов Delphi */
-  binDelphi?: string;
+  pathDelphi: string;
   /** Папка утилиты Editbin */
-  binEditbin?: string;
+  binEditbin: string;
   /** Папка WinRAR */
-  binWinRAR?: string;
-};
-
-/** Параметры по умолчанию */
-const defaultParams: Required<Pick<IParams, 'pathDelphi' | 'binDelphi' | 'binEditbin' | 'binWinRAR'>> = {
-  pathDelphi: 'c:\\Program Files\\Borland\\Delphi5',
-  binDelphi: 'c:\\Program Files\\Borland\\Delphi5\\Bin',
-  binEditbin: '',
-  binWinRAR: 'c:\\Program Files\\WinRAR'
+  binWinRAR: string;
 };
 
 /**
@@ -76,20 +66,15 @@ export function ug(log: Log) {
 
   const params = JSON.parse(readFileSync(paramsFile, {encoding:'utf8', flag:'r'})) as IParams;
 
-  const {
-    compilationType,
-    rootGedeminDir, archiveDir,
-    pathDelphi, binDelphi, binEditbin, binWinRAR } = { ...defaultParams, ...params };
+  const { compilationType, rootGedeminDir, archiveDir, pathDelphi, binEditbin, binWinRAR } = params;
 
-  /** Основная папка проекта */
-  const pathGedemin = path.join(rootGedeminDir, 'Gedemin')
+  /** Основная папка проекта где находятся .dpr, .cfg, .res файлы */
+  const pathGedemin = path.join(rootGedeminDir, 'Gedemin', 'Gedemin')
   /** В процессе компиляции DCU файлы помещаются в эту папку */
-  const pathDCU = path.join(pathGedemin, 'DCU');
+  const pathDCU = path.join(rootGedeminDir, 'Gedemin', 'DCU');
   /** Целевая папка компиляции */
-  const pathEXE = path.join(pathGedemin, 'EXE');
-  /** Папка файлов конфигурации и ресурсов */
-  const pathCFG = path.join(pathGedemin, 'Gedemin');
-  
+  const pathEXE = path.join(rootGedeminDir, 'Gedemin', 'EXE');
+
   /**
    * Снимаем исходники с гита.
    * как он понимает репозиторий?
@@ -107,11 +92,10 @@ export function ug(log: Log) {
    *    гит и прочие программы вписываются в параметры для компиляции,
    *    т.е. для выполнения execFileSync изменяется только execOptions.cwd
    */
-    const execOptions: ExecFileSyncOptions = {
-    stdio: ['ignore', 'pipe', 'ignore'],
-    maxBuffer: 1024 * 1024 * 4,
-    timeout: 60 * 1000,
-    cwd: rootGedeminDir
+  const basicExecOptions: ExecFileSyncOptions = {
+    stdio: ['pipe', 'pipe', 'pipe'],
+    maxBuffer: 1024 * 1024 * 64,
+    timeout: 60 * 1000
   };
 
   /** Количество шагов процесса */
@@ -123,10 +107,11 @@ export function ug(log: Log) {
   log.log(`Gedemin root dir: ${rootGedeminDir}`);
 
   runProcess('Pull latest sources', () => {
+    const opt = { ...basicExecOptions, cwd: rootGedeminDir };
     log.log('git checkout master...');
-    log.log(execFileSync('git', ['checkout', 'master'], execOptions).toString());
+    log.log(execFileSync('git', ['checkout', 'master'], opt).toString());
     log.log('git pull origin master...');
-    log.log(execFileSync('git', ['pull', 'origin', 'master'], execOptions).toString());
+    log.log(execFileSync('git', ['pull', 'origin', 'master'], opt).toString());
   });
 
   runProcess('Clear DCU folder', () => {
@@ -151,9 +136,9 @@ export function ug(log: Log) {
    */
 
   /** Файл конфигурации проекта для компиляции */
-  const gedeminCfgFileName = path.join(pathCFG, 'gedemin.cfg');
+  const gedeminCfgFileName = path.join(pathGedemin, 'gedemin.cfg');
   /** Файла для сохранения текущей конфигурации */
-  const gedeminSavedCfgFileName = path.join(pathCFG, 'gedemin.current.cfg');
+  const gedeminSavedCfgFileName = path.join(pathGedemin, 'gedemin.current.cfg');
 
   runProcess('Prepare config file', () => {
     if (existsSync(gedeminCfgFileName)) {
@@ -163,8 +148,8 @@ export function ug(log: Log) {
 
     let srcPath = gedeminSrcPath.join(';');
 
-    while (srcPath.includes('<<delphi>>')) {
-      srcPath = srcPath.replace('<<delphi>>', pathDelphi.replace(/\\/gi, '/'));
+    while (srcPath.includes('<<DELPHI>>')) {
+      srcPath = srcPath.replace('<<DELPHI>>', pathDelphi.replace(/\\/gi, '/'));
     }
 
     let cfgBody = gedeminCfgTemplate;
@@ -192,63 +177,64 @@ export function ug(log: Log) {
   /** Целевой файл */
   const gedeminExeFileName = path.join(pathEXE, 'gedemin.exe');
   //const
-  runProcess('Create new gedemin.exe', () => {
-    if (existsSync(gedeminExeFileName)) {  
+  runProcess('Build gedemin.exe', () => {
+    if (existsSync(gedeminExeFileName)) {
       unlinkSync(gedeminExeFileName);
-      log.log('gedemin.exe deleted');
+      log.log('previous gedemin.exe has been deleted...');
     }
-    
-    log.log('build gedemin.exe...');
-    execOptions.cwd = pathCFG;
-    log.log(`pathCFG: ${pathCFG}`);
-    log.log(
-      execFileSync(path.join(binDelphi, 'dcc32.exe'),
-      [gedeminCompilerSwitch[compilationType], `gedemin.dpr`],
-      execOptions).toString()
-    );
-    log.log('gedemin.exe built');
 
-    execOptions.cwd = pathEXE;
-    log.log(`pathEXE: ${pathEXE}`);    
-    log.log(execFileSync('StripReloc.exe', ['/b', 'gedemin.exe'], execOptions).toString());
-    log.log('StripReloc passed');
+    log.log('building gedemin.exe...');
+    log.log(pathGedemin);
+    log.log(
+      execFileSync(
+        path.join(pathDelphi, 'Bin', 'dcc32.exe'),
+        [gedeminCompilerSwitch[compilationType], 'gedemin.dpr'],
+        { ...basicExecOptions, cwd: pathGedemin }
+      ).toString()
+    );
+    log.log('gedemin.exe has been built...');
+
+    log.log(`pathEXE: ${pathEXE}`);
+    log.log(execFileSync('StripReloc.exe', ['/b', 'gedemin.exe'], { ...basicExecOptions, cwd: pathEXE }).toString());
+    log.log('StripReloc passed...');
 
     if (compilationType === 'DEBUG') {
-      log.log(execFileSync('tdspack.exe', ['-e -o -a', 'gedemin.exe'], execOptions).toString());
-      log.log('tdspack passed');
+      log.log(execFileSync('tdspack.exe', ['-e -o -a', 'gedemin.exe'], { ...basicExecOptions, cwd: pathEXE }).toString());
+      log.log('debug information has been packed...');
     };
 
-    log.log(execFileSync(path.join(binEditbin, 'editbin.exe'), ['/SWAPRUN:NET', 'gedemin.exe'], execOptions).toString());
-    log.log('editbin passed');
-    
-    log.log('New version gedemin.exe ready to use');
+    log.log(execFileSync(path.join(binEditbin, 'editbin.exe'), ['/SWAPRUN:NET', 'gedemin.exe'], { ...basicExecOptions, cwd: pathEXE }).toString());
+    log.log('swaprun flag has been set on gedemin.exe file...');
+
+    log.log('gedemin.exe has been successfully built...');
   });
 
-/** Файл архива */  
-const gedeminArchiveFileName = path.join(archiveDir, gedeminArchiveName[compilationType]);  
-/**
-   * Синхронизация содержимого архива по файлу списка gedemin.lst 
-   *    добавление файлов
-   *    обновление файлов более новыми версиями по дате
-   *    удаление файлов, которых нет в списке
-   * Вопрос: где хранить файл списка gedemin.lst
-   *    1) в папке EXE
-   *    2) в папке архива (сейчас здесь)
-   */
-  const createArhive = () => {  
-    log.log(
-      execFileSync(path.join(binWinRAR, 'WinRAR.exe'),
-        [ 'a', '-u', '-as', '-ibck',
-          gedeminArchiveFileName,
-          '@' + path.join(archiveDir, 'gedemin.lst') ],
-        execOptions).toString()
-    );
-    if (existsSync(gedeminArchiveFileName)) {
-      log.log(`See archive ${gedeminArchiveFileName}`);
-    };
+  /** Файл архива */
+  const gedeminArchiveFileName = path.join(archiveDir, gedeminArchiveName[compilationType]);
+
+  /**
+    * Синхронизация содержимого архива по файлу списка gedemin.lst
+    *    добавление файлов
+    *    обновление файлов более новыми версиями по дате
+    *    удаление файлов, которых нет в списке
+    * Вопрос: где хранить файл списка gedemin.lst
+    *    1) в папке EXE
+    *    2) в папке архива (сейчас здесь)
+    */
+  const createArhive = () => {
+      log.log(
+        execFileSync(path.join(binWinRAR, 'WinRAR.exe'),
+          [ 'a', '-u', '-as', '-ibck',
+            gedeminArchiveFileName,
+            '@' + path.join(archiveDir, 'gedemin.lst') ],
+          { ...basicExecOptions, cwd: pathEXE }).toString()
+      );
+      if (existsSync(gedeminArchiveFileName)) {
+        log.log(`See archive ${gedeminArchiveFileName}`);
+      };
   };
   runProcess('Create portable version archive', createArhive);
-  
+
   runProcess('Some clean up', () => {
     if (existsSync(gedeminSavedCfgFileName)) {
       copyFileSync(gedeminSavedCfgFileName, gedeminCfgFileName);
