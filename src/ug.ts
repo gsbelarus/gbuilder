@@ -1,6 +1,5 @@
 //FIXME: было бы неплохо дать краткое описание процесса компиляции. чтомы берем, откуда, для чего, что и куда помещаем
 
-
 /**
  * Текущий функционал
  *    Снятие из гита последних исходников
@@ -8,8 +7,8 @@
  *    Формирование архива по файлу списка
  */
 
-import { execFileSync, ExecFileSyncOptionsWithStringEncoding } from 'child_process';
-import { existsSync, readFileSync, readdirSync, unlinkSync } from 'fs';
+import { execFileSync, ExecFileSyncOptions } from 'child_process';
+import { existsSync, readFileSync, readdirSync, unlinkSync, copyFileSync, writeFileSync } from 'fs';
 import path from 'path';
 import { Log } from './log';
 
@@ -26,31 +25,29 @@ export interface IParams {
    */
   rootGedeminDir: string;
 
-  /**
-   * Папка архива
-   */
+  /** Папка архива */
   archiveDir: string;
-
-  /**
-   * Полные пути к используемым программам,
-   * расположенным вне каталога gedemin\EXE\
-   */
+  /** Папка Delphi */
   pathDelphi?: string;
+  /** Папка иполняемых файлов Delphi */
   binDelphi?: string;
+  /** Папка утилиты Editbin */
   binEditbin?: string;
+  /** Папка WinRAR */
   binWinRAR?: string;
 };
 
+/** Параметры по умолчанию */
 const defaultParams: Required<Pick<IParams, 'pathDelphi' | 'binDelphi' | 'binEditbin' | 'binWinRAR'>> = {
-  pathDelphi: 'c:\\Program Files\\Borland\\Delphi5\\',
+  pathDelphi: 'c:\\Program Files\\Borland\\Delphi5',
   binDelphi: 'c:\\Program Files\\Borland\\Delphi5\\Bin',
   binEditbin: '',
-  binWinRAR: 'c:\\Program Files\\WinRAR\\'
+  binWinRAR: 'c:\\Program Files\\WinRAR'
 };
 
 /**
- *
- * @param params
+ * Главная функция.
+ * @param log Логгер.
  */
 export function ug(log: Log) {
 
@@ -65,12 +62,17 @@ export function ug(log: Log) {
 
   const {
     compileType,
-    rootGedeminDir  } = { ...defaultParams, ...params };
+    rootGedeminDir,
+    pathDelphi  } = { ...defaultParams, ...params };
 
-  /**
-   * В процессе компиляции DCU, DCP, BPL файлы помещаются в эту папку.
-   */
-  const pathDCU = path.join(rootGedeminDir, 'gedemin', 'DCU');
+  /** Основная папка проекта */
+  const pathGD = path.join(rootGedeminDir, 'Gedemin')
+  /** В процессе компиляции DCU файлы помещаются в эту папку */
+  const pathDCU = path.join(pathGD, 'DCU');
+  /** Папка проекта с файлами конфигурации и ресурсов */
+  const pathCFG = path.join(pathGD, 'Gedemin');
+  /** Целевая папка компиляции */
+  const pathEXE = path.join(pathGD, 'EXE');
 
   /**
    * Снимаем исходники с гита.
@@ -83,21 +85,22 @@ export function ug(log: Log) {
    */
 
   /**
-   * компиляция работает c maxBuffer 2M
-   * время компиляции примерно 30 сек (i5 8G SSD)
-   * на всякий случай maxBuffer и timeout ставим больше
-   * гит и прочие программы вписываются в параметры для компиляции
+   * Параметры execFileSync
+   *    Компиляция работает c maxBuffer 2M примерно 30 сек (i5 8G SSD),
+   *    на всякий случай maxBuffer и timeout ставим больше;
+   *    гит и прочие программы вписываются в параметры для компиляции,
+   *    т.е. для выполнения execFileSync изменяется только execOptions.cwd
    */
-
-  const execOptions: ExecFileSyncOptionsWithStringEncoding = {
+    const execOptions: ExecFileSyncOptions = {
     stdio: ['ignore', 'pipe', 'ignore'],
     maxBuffer: 1024 * 1024 * 4,
     timeout: 60 * 1000,
-    encoding: 'utf8',
     cwd: rootGedeminDir
   };
 
-  log.startProcess('Gedemin compilation', 2);
+  /** Количество шагов процесса */
+  const Steps = 3;
+  log.startProcess('Gedemin compilation', Steps);
 
   log.log(`Read params: ${JSON.stringify(params, undefined, 2)}`);
   log.log(`Compilation type: ${compileType}`);
@@ -111,7 +114,7 @@ export function ug(log: Log) {
     log.log('git pull origin master...');
     log.log(execFileSync('git', ['pull', 'origin', 'master'], execOptions).toString());
   } catch(e) {
-    log.error(e.message)
+    log.error(e.message);
     return;
   };
 
@@ -133,9 +136,46 @@ export function ug(log: Log) {
       log.log(`${cnt} files have been deleted.`);
     }
   } catch(e) {
-    log.error(e.message)
+    log.error(e.message);
     return;
   };
+
+  log.finishProcess();
+  
+  log.startProcess('Prepare config file');
+  /** Имя файла конфигурации проекта */
+  const gdCFG = path.join(pathCFG, 'gedemin.cfg');
+  /** Имя файла для сохранения текущей конфигурации */  
+  const gdCurrentCFG = path.join(pathCFG, 'gedemin.current.cfg');
+  try {
+    copyFileSync(gdCFG, gdCurrentCFG);
+    log.log(`current project config saved`);
+  } catch(e) {
+    log.error(e.message);
+  };
+
+  /** Имя файла конфигурации по типу компиляции */  
+  const gdCompileTypeCFG = path.join(pathCFG, `gedemin.${compileType}.cfg`);
+  try {
+    copyFileSync(gdCompileTypeCFG, gdCFG);
+    log.log(`project config prepared as '${compileType}'`);    
+  } catch(e) {
+    log.error(e.message);
+    return;
+  };
+  
+  const pathDelphiDefault = defaultParams.pathDelphi;
+  if ( pathDelphiDefault !== pathDelphi ) {
+    try {
+      let cfgFile = readFileSync(gdCFG).toString();
+      cfgFile = cfgFile.split(pathDelphiDefault).join(pathDelphi);
+      writeFileSync(gdCFG, cfgFile);
+      log.log('project config changed')
+    } catch(e) {
+      log.error(e.message);      
+      return;
+    };
+  }
 
   log.finishProcess();
 
