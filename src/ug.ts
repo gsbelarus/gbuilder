@@ -150,9 +150,9 @@ export function ug(log: Log) {
    * Файл создадим из шаблона, подставив нужные значения в зависимости от типа компиляции.
    */
 
-  /** Имя файла конфигурации проекта */
+  /** Файл конфигурации проекта для компиляции */
   const gedeminCfgFileName = path.join(pathCFG, 'gedemin.cfg');
-  /** Имя файла для сохранения текущей конфигурации */
+  /** Файла для сохранения текущей конфигурации */
   const gedeminSavedCfgFileName = path.join(pathCFG, 'gedemin.current.cfg');
 
   runProcess('Prepare config file', () => {
@@ -189,14 +189,16 @@ export function ug(log: Log) {
     log.log(`Configuration file has been prepared and saved as ${gedeminCfgFileName}...`);
   });
 
-  const gdEXE = path.join(pathEXE, 'gedemin.exe');
+  /** Целевой файл */
+  const gedeminExeFileName = path.join(pathEXE, 'gedemin.exe');
+  //const
   runProcess('Create new gedemin.exe', () => {
-    if (existsSync(gdEXE)) {  
-      unlinkSync(gdEXE);
+    if (existsSync(gedeminExeFileName)) {  
+      unlinkSync(gedeminExeFileName);
       log.log('gedemin.exe deleted');
     }
+    
     log.log('build gedemin.exe...');
-
     execOptions.cwd = pathCFG;
     log.log(`pathCFG: ${pathCFG}`);
     log.log(
@@ -222,6 +224,8 @@ export function ug(log: Log) {
     log.log('New version gedemin.exe ready to use');
   });
 
+/** Файл архива */  
+const gedeminArchiveFileName = path.join(archiveDir, gedeminArchiveName[compilationType]);  
 /**
    * Синхронизация содержимого архива по файлу списка gedemin.lst 
    *    добавление файлов
@@ -231,14 +235,19 @@ export function ug(log: Log) {
    *    1) в папке EXE
    *    2) в папке архива (сейчас здесь)
    */
-  runProcess('Create portable version archive', () => {  
+  const createArhive = () => {  
     log.log(
       execFileSync(path.join(binWinRAR, 'WinRAR.exe'),
         [ 'a', '-u', '-as', '-ibck',
-          path.join(archiveDir, gedeminArchiveName[compilationType]),
+          gedeminArchiveFileName,
           '@' + path.join(archiveDir, 'gedemin.lst') ],
-        execOptions).toString());
-  });
+        execOptions).toString()
+    );
+    if (existsSync(gedeminArchiveFileName)) {
+      log.log(`See archive ${gedeminArchiveFileName}`);
+    };
+  };
+  runProcess('Create portable version archive', createArhive);
   
   runProcess('Some clean up', () => {
     if (existsSync(gedeminSavedCfgFileName)) {
