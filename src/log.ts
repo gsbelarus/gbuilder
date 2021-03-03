@@ -70,7 +70,7 @@ export class Log {
       process.finished = new Date();
     }
 
-    this._log.log(`\x1b[33m${step}${this._fmtTime(process.finished)} FINISHED: ${process.name}\x1b[0m`);
+    this._log.log(`${step}${this._fmtTime(process.finished)} FINISHED: ${process.name}`);
   }
 
   log(...messages: string[]) {

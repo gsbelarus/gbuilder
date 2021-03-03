@@ -11,6 +11,7 @@ import { execFileSync, ExecFileSyncOptions } from 'child_process';
 import { existsSync, readFileSync, readdirSync, unlinkSync, copyFileSync, writeFileSync } from 'fs';
 import path from 'path';
 import { Log } from './log';
+import { gedeminCfgTemplate, gedeminCfgVariables, gedeminSrcPath } from './const';
 
 export interface IParams {
   /**
@@ -74,18 +75,16 @@ export function ug(log: Log) {
   const params = JSON.parse(readFileSync(paramsFile, {encoding:'utf8', flag:'r'})) as IParams;
 
   const {
-    compileType,
+    compileType: compilationType,
     rootGedeminDir,
     pathDelphi  } = { ...defaultParams, ...params };
 
   /** Основная папка проекта */
-  const pathGD = path.join(rootGedeminDir, 'Gedemin')
+  const pathGedemin = path.join(rootGedeminDir, 'Gedemin')
   /** В процессе компиляции DCU файлы помещаются в эту папку */
-  const pathDCU = path.join(pathGD, 'DCU');
-  /** Папка проекта с файлами конфигурации и ресурсов */
-  const pathCFG = path.join(pathGD, 'Gedemin');
+  const pathDCU = path.join(pathGedemin, 'DCU');
   /** Целевая папка компиляции */
-  const pathEXE = path.join(pathGD, 'EXE');
+  const pathEXE = path.join(pathGedemin, 'EXE');
 
   /**
    * Снимаем исходники с гита.
@@ -112,11 +111,11 @@ export function ug(log: Log) {
   };
 
   /** Количество шагов процесса */
-  const Steps = 3;
+  const Steps = 4;
   log.startProcess('Gedemin compilation', Steps);
 
   log.log(`Read params: ${JSON.stringify(params, undefined, 2)}`);
-  log.log(`Compilation type: ${compileType}`);
+  log.log(`Compilation type: ${compilationType}`);
   log.log(`Gedemin root dir: ${rootGedeminDir}`);
 
   runProcess('Pull latest sources', () => {
@@ -137,47 +136,62 @@ export function ug(log: Log) {
     if (!cnt) {
       log.log('Nothing to delete!');
     } else {
-      log.log(`${cnt} files have been deleted.`);
+      log.log(`${cnt} files have been deleted...`);
     }
   });
 
-  log.startProcess('Prepare config file');
 
-  // /** Имя файла конфигурации проекта */
-  // const gdCFG = path.join(pathCFG, 'gedemin.cfg');
-  // /** Имя файла для сохранения текущей конфигурации */
-  // const gdCurrentCFG = path.join(pathCFG, 'gedemin.current.cfg');
-  // try {
-  //   copyFileSync(gdCFG, gdCurrentCFG);
-  //   log.log(`current project config saved`);
-  // } catch(e) {
-  //   log.error(e.message);
-  // };
+  /**
+   * Подготавливаем CFG файл для компиляции.
+   * Текущий файл сохраним с именем .current.cfg и восстановим в конце процесса.
+   * Файл создадим из шаблона, подставив нужные значения в зависимости от типа компиляции.
+   */
 
-  // /** Имя файла конфигурации по типу компиляции */
-  // const gdCompileTypeCFG = path.join(pathCFG, `gedemin.${compileType}.cfg`);
-  // try {
-  //   copyFileSync(gdCompileTypeCFG, gdCFG);
-  //   log.log(`project config prepared as '${compileType}'`);
-  // } catch(e) {
-  //   log.error(e.message);
-  //   return;
-  // };
+  /** Имя файла конфигурации проекта */
+  const gedeminCfgFileName = path.join(pathGedemin, 'gedemin.cfg');
+  /** Имя файла для сохранения текущей конфигурации */
+  const gedeminSavedCfgFileName = path.join(pathGedemin, 'gedemin.current.cfg');
 
-  // const pathDelphiDefault = defaultParams.pathDelphi;
-  // if ( pathDelphiDefault !== pathDelphi ) {
-  //   try {
-  //     let cfgFile = readFileSync(gdCFG).toString();
-  //     cfgFile = cfgFile.split(pathDelphiDefault).join(pathDelphi);
-  //     writeFileSync(gdCFG, cfgFile);
-  //     log.log('project config changed')
-  //   } catch(e) {
-  //     log.error(e.message);
-  //     return;
-  //   };
-  // }
+  runProcess('Prepare config file', () => {
+    if (existsSync(gedeminCfgFileName)) {
+      copyFileSync(gedeminCfgFileName, gedeminSavedCfgFileName);
+      log.log(`Existing gedemin.cfg file saved as ${gedeminSavedCfgFileName}...`);
+    }
 
-  log.finishProcess();
+    let srcPath = gedeminSrcPath.join(';');
+
+    while (srcPath.includes('<<delphi>>')) {
+      srcPath = srcPath.replace('<<delphi>>', pathDelphi);
+    }
+
+    let cfgBody = gedeminCfgTemplate;
+
+    while (cfgBody.includes('<<GEDEMIN_SRC_PATH>>')) {
+      cfgBody = cfgBody.replace('<<GEDEMIN_SRC_PATH>>', srcPath);
+    }
+
+    const cfgVariables = gedeminCfgVariables[compilationType];
+
+    if (!cfgVariables) {
+      throw new Error(`No cfg data for compilation type: ${compilationType}`);
+    }
+
+    cfgBody = cfgBody.replace('<<C_SWITCH>>', cfgVariables.c_switch);
+    cfgBody = cfgBody.replace('<<D_SWITCH>>', cfgVariables.d_switch);
+    cfgBody = cfgBody.replace('<<O_SWITCH>>', cfgVariables.o_switch);
+    cfgBody = cfgBody.replace('<<COND>>', cfgVariables.cond);
+
+    writeFileSync(gedeminCfgFileName, cfgBody);
+
+    log.log(`Configuration file has been prepared and saved as ${gedeminCfgFileName}...`);
+  });
+
+  runProcess('Some clean up', () => {
+    if (existsSync(gedeminSavedCfgFileName)) {
+      copyFileSync(gedeminSavedCfgFileName, gedeminCfgFileName);
+      log.log(`Previous gedemin.cfg file restored...`);
+    }
+  });
 
   log.finishProcess();
 };
