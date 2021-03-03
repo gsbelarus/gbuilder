@@ -125,10 +125,10 @@ export const gedeminCfgTemplate =
 -M
 -$M16384,1048576
 -K$00400000
--E"..\exe"
--N"..\dcu"
--LE"..\bpl"
--LN"..\bpl"
+-E"../exe"
+-N"../dcu"
+-LE"../bpl"
+-LN"../bpl"
 -U"<<GEDEMIN_SRC_PATH>>"
 -O"<<GEDEMIN_SRC_PATH>>"
 -I"<<GEDEMIN_SRC_PATH>>"
