@@ -111,3 +111,4 @@ dist
 .pnp.*
 .editorconfig
 /res.txt
+/src/temp.ts
