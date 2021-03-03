@@ -11,14 +11,16 @@ import { execFileSync, ExecFileSyncOptions } from 'child_process';
 import { existsSync, readFileSync, readdirSync, unlinkSync, copyFileSync, writeFileSync } from 'fs';
 import path from 'path';
 import { Log } from './log';
-import { gedeminCfgTemplate, gedeminCfgVariables, gedeminSrcPath } from './const';
+import {
+   gedeminCfgTemplate, gedeminCfgVariables, gedeminSrcPath,
+   gedeminCompilerSwitch, gedeminArchiveName } from './const';
 
 export interface IParams {
   /**
    * Тип компиляции:
    *    выбор файла конфигурации, ключей компиляции, файла архива
    */
-  compileType: 'PRODUCT' | 'DEBUG' | 'LOCK';
+  compilationType: 'PRODUCT' | 'DEBUG' | 'LOCK';
 
   /**
    * Корневая папка с полными исходниками Гедымина.
@@ -75,9 +77,9 @@ export function ug(log: Log) {
   const params = JSON.parse(readFileSync(paramsFile, {encoding:'utf8', flag:'r'})) as IParams;
 
   const {
-    compileType: compilationType,
-    rootGedeminDir,
-    pathDelphi  } = { ...defaultParams, ...params };
+    compilationType,
+    rootGedeminDir, archiveDir,
+    pathDelphi, binDelphi, binEditbin, binWinRAR } = { ...defaultParams, ...params };
 
   /** Основная папка проекта */
   const pathGedemin = path.join(rootGedeminDir, 'Gedemin')
@@ -85,7 +87,9 @@ export function ug(log: Log) {
   const pathDCU = path.join(pathGedemin, 'DCU');
   /** Целевая папка компиляции */
   const pathEXE = path.join(pathGedemin, 'EXE');
-
+  /** Папка файлов конфигурации и ресурсов */
+  const pathCFG = path.join(pathGedemin, 'Gedemin');
+  
   /**
    * Снимаем исходники с гита.
    * как он понимает репозиторий?
@@ -111,7 +115,7 @@ export function ug(log: Log) {
   };
 
   /** Количество шагов процесса */
-  const Steps = 4;
+  const Steps = 6;
   log.startProcess('Gedemin compilation', Steps);
 
   log.log(`Read params: ${JSON.stringify(params, undefined, 2)}`);
@@ -140,7 +144,6 @@ export function ug(log: Log) {
     }
   });
 
-
   /**
    * Подготавливаем CFG файл для компиляции.
    * Текущий файл сохраним с именем .current.cfg и восстановим в конце процесса.
@@ -148,9 +151,9 @@ export function ug(log: Log) {
    */
 
   /** Имя файла конфигурации проекта */
-  const gedeminCfgFileName = path.join(pathGedemin, 'gedemin.cfg');
+  const gedeminCfgFileName = path.join(pathCFG, 'gedemin.cfg');
   /** Имя файла для сохранения текущей конфигурации */
-  const gedeminSavedCfgFileName = path.join(pathGedemin, 'gedemin.current.cfg');
+  const gedeminSavedCfgFileName = path.join(pathCFG, 'gedemin.current.cfg');
 
   runProcess('Prepare config file', () => {
     if (existsSync(gedeminCfgFileName)) {
@@ -161,7 +164,7 @@ export function ug(log: Log) {
     let srcPath = gedeminSrcPath.join(';');
 
     while (srcPath.includes('<<delphi>>')) {
-      srcPath = srcPath.replace('<<delphi>>', pathDelphi);
+      srcPath = srcPath.replace('<<delphi>>', pathDelphi.replace(/\\/gi, '/'));
     }
 
     let cfgBody = gedeminCfgTemplate;
@@ -186,10 +189,63 @@ export function ug(log: Log) {
     log.log(`Configuration file has been prepared and saved as ${gedeminCfgFileName}...`);
   });
 
+  const gdEXE = path.join(pathEXE, 'gedemin.exe');
+  runProcess('Create new gedemin.exe', () => {
+    if (existsSync(gdEXE)) {  
+      unlinkSync(gdEXE);
+      log.log('gedemin.exe deleted');
+    }
+    log.log('build gedemin.exe...');
+
+    execOptions.cwd = pathCFG;
+    log.log(`pathCFG: ${pathCFG}`);
+    log.log(
+      execFileSync(path.join(binDelphi, 'dcc32.exe'),
+      [gedeminCompilerSwitch[compilationType], `gedemin.dpr`],
+      execOptions).toString()
+    );
+    log.log('gedemin.exe built');
+
+    execOptions.cwd = pathEXE;
+    log.log(`pathEXE: ${pathEXE}`);    
+    log.log(execFileSync('StripReloc.exe', ['/b', 'gedemin.exe'], execOptions).toString());
+    log.log('StripReloc passed');
+
+    if (compilationType === 'DEBUG') {
+      log.log(execFileSync('tdspack.exe', ['-e -o -a', 'gedemin.exe'], execOptions).toString());
+      log.log('tdspack passed');
+    };
+
+    log.log(execFileSync(path.join(binEditbin, 'editbin.exe'), ['/SWAPRUN:NET', 'gedemin.exe'], execOptions).toString());
+    log.log('editbin passed');
+    
+    log.log('New version gedemin.exe ready to use');
+  });
+
+/**
+   * Синхронизация содержимого архива по файлу списка gedemin.lst 
+   *    добавление файлов
+   *    обновление файлов более новыми версиями по дате
+   *    удаление файлов, которых нет в списке
+   * Вопрос: где хранить файл списка gedemin.lst
+   *    1) в папке EXE
+   *    2) в папке архива (сейчас здесь)
+   */
+  runProcess('Create portable version archive', () => {  
+    log.log(
+      execFileSync(path.join(binWinRAR, 'WinRAR.exe'),
+        [ 'a', '-u', '-as', '-ibck',
+          path.join(archiveDir, gedeminArchiveName[compilationType]),
+          '@' + path.join(archiveDir, 'gedemin.lst') ],
+        execOptions).toString());
+  });
+  
   runProcess('Some clean up', () => {
     if (existsSync(gedeminSavedCfgFileName)) {
       copyFileSync(gedeminSavedCfgFileName, gedeminCfgFileName);
       log.log(`Previous gedemin.cfg file restored...`);
+      unlinkSync(gedeminSavedCfgFileName);
+      log.log(`Saved gedemin.cfg file deleted...`);
     }
   });
 
