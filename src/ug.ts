@@ -11,7 +11,9 @@ import { execFileSync, ExecFileSyncOptions } from 'child_process';
 import { existsSync, readFileSync, readdirSync, unlinkSync, copyFileSync, writeFileSync } from 'fs';
 import path from 'path';
 import { Log } from './log';
-import { gedeminCfgTemplate, gedeminCfgVariables, gedeminSrcPath, gedeminCompilerSwitch } from './const';
+import {
+   gedeminCfgTemplate, gedeminCfgVariables, gedeminSrcPath,
+   gedeminCompilerSwitch, gedeminArchiveName } from './const';
 
 export interface IParams {
   /**
@@ -76,8 +78,8 @@ export function ug(log: Log) {
 
   const {
     compilationType,
-    rootGedeminDir,
-    pathDelphi, binDelphi, binEditbin  } = { ...defaultParams, ...params };
+    rootGedeminDir, archiveDir,
+    pathDelphi, binDelphi, binEditbin, binWinRAR } = { ...defaultParams, ...params };
 
   /** Основная папка проекта */
   const pathGedemin = path.join(rootGedeminDir, 'Gedemin')
@@ -113,7 +115,7 @@ export function ug(log: Log) {
   };
 
   /** Количество шагов процесса */
-  const Steps = 5;
+  const Steps = 6;
   log.startProcess('Gedemin compilation', Steps);
 
   log.log(`Read params: ${JSON.stringify(params, undefined, 2)}`);
@@ -194,6 +196,7 @@ export function ug(log: Log) {
       log.log('gedemin.exe deleted');
     }
     log.log('build gedemin.exe...');
+
     execOptions.cwd = pathCFG;
     log.log(`pathCFG: ${pathCFG}`);
     log.log(
@@ -217,6 +220,24 @@ export function ug(log: Log) {
     log.log('editbin passed');
     
     log.log('New version gedemin.exe ready to use');
+  });
+
+/**
+   * Синхронизация содержимого архива по файлу списка gedemin.lst 
+   *    добавление файлов
+   *    обновление файлов более новыми версиями по дате
+   *    удаление файлов, которых нет в списке
+   * Вопрос: где хранить файл списка gedemin.lst
+   *    1) в папке EXE
+   *    2) в папке архива (сейчас здесь)
+   */
+  runProcess('Create portable version archive', () => {  
+    log.log(
+      execFileSync(path.join(binWinRAR, 'WinRAR.exe'),
+        [ 'a', '-u', '-as', '-ibck',
+          path.join(archiveDir, gedeminArchiveName[compilationType]),
+          '@' + path.join(archiveDir, 'gedemin.lst') ],
+        execOptions).toString());
   });
   
   runProcess('Some clean up', () => {

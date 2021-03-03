@@ -141,3 +141,8 @@ export const gedeminCompilerSwitch = {
   DEBUG: '-b -vt',
   LOCK: '-b'
 };
+
+export const gedeminArchiveName = {
+  PRODUCT: 'gedemin.rar',
+  DEBUG: 'gedemin_debug.rar',
+  LOCK: 'gedemin_lock.rar'};
