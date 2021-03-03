@@ -51,6 +51,19 @@ const defaultParams: Required<Pick<IParams, 'pathDelphi' | 'binDelphi' | 'binEdi
  */
 export function ug(log: Log) {
 
+  const runProcess = (name: string, fn: () => void) => {
+    log.startProcess(name);
+
+    try {
+      fn();
+    } catch(e) {
+      log.error(e.message);
+      process.exit(1);
+    };
+
+    log.finishProcess();
+  }
+
   const paramsFile = process.argv[2];
 
   if (!paramsFile || !existsSync(paramsFile)) {
@@ -106,23 +119,14 @@ export function ug(log: Log) {
   log.log(`Compilation type: ${compileType}`);
   log.log(`Gedemin root dir: ${rootGedeminDir}`);
 
-  log.startProcess('Pull latest sources');
-
-  try {
+  runProcess('Pull latest sources', () => {
     log.log('git checkout master...');
     log.log(execFileSync('git', ['checkout', 'master'], execOptions).toString());
     log.log('git pull origin master...');
     log.log(execFileSync('git', ['pull', 'origin', 'master'], execOptions).toString());
-  } catch(e) {
-    log.error(e.message);
-    return;
-  };
+  });
 
-  log.finishProcess();
-
-  log.startProcess('Clear DCU folder');
-
-  try {
+  runProcess('Clear DCU folder', () => {
     let cnt = 0;
     for (const f of readdirSync(pathDCU)) {
       if (path.extname(f).toLowerCase() === '.dcu') {
@@ -135,47 +139,43 @@ export function ug(log: Log) {
     } else {
       log.log(`${cnt} files have been deleted.`);
     }
-  } catch(e) {
-    log.error(e.message);
-    return;
-  };
+  });
 
-  log.finishProcess();
-  
   log.startProcess('Prepare config file');
-  /** Имя файла конфигурации проекта */
-  const gdCFG = path.join(pathCFG, 'gedemin.cfg');
-  /** Имя файла для сохранения текущей конфигурации */  
-  const gdCurrentCFG = path.join(pathCFG, 'gedemin.current.cfg');
-  try {
-    copyFileSync(gdCFG, gdCurrentCFG);
-    log.log(`current project config saved`);
-  } catch(e) {
-    log.error(e.message);
-  };
 
-  /** Имя файла конфигурации по типу компиляции */  
-  const gdCompileTypeCFG = path.join(pathCFG, `gedemin.${compileType}.cfg`);
-  try {
-    copyFileSync(gdCompileTypeCFG, gdCFG);
-    log.log(`project config prepared as '${compileType}'`);    
-  } catch(e) {
-    log.error(e.message);
-    return;
-  };
-  
-  const pathDelphiDefault = defaultParams.pathDelphi;
-  if ( pathDelphiDefault !== pathDelphi ) {
-    try {
-      let cfgFile = readFileSync(gdCFG).toString();
-      cfgFile = cfgFile.split(pathDelphiDefault).join(pathDelphi);
-      writeFileSync(gdCFG, cfgFile);
-      log.log('project config changed')
-    } catch(e) {
-      log.error(e.message);      
-      return;
-    };
-  }
+  // /** Имя файла конфигурации проекта */
+  // const gdCFG = path.join(pathCFG, 'gedemin.cfg');
+  // /** Имя файла для сохранения текущей конфигурации */
+  // const gdCurrentCFG = path.join(pathCFG, 'gedemin.current.cfg');
+  // try {
+  //   copyFileSync(gdCFG, gdCurrentCFG);
+  //   log.log(`current project config saved`);
+  // } catch(e) {
+  //   log.error(e.message);
+  // };
+
+  // /** Имя файла конфигурации по типу компиляции */
+  // const gdCompileTypeCFG = path.join(pathCFG, `gedemin.${compileType}.cfg`);
+  // try {
+  //   copyFileSync(gdCompileTypeCFG, gdCFG);
+  //   log.log(`project config prepared as '${compileType}'`);
+  // } catch(e) {
+  //   log.error(e.message);
+  //   return;
+  // };
+
+  // const pathDelphiDefault = defaultParams.pathDelphi;
+  // if ( pathDelphiDefault !== pathDelphi ) {
+  //   try {
+  //     let cfgFile = readFileSync(gdCFG).toString();
+  //     cfgFile = cfgFile.split(pathDelphiDefault).join(pathDelphi);
+  //     writeFileSync(gdCFG, cfgFile);
+  //     log.log('project config changed')
+  //   } catch(e) {
+  //     log.error(e.message);
+  //     return;
+  //   };
+  // }
 
   log.finishProcess();
 
