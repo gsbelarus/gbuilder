@@ -70,19 +70,19 @@ export const gedeminSrcPath = [
 // -D_QEXPORT;SPLASH;MESSAGE;_REALIZATION;SYNEDIT;_PROTECT;GEDEMIN;_LOADMODULE;_MODEM;GED_LOC_RUS;_GEDEMIN_LOCK;_DEBUG;_LOCALIZATION;_NEW_GRID;FR4;_QBUILDER;_TEECHARTPRO;_DUNIT_TEST;WITH_INDY;_FULL_MODIFY;_EXCMAGIC_GEDEMIN;ID64
 
 export const gedeminCfgVariables = {
-  'PRODUCT': {
+  PRODUCT: {
     d_switch: '-',
     o_switch: '+',
     c_switch: '+',
     cond: 'SPLASH;MESSAGE;SYNEDIT;GEDEMIN;GED_LOC_RUS;FR4;WITH_INDY;'
   },
-  'DEBUG': {
+  DEBUG: {
     d_switch: '+',
     o_switch: '-',
     c_switch: '+',
     cond: 'SPLASH;MESSAGE;SYNEDIT;GEDEMIN;GED_LOC_RUS;FR4;EXCMAGIC_GEDEMIN;WITH_INDY'
   },
-  'PROTECT': {
+  LOCK: {
     d_switch: '+',
     o_switch: '-',
     c_switch: '-',
@@ -135,3 +135,9 @@ export const gedeminCfgTemplate =
 -R"<<GEDEMIN_SRC_PATH>>"
 -D<<COND>>
 `;
+
+export const gedeminCompilerSwitch = {
+  PRODUCT: '-b',
+  DEBUG: '-b -vt',
+  LOCK: '-b'
+};
