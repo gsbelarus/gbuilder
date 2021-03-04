@@ -245,12 +245,12 @@ export function ug(log: Log) {
   log.log(`Compilation type: ${compilationType}`);
   log.log(`Gedemin root dir: ${rootGedeminDir}`);
 
-  runProcess('Some clean up', configCleanUp);                   // 1
-  runProcess('Pull latest sources', pullSources);               // 2
-  runProcess('Clear DCU folder', clearDCU);                     // 3
-  runProcess('Prepare config file', prepareConfig);             // 4
-  runProcess('Build gedemin.exe', buildGedemin);                // 5
-  runProcess('Create portable version archive', createArhive);  // 6
+  runProcess('Pull latest sources', pullSources);               // 1
+  runProcess('Clear DCU folder', clearDCU);                     // 2
+  runProcess('Prepare config file', prepareConfig);             // 3
+  runProcess('Build gedemin.exe', buildGedemin);                // 4
+  runProcess('Create portable version archive', createArhive);  // 5
+  runProcess('Some clean up', configCleanUp);                   // 6
 
   log.finishProcess();
 };
