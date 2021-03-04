@@ -13,7 +13,7 @@ import path from 'path';
 import { Log } from './log';
 import {
    gedeminCfgTemplate, gedeminCfgVariables, gedeminSrcPath,
-   gedeminCompilerSwitch, gedeminArchiveName, portableFilesList } from './const';
+   gedeminCompilerSwitch, gedeminArchiveName, portableFilesList, gedeminVerRC } from './const';
 
 export interface IParams {
   /**
@@ -44,17 +44,24 @@ export interface IParams {
  */
 export function ug(log: Log) {
 
-  const runProcess = (name: string, fn: () => void) => {
-    log.startProcess(name);
+  /** Обертка процесса
+   *  @param name имя процесса
+   *  @param fn функция
+   *  @param skip пропустить выполнение
+   */
+  const runProcess = (name: string, fn: () => void, skip?: boolean) => {
+    if (!skip) {
+      log.startProcess(name);
 
-    try {
-      fn();
-    } catch(e) {
-      log.error(e.message);
-      process.exit(1);
-    };
+      try {
+        fn();
+      } catch(e) {
+        log.error(e.message);
+        process.exit(1);
+      };
 
-    log.finishProcess();
+      log.finishProcess();
+    }      
   }
 
   const paramsFile = process.argv[2];
@@ -68,7 +75,7 @@ export function ug(log: Log) {
 
   const { compilationType, rootGedeminDir, archiveDir, pathDelphi, binEditbin, binWinRAR } = params;
 
-  /** Основная папка проекта где находятся .dpr, .cfg, .res файлы */
+  /** Основная папка проекта, где находятся .dpr, .cfg, .rc файлы */
   const pathGedemin = path.join(rootGedeminDir, 'Gedemin', 'Gedemin')
   /** В процессе компиляции DCU файлы помещаются в эту папку */
   const pathDCU = path.join(rootGedeminDir, 'Gedemin', 'DCU');
@@ -261,6 +268,51 @@ export function ug(log: Log) {
     }
   };
 
+  /** RC-файл версии  */
+  const gedeminVerRCFileName = path.join(pathGedemin, 'gedemin_ver.rc');
+  /** RES-файл версии  */
+  const gedeminVerResFileName = path.join(pathGedemin, 'gedemin_ver.res');
+  /** Путь рисунков */
+  const pathImages = path.resolve(pathGedemin, '..\\images');
+
+  /** Инкремент версии */
+  const incVer = () => {
+    const rcText = readFileSync(gedeminVerRCFileName).toString().trim().split('\n');
+
+    if (rcText.length !== 31) {
+      throw new Error('Invalid gedemin_ver.rc');
+    }
+
+    const buildNumber = parseInt(rcText[1].split(',')[3].trim()) + 1;
+
+    let newRC = gedeminVerRC;
+
+    while (newRC.includes('<<BUILD_NUMBER>>')) {
+      newRC = newRC.replace('<<BUILD_NUMBER>>', buildNumber.toString());
+    }
+
+    newRC = newRC.replace('<<YEAR>>', new Date().getFullYear().toString());
+
+    writeFileSync(gedeminVerRCFileName, newRC);
+
+    log.log(`Build number has been incremented to ${buildNumber}`);
+    log.log('gedemin_ver.rc saved...');
+
+    if (existsSync(gedeminVerResFileName)) {
+      unlinkSync(gedeminVerResFileName);
+      log.log('previous gedemin_ver.res has been deleted...');
+    }
+
+    log.log(
+      execFileSync(
+        path.join(pathDelphi, 'Bin', 'brcc32.exe'),
+        ['-fogedemin_ver.res', `-i${pathImages}`, 'gedemin_ver.rc'],
+        { ...basicExecOptions, cwd: pathGedemin }
+      ).toString()
+    );
+    log.log('gedemin_ver.res has been built...');
+  };
+
   /** Количество шагов процесса */
   const Steps = 7;
   log.startProcess('Gedemin compilation', Steps);
@@ -269,13 +321,14 @@ export function ug(log: Log) {
   log.log(`Compilation type: ${compilationType}`);
   log.log(`Gedemin root dir: ${rootGedeminDir}`);
 
-  runProcess('Check prerequisites', checkPrerequisites);        // 0
-  runProcess('Pull latest sources', pullSources);               // 1
-  runProcess('Clear DCU folder', clearDCU);                     // 2
-  runProcess('Prepare config file', prepareConfig);             // 3
-  runProcess('Build gedemin.exe', buildGedemin);                // 4
-  runProcess('Create portable version archive', createArhive);  // 5
-  runProcess('Some clean up', configCleanUp);                   // 6
+  runProcess('Check prerequisites', checkPrerequisites, false);
+  runProcess('Pull latest sources', pullSources, false);
+  runProcess('Clear DCU folder', clearDCU, false);
+  runProcess('Prepare config file', prepareConfig, false);
+  runProcess('Increment version', incVer, false);
+  runProcess('Build gedemin.exe', buildGedemin, false);
+  runProcess('Create portable version archive', createArhive, false);
+  runProcess('Some clean up', configCleanUp, false);
 
   log.finishProcess();
 };
