@@ -90,7 +90,7 @@ export function ug(log: Log) {
    *    Компиляция работает c maxBuffer 2M примерно 30 сек (i5 8G SSD),
    *    на всякий случай maxBuffer и timeout ставим больше;
    *    гит и прочие программы вписываются в параметры для компиляции,
-   *    т.е. для выполнения execFileSync изменяется только execOptions.cwd
+   *    т.е. для выполнения execFileSync к параметрам basicExecOptions добавляем только cwd
    */
   const basicExecOptions: ExecFileSyncOptions = {
     stdio: ['pipe', 'pipe', 'pipe'],
@@ -98,23 +98,17 @@ export function ug(log: Log) {
     timeout: 60 * 1000
   };
 
-  /** Количество шагов процесса */
-  const Steps = 6;
-  log.startProcess('Gedemin compilation', Steps);
-
-  log.log(`Read params: ${JSON.stringify(params, undefined, 2)}`);
-  log.log(`Compilation type: ${compilationType}`);
-  log.log(`Gedemin root dir: ${rootGedeminDir}`);
-
-  runProcess('Pull latest sources', () => {
+  /** Снятие из гита последних исходников */
+  const pullSources = () => {    
     const opt = { ...basicExecOptions, cwd: rootGedeminDir };
     log.log('git checkout master...');
     log.log(execFileSync('git', ['checkout', 'master'], opt).toString());
     log.log('git pull origin master...');
     log.log(execFileSync('git', ['pull', 'origin', 'master'], opt).toString());
-  });
+  };
 
-  runProcess('Clear DCU folder', () => {
+  /** Очистка папки DCU */
+  const clearDCU = () => {    
     let cnt = 0;
     for (const f of readdirSync(pathDCU)) {
       if (path.extname(f).toLowerCase() === '.dcu') {
@@ -127,20 +121,18 @@ export function ug(log: Log) {
     } else {
       log.log(`${cnt} files have been deleted...`);
     }
-  });
-
-  /**
-   * Подготавливаем CFG файл для компиляции.
-   * Текущий файл сохраним с именем .current.cfg и восстановим в конце процесса.
-   * Файл создадим из шаблона, подставив нужные значения в зависимости от типа компиляции.
-   */
+  };
 
   /** Файл конфигурации проекта для компиляции */
   const gedeminCfgFileName = path.join(pathGedemin, 'gedemin.cfg');
   /** Файла для сохранения текущей конфигурации */
   const gedeminSavedCfgFileName = path.join(pathGedemin, 'gedemin.current.cfg');
-
-  runProcess('Prepare config file', () => {
+  /**
+   * Подготавливаем CFG файл для компиляции.
+   * Текущий файл сохраним с именем .current.cfg и восстановим в конце процесса.
+   * Файл создадим из шаблона, подставив нужные значения в зависимости от типа компиляции.
+   */
+  const prepareConfig = () => {    
     if (existsSync(gedeminCfgFileName)) {
       copyFileSync(gedeminCfgFileName, gedeminSavedCfgFileName);
       log.log(`Existing gedemin.cfg file saved as ${gedeminSavedCfgFileName}...`);
@@ -172,12 +164,12 @@ export function ug(log: Log) {
     writeFileSync(gedeminCfgFileName, cfgBody);
 
     log.log(`Configuration file has been prepared and saved as ${gedeminCfgFileName}...`);
-  });
+  };
 
   /** Целевой файл */
   const gedeminExeFileName = path.join(pathEXE, 'gedemin.exe');
-  //const
-  runProcess('Build gedemin.exe', () => {
+  /** Компиляция нового экзешника заданного типа */
+  const buildGedemin = () => {  
     if (existsSync(gedeminExeFileName)) {
       unlinkSync(gedeminExeFileName);
       log.log('previous gedemin.exe has been deleted...');
@@ -207,19 +199,15 @@ export function ug(log: Log) {
     log.log('swaprun flag has been set on gedemin.exe file...');
 
     log.log('gedemin.exe has been successfully built...');
-  });
+  };
 
   /** Файл архива */
   const gedeminArchiveFileName = path.join(archiveDir, gedeminArchiveName[compilationType]);
-
   /**
-    * Синхронизация содержимого архива по файлу списка gedemin.lst
+   *  Формирование/синхронизация архива по файлу списка gedemin.lst
     *    добавление файлов
     *    обновление файлов более новыми версиями по дате
     *    удаление файлов, которых нет в списке
-    * Вопрос: где хранить файл списка gedemin.lst
-    *    1) в папке EXE
-    *    2) в папке архива (сейчас здесь)
     */
   const createArhive = () => {
       log.log(
@@ -233,16 +221,36 @@ export function ug(log: Log) {
         log.log(`See archive ${gedeminArchiveFileName}`);
       };
   };
-  runProcess('Create portable version archive', createArhive);
+  /**
+  * Вопрос: где хранить файл списка gedemin.lst
+  *    1) в папке EXE
+  *    2) в папке архива (сейчас здесь)
+  */
 
-  runProcess('Some clean up', () => {
+  /** Восстановление сохраненного файла конфигурации */
+  const configCleanUp = () => {    
     if (existsSync(gedeminSavedCfgFileName)) {
       copyFileSync(gedeminSavedCfgFileName, gedeminCfgFileName);
       log.log(`Previous gedemin.cfg file restored...`);
       unlinkSync(gedeminSavedCfgFileName);
       log.log(`Saved gedemin.cfg file deleted...`);
     }
-  });
+  };
+  
+  /** Количество шагов процесса */
+  const Steps = 6;
+  log.startProcess('Gedemin compilation', Steps);
+
+  log.log(`Read params: ${JSON.stringify(params, undefined, 2)}`);
+  log.log(`Compilation type: ${compilationType}`);
+  log.log(`Gedemin root dir: ${rootGedeminDir}`);
+
+  runProcess('Pull latest sources', pullSources);               // 1
+  runProcess('Clear DCU folder', clearDCU);                     // 2
+  runProcess('Prepare config file', prepareConfig);             // 3
+  runProcess('Build gedemin.exe', buildGedemin);                // 4
+  runProcess('Create portable version archive', createArhive);  // 5
+  runProcess('Some clean up', configCleanUp);                   // 6
 
   log.finishProcess();
 };
