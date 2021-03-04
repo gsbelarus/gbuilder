@@ -146,3 +146,37 @@ export const gedeminArchiveName = {
   PRODUCT: 'gedemin.rar',
   DEBUG: 'gedemin_debug.rar',
   LOCK: 'gedemin_lock.rar'};
+
+/**
+ * Список файлов для формирования архива портативной инстоляции.
+ */
+export const portableFilesList = [
+  'gedemin.exe',
+  'midas.dll',
+  'midas.sxs.manifest',
+  'gedemin.exe.manifest',
+  'ib_util.dll',
+  'icudt30.dll',
+  'icuin30.dll',
+  'icuuc30.dll',
+  'fbembed.dll',
+  'firebird.msg',
+  'microsoft.vc80.crt.manifest',
+  'msvcp80.dll',
+  'msvcr80.dll',
+  'gedemin_upd.exe',
+  'gdcc.exe',
+  'libeay32.dll',
+  'ssleay32.dll',
+  'udf/gudf.dll',
+  'intl/fbintl.conf',
+  'intl/fbintl.dll',
+  'swipl/lib/memfile.dll',
+  'swipl/lib/process.dll',
+  'swipl/lib/readutil.dll',
+  'swipl/gd_pl_state.dat ',
+  'swipl/libgmp-10.dll',
+  'swipl/libswipl.dll',
+  'swipl/pthreadGC2.dll',
+  'gsdbquery.dll'
+];

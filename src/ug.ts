@@ -13,7 +13,7 @@ import path from 'path';
 import { Log } from './log';
 import {
    gedeminCfgTemplate, gedeminCfgVariables, gedeminSrcPath,
-   gedeminCompilerSwitch, gedeminArchiveName } from './const';
+   gedeminCompilerSwitch, gedeminArchiveName, portableFilesList } from './const';
 
 export interface IParams {
   /**
@@ -95,11 +95,20 @@ export function ug(log: Log) {
   const basicExecOptions: ExecFileSyncOptions = {
     stdio: ['pipe', 'pipe', 'pipe'],
     maxBuffer: 1024 * 1024 * 64,
-    timeout: 60 * 1000
+    timeout: 5 * 60 * 1000
+  };
+
+  /** Проверяем наличие необходимых файлов, программ, папок */
+  const checkPrerequisites = () => {
+    if (!existsSync(archiveDir)) {
+      throw new Error(`Archive dir "${archiveDir}" not found!`);
+    }
+
+    log.log('everything is ok!');
   };
 
   /** Снятие из гита последних исходников */
-  const pullSources = () => {    
+  const pullSources = () => {
     const opt = { ...basicExecOptions, cwd: rootGedeminDir };
     log.log('git checkout master...');
     log.log(execFileSync('git', ['checkout', 'master'], opt).toString());
@@ -108,7 +117,7 @@ export function ug(log: Log) {
   };
 
   /** Очистка папки DCU */
-  const clearDCU = () => {    
+  const clearDCU = () => {
     let cnt = 0;
     for (const f of readdirSync(pathDCU)) {
       if (path.extname(f).toLowerCase() === '.dcu') {
@@ -132,7 +141,7 @@ export function ug(log: Log) {
    * Текущий файл сохраним с именем .current.cfg и восстановим в конце процесса.
    * Файл создадим из шаблона, подставив нужные значения в зависимости от типа компиляции.
    */
-  const prepareConfig = () => {    
+  const prepareConfig = () => {
     if (existsSync(gedeminCfgFileName)) {
       copyFileSync(gedeminCfgFileName, gedeminSavedCfgFileName);
       log.log(`Existing gedemin.cfg file saved as ${gedeminSavedCfgFileName}...`);
@@ -169,7 +178,7 @@ export function ug(log: Log) {
   /** Целевой файл */
   const gedeminExeFileName = path.join(pathEXE, 'gedemin.exe');
   /** Компиляция нового экзешника заданного типа */
-  const buildGedemin = () => {  
+  const buildGedemin = () => {
     if (existsSync(gedeminExeFileName)) {
       unlinkSync(gedeminExeFileName);
       log.log('previous gedemin.exe has been deleted...');
@@ -203,24 +212,39 @@ export function ug(log: Log) {
 
   /** Файл архива */
   const gedeminArchiveFileName = path.join(archiveDir, gedeminArchiveName[compilationType]);
+
   /**
    *  Формирование/синхронизация архива по файлу списка gedemin.lst
-    *    добавление файлов
-    *    обновление файлов более новыми версиями по дате
-    *    удаление файлов, которых нет в списке
-    */
+   *    добавление файлов
+   *    обновление файлов более новыми версиями по дате
+   *    удаление файлов, которых нет в списке
+   */
   const createArhive = () => {
-      log.log(
-        execFileSync(path.join(binWinRAR, 'WinRAR.exe'),
-          [ 'a', '-u', '-as', '-ibck',
-            gedeminArchiveFileName,
-            '@' + path.join(archiveDir, 'gedemin.lst') ],
-          { ...basicExecOptions, cwd: pathEXE }).toString()
-      );
-      if (existsSync(gedeminArchiveFileName)) {
-        log.log(`See archive ${gedeminArchiveFileName}`);
-      };
+    if (existsSync(gedeminArchiveFileName)) {
+      unlinkSync(gedeminArchiveFileName);
+    }
+
+    const lstFileName = path.join(archiveDir, 'gedemin.lst');
+
+    writeFileSync(lstFileName, portableFilesList.join('\n'), { encoding: 'utf-8' });
+
+    log.log(
+      execFileSync(path.join(binWinRAR, 'WinRAR.exe'),
+        [ 'a', '-u', '-as', '-ibck',
+          gedeminArchiveFileName,
+          '@' + lstFileName ],
+        { ...basicExecOptions, cwd: pathEXE }).toString()
+    );
+
+    unlinkSync(lstFileName);
+
+    if (existsSync(gedeminArchiveFileName)) {
+      log.log(`Portable archive has been created ${gedeminArchiveFileName}...`);
+    } else {
+      throw new Error('Can not create portable archive!');
+    };
   };
+
   /**
   * Вопрос: где хранить файл списка gedemin.lst
   *    1) в папке EXE
@@ -228,7 +252,7 @@ export function ug(log: Log) {
   */
 
   /** Восстановление сохраненного файла конфигурации */
-  const configCleanUp = () => {    
+  const configCleanUp = () => {
     if (existsSync(gedeminSavedCfgFileName)) {
       copyFileSync(gedeminSavedCfgFileName, gedeminCfgFileName);
       log.log(`Previous gedemin.cfg file restored...`);
@@ -236,15 +260,16 @@ export function ug(log: Log) {
       log.log(`Saved gedemin.cfg file deleted...`);
     }
   };
-  
+
   /** Количество шагов процесса */
-  const Steps = 6;
+  const Steps = 7;
   log.startProcess('Gedemin compilation', Steps);
 
   log.log(`Read params: ${JSON.stringify(params, undefined, 2)}`);
   log.log(`Compilation type: ${compilationType}`);
   log.log(`Gedemin root dir: ${rootGedeminDir}`);
 
+  runProcess('Check prerequisites', checkPrerequisites);        // 0
   runProcess('Pull latest sources', pullSources);               // 1
   runProcess('Clear DCU folder', clearDCU);                     // 2
   runProcess('Prepare config file', prepareConfig);             // 3
