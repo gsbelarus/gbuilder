@@ -314,7 +314,7 @@ export function ug(log: Log) {
   };
 
   /** Количество шагов процесса */
-  const Steps = 7;
+  const Steps = 8;
   log.startProcess('Gedemin compilation', Steps);
 
   log.log(`Read params: ${JSON.stringify(params, undefined, 2)}`);
