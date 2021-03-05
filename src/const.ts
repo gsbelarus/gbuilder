@@ -59,6 +59,8 @@ export const gdccSrcPath = [
   '../component/indy'
 ];
 
+export const updSrcPath = gdccSrcPath;
+
 export const gedeminSrcPath = [
   '../component/indy',
   '../common/tdbf',

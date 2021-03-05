@@ -13,7 +13,7 @@ import path from 'path';
 import { Log } from './log';
 import {
    gedeminCfgTemplate, gedeminCfgVariables, gedeminSrcPath,
-   gedeminCompilerSwitch, gedeminArchiveName, portableFilesList, gedeminVerRC, gdccSrcPath } from './const';
+   gedeminCompilerSwitch, gedeminArchiveName, portableFilesList, gedeminVerRC, gdccSrcPath, updSrcPath } from './const';
 
 export interface IParams {
   /**
@@ -217,6 +217,47 @@ export function ug(log: Log) {
     log.log(`Configuration file has been prepared and saved as ${gdccCfgFileName}...`);
   };
 
+  /** Файл UPD-конфигурации */
+  const updCfgFileName = path.join(pathGedemin, 'gedemin_upd.cfg');
+  /** Файл для сохранения текущей UPD-конфигурации */
+  const updSavedCfgFileName = path.join(pathGedemin, 'gedemin_upd.current.cfg');
+  /**
+   * Подготавливаем CFG файл для компиляции UPD
+   * Текущий файл сохраним с именем gedemin_upd.current.cfg и восстановим в конце процесса.
+   * Файл создадим из шаблона, подставив нужные значения в зависимости от типа компиляции.
+   */
+  const prepareUpdConfig = () => {
+    if (existsSync(updCfgFileName)) {
+      copyFileSync(updCfgFileName, updSavedCfgFileName);
+      log.log(`Existing gedemin_upd.cfg file saved as ${updSavedCfgFileName}...`);
+    }
+
+    let srcPath = updSrcPath.join(';');
+    srcPath = srcPath.replace(/<<DELPHI>>/gi, pathDelphi.replace(/\\/gi, '/'));
+
+    let cfgBody = gedeminCfgTemplate;
+    cfgBody = cfgBody.replace(/<<GEDEMIN_SRC_PATH>>/gi, srcPath);
+
+    //const updType = compilationType;
+    const updType = 'PRODUCT';
+    const cfgVariables = gedeminCfgVariables[updType];
+
+    if (!cfgVariables) {
+      throw new Error(`No cfg data for compilation type: ${updType}`);
+    }
+
+    cfgBody = cfgBody.replace('<<C_SWITCH>>', cfgVariables.c_switch);
+    cfgBody = cfgBody.replace('<<D_SWITCH>>', cfgVariables.d_switch);
+    cfgBody = cfgBody.replace('<<O_SWITCH>>', cfgVariables.o_switch);
+    cfgBody = cfgBody.replace('-D<<COND>>', '');
+    cfgBody = cfgBody.replace('-$V-', '-$V+');
+    cfgBody = cfgBody.replace('-$Y+', '-$YD');
+
+    writeFileSync(updCfgFileName, cfgBody);
+
+    log.log(`Configuration file has been prepared and saved as ${updCfgFileName}...`);
+  };
+
   /** Целевой файл */
   const gedeminExeFileName = path.join(pathEXE, 'gedemin.exe');
   /** Компиляция нового экзешника заданного типа */
@@ -282,6 +323,36 @@ export function ug(log: Log) {
     log.log('gdcc.exe has been successfully built...');
   };
 
+  /** Целевой файл UPD */
+  const updExeFileName = path.join(pathEXE, 'gedemin_upd.exe');
+  /** Компиляция нового UPD-экзешника */
+  const buildUpd = () => {
+    if (existsSync(updExeFileName)) {
+      unlinkSync(updExeFileName);
+      log.log('previous gedemin_upd.exe has been deleted...');
+    }
+
+    //const updType = compilationType;
+    const updType = 'PRODUCT';
+
+    log.log('building gedemin_upd.exe...');
+    log.log(pathGedemin);
+    log.log(
+      execFileSync(
+        path.join(pathDelphi, 'Bin', 'dcc32.exe'),
+        [gedeminCompilerSwitch[updType], 'gedemin_upd.dpr'],
+        { ...basicExecOptions, cwd: pathGedemin }
+      ).toString()
+    );
+    log.log('gedemin_upd.exe has been built...');
+
+    log.log(`pathEXE: ${pathEXE}`);    
+    log.log(execFileSync(path.join(binEditbin, 'editbin.exe'), ['/SWAPRUN:NET', 'gedemin_upd.exe'], { ...basicExecOptions, cwd: pathEXE }).toString());
+    log.log('swaprun flag has been set on gedemin_upd.exe file...');
+
+    log.log('gedemin_upd.exe has been successfully built...');
+  };
+
   /** Файл архива */
   const gedeminArchiveFileName = path.join(archiveDir, gedeminArchiveName[compilationType]);
   /**
@@ -322,7 +393,7 @@ export function ug(log: Log) {
   *    2) в папке архива (сейчас здесь)
   */
 
-  /** Восстановление сохраненного файла конфигурации */
+  /** Восстановление сохраненных файлов конфигурации */
   const configCleanUp = () => {
     if (existsSync(gedeminSavedCfgFileName)) {
       copyFileSync(gedeminSavedCfgFileName, gedeminCfgFileName);
@@ -336,6 +407,13 @@ export function ug(log: Log) {
       log.log(`Previous gdcc.cfg file restored...`);
       unlinkSync(gdccSavedCfgFileName);
       log.log(`Saved gdcc.cfg file deleted...`);
+    }
+
+    if (existsSync(updSavedCfgFileName)) {
+      copyFileSync(updSavedCfgFileName, updCfgFileName);
+      log.log(`Previous gedemin_upd.cfg file restored...`);
+      unlinkSync(updSavedCfgFileName);
+      log.log(`Saved gedemin_upd.cfg file deleted...`);
     }
   };
 
@@ -381,23 +459,27 @@ export function ug(log: Log) {
   };
 
   /** Количество шагов процесса */
-  const Steps = 10;
+  const Steps = 12;
+  /** Начало процесса */
   log.startProcess('Gedemin compilation', Steps);
 
   log.log(`Read params: ${JSON.stringify(params, undefined, 2)}`);
   log.log(`Compilation type: ${compilationType}`);
   log.log(`Gedemin root dir: ${rootGedeminDir}`);
 
-  runProcess('Check prerequisites', checkPrerequisites, true);
-  runProcess('Pull latest sources', pullSources, true);
+  runProcess('Check prerequisites', checkPrerequisites, false);
+  runProcess('Pull latest sources', pullSources, false);
   runProcess('Clear DCU folder', clearDCU, false);
   runProcess('Prepare config file', prepareConfig, false);
-  runProcess('Increment version', incVer, true);
+  runProcess('Increment version', incVer, false);
   runProcess('Build gedemin.exe', buildGedemin, false);
   runProcess('Prepare GDCC config file', prepareGdccConfig, false);
-  runProcess('Build gdcc.exe', buildGdcc, false);  
-  runProcess('Some clean up', configCleanUp, false);
-  runProcess('Create portable version archive', createArhive, true);
-
+  runProcess('Build gdcc.exe', buildGdcc, false);
+  runProcess('Prepare UPD config file', prepareUpdConfig, false);
+  runProcess('Build gedemin_upd.exe', buildUpd, false);
+  runProcess('Config clean up', configCleanUp, false);
+  runProcess('Create portable version archive', createArhive, false);
+  
+  /** Окончание процесса */
   log.finishProcess();
 };
