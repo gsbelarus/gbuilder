@@ -13,7 +13,7 @@ import path from 'path';
 import { Log } from './log';
 import {
    gedeminCfgTemplate, gedeminCfgVariables, gedeminSrcPath,
-   gedeminCompilerSwitch, gedeminArchiveName, portableFilesList, gedeminVerRC } from './const';
+   gedeminCompilerSwitch, gedeminArchiveName, portableFilesList, gedeminVerRC, gdccSrcPath } from './const';
 
 export interface IParams {
   /**
@@ -141,11 +141,11 @@ export function ug(log: Log) {
 
   /** Файл конфигурации проекта для компиляции */
   const gedeminCfgFileName = path.join(pathGedemin, 'gedemin.cfg');
-  /** Файла для сохранения текущей конфигурации */
+  /** Файл для сохранения текущей конфигурации */
   const gedeminSavedCfgFileName = path.join(pathGedemin, 'gedemin.current.cfg');
   /**
    * Подготавливаем CFG файл для компиляции.
-   * Текущий файл сохраним с именем .current.cfg и восстановим в конце процесса.
+   * Текущий файл сохраним с именем gedemin.current.cfg и восстановим в конце процесса.
    * Файл создадим из шаблона, подставив нужные значения в зависимости от типа компиляции.
    */
   const prepareConfig = () => {
@@ -155,16 +155,10 @@ export function ug(log: Log) {
     }
 
     let srcPath = gedeminSrcPath.join(';');
-
-    while (srcPath.includes('<<DELPHI>>')) {
-      srcPath = srcPath.replace('<<DELPHI>>', pathDelphi.replace(/\\/gi, '/'));
-    }
+    srcPath = srcPath.replace(/<<DELPHI>>/gi, pathDelphi.replace(/\\/gi, '/'));
 
     let cfgBody = gedeminCfgTemplate;
-
-    while (cfgBody.includes('<<GEDEMIN_SRC_PATH>>')) {
-      cfgBody = cfgBody.replace('<<GEDEMIN_SRC_PATH>>', srcPath);
-    }
+    cfgBody = cfgBody.replace(/<<GEDEMIN_SRC_PATH>>/gi, srcPath);
 
     const cfgVariables = gedeminCfgVariables[compilationType];
 
@@ -180,6 +174,47 @@ export function ug(log: Log) {
     writeFileSync(gedeminCfgFileName, cfgBody);
 
     log.log(`Configuration file has been prepared and saved as ${gedeminCfgFileName}...`);
+  };
+
+  /** Файл GDCC-конфигурации */
+  const gdccCfgFileName = path.join(pathGedemin, 'gdcc.cfg');
+  /** Файл для сохранения текущей GDCC-конфигурации */
+  const gdccSavedCfgFileName = path.join(pathGedemin, 'gdcc.current.cfg');
+  /**
+   * Подготавливаем CFG файл для компиляции GDCC
+   * Текущий файл сохраним с именем gdcc.current.cfg и восстановим в конце процесса.
+   * Файл создадим из шаблона, подставив нужные значения в зависимости от типа компиляции.
+   */
+  const prepareGdccConfig = () => {
+    if (existsSync(gdccCfgFileName)) {
+      copyFileSync(gdccCfgFileName, gdccSavedCfgFileName);
+      log.log(`Existing dgcc.cfg file saved as ${gdccSavedCfgFileName}...`);
+    }
+
+    let srcPath = gdccSrcPath.join(';');
+    srcPath = srcPath.replace(/<<DELPHI>>/gi, pathDelphi.replace(/\\/gi, '/'));
+
+    let cfgBody = gedeminCfgTemplate;
+    cfgBody = cfgBody.replace(/<<GEDEMIN_SRC_PATH>>/gi, srcPath);
+
+    //const gdccType = compilationType;
+    const gdccType = 'PRODUCT';
+    const cfgVariables = gedeminCfgVariables[gdccType];
+
+    if (!cfgVariables) {
+      throw new Error(`No cfg data for compilation type: ${gdccType}`);
+    }
+
+    cfgBody = cfgBody.replace('<<C_SWITCH>>', cfgVariables.c_switch);
+    cfgBody = cfgBody.replace('<<D_SWITCH>>', cfgVariables.d_switch);
+    cfgBody = cfgBody.replace('<<O_SWITCH>>', cfgVariables.o_switch);
+    cfgBody = cfgBody.replace('-D<<COND>>', '');
+    cfgBody = cfgBody.replace('-$V-', '-$V+');
+    cfgBody = cfgBody.replace('-$Y+', '-$YD');
+
+    writeFileSync(gdccCfgFileName, cfgBody);
+
+    log.log(`Configuration file has been prepared and saved as ${gdccCfgFileName}...`);
   };
 
   /** Целевой файл */
@@ -217,9 +252,38 @@ export function ug(log: Log) {
     log.log('gedemin.exe has been successfully built...');
   };
 
+  /** Целевой файл GDCC */
+  const gdccExeFileName = path.join(pathEXE, 'gdcc.exe');
+  /** Компиляция нового GDCC-экзешника */
+  const buildGdcc = () => {
+    if (existsSync(gdccExeFileName)) {
+      unlinkSync(gdccExeFileName);
+      log.log('previous gdcc.exe has been deleted...');
+    }
+
+    //const gdccType = compilationType;
+    const gdccType = 'PRODUCT';
+
+    log.log('building gdcc.exe...');
+    log.log(pathGedemin);
+    log.log(
+      execFileSync(
+        path.join(pathDelphi, 'Bin', 'dcc32.exe'),
+        [gedeminCompilerSwitch[gdccType], 'gdcc.dpr'],
+        { ...basicExecOptions, cwd: pathGedemin }
+      ).toString()
+    );
+    log.log('gdcc.exe has been built...');
+
+    log.log(`pathEXE: ${pathEXE}`);    
+    log.log(execFileSync(path.join(binEditbin, 'editbin.exe'), ['/SWAPRUN:NET', 'gdcc.exe'], { ...basicExecOptions, cwd: pathEXE }).toString());
+    log.log('swaprun flag has been set on gdcc.exe file...');
+
+    log.log('gdcc.exe has been successfully built...');
+  };
+
   /** Файл архива */
   const gedeminArchiveFileName = path.join(archiveDir, gedeminArchiveName[compilationType]);
-
   /**
    *  Формирование/синхронизация архива по файлу списка gedemin.lst
    *    добавление файлов
@@ -266,6 +330,13 @@ export function ug(log: Log) {
       unlinkSync(gedeminSavedCfgFileName);
       log.log(`Saved gedemin.cfg file deleted...`);
     }
+
+    if (existsSync(gdccSavedCfgFileName)) {
+      copyFileSync(gdccSavedCfgFileName, gdccCfgFileName);
+      log.log(`Previous gdcc.cfg file restored...`);
+      unlinkSync(gdccSavedCfgFileName);
+      log.log(`Saved gdcc.cfg file deleted...`);
+    }
   };
 
   /** RC-файл версии  */
@@ -286,11 +357,7 @@ export function ug(log: Log) {
     const buildNumber = parseInt(rcText[1].split(',')[3].trim()) + 1;
 
     let newRC = gedeminVerRC;
-
-    while (newRC.includes('<<BUILD_NUMBER>>')) {
-      newRC = newRC.replace('<<BUILD_NUMBER>>', buildNumber.toString());
-    }
-
+    newRC = newRC.replace(/<<BUILD_NUMBER>>/gi, buildNumber.toString());
     newRC = newRC.replace('<<YEAR>>', new Date().getFullYear().toString());
 
     writeFileSync(gedeminVerRCFileName, newRC);
@@ -314,21 +381,23 @@ export function ug(log: Log) {
   };
 
   /** Количество шагов процесса */
-  const Steps = 8;
+  const Steps = 10;
   log.startProcess('Gedemin compilation', Steps);
 
   log.log(`Read params: ${JSON.stringify(params, undefined, 2)}`);
   log.log(`Compilation type: ${compilationType}`);
   log.log(`Gedemin root dir: ${rootGedeminDir}`);
 
-  runProcess('Check prerequisites', checkPrerequisites, false);
-  runProcess('Pull latest sources', pullSources, false);
+  runProcess('Check prerequisites', checkPrerequisites, true);
+  runProcess('Pull latest sources', pullSources, true);
   runProcess('Clear DCU folder', clearDCU, false);
   runProcess('Prepare config file', prepareConfig, false);
-  runProcess('Increment version', incVer, false);
+  runProcess('Increment version', incVer, true);
   runProcess('Build gedemin.exe', buildGedemin, false);
-  runProcess('Create portable version archive', createArhive, false);
+  runProcess('Prepare GDCC config file', prepareGdccConfig, false);
+  runProcess('Build gdcc.exe', buildGdcc, false);  
   runProcess('Some clean up', configCleanUp, false);
+  runProcess('Create portable version archive', createArhive, true);
 
   log.finishProcess();
 };

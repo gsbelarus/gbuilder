@@ -1,3 +1,64 @@
+export const gdccSrcPath = [
+  '../jcl/Source',
+  '../jcl/Source/windows',
+  '../jcl/Source/vcl',
+  '../jcl/Source/common',
+  '../jcl/packages',
+  '../ibx',
+  '../../comp5/xstorm',
+  '../../comp5',
+  '../setup',
+  '../imports',
+  '../component',
+  '../component/diff',
+  '../component/textdiff',
+  '../component/gdc',
+  '../component/repository',
+  '../Component/tb2k/Source',
+  '../Component/SynEdit/Source',
+  '../common',
+  '<<DELPHI>>/Source/Vcl',
+  '<<DELPHI>>/Source/Toolsapi',
+  '<<DELPHI>>/Ocx/Servers',
+  '<<DELPHI>>/lib',
+  '../designer',
+  '../property',
+  '../transaction',
+  '../property/functionwizard',
+  '../document',
+  '../gdcFile',
+  '../FastReport/source',
+  '../report',
+  '../zlib',
+  '../../comp5/async4/source',
+  '../const',
+  '../inventory',
+  '../wage',
+  '../gadmin',
+  '../security',
+  '../addressbook',
+  '../bugbase',
+  '../greference',
+  '../log',
+  '../directorygood',
+  '../messaging',
+  '../queryfilter',
+  '../classtree',
+  '../attr',
+  '../storage',
+  '../bank',
+  '../newtransaction',
+  '../realization',
+  '../gudf',
+  '../protect',
+  '../gedemin',
+  '../images',
+  '../tax',
+  '../backup',
+  '<<DELPHI>>/Imports',
+  '../component/indy'
+];
+
 export const gedeminSrcPath = [
   '../component/indy',
   '../common/tdbf',
@@ -119,7 +180,7 @@ export const gedeminCfgTemplate =
 -$Y+
 -$Z1
 -cg
--AWinTypes=Windows;WinProcs=Windows;DbiTypes=BDE;DbiProcs=BDE;DbiErrs=BDE
+-AWinTypes=Windows;WinProcs=Windows;DbiTypes=BDE;DbiProcs=BDE;DbiErrs=BDE;
 -H+
 -W+
 -M
