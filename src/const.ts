@@ -119,7 +119,7 @@ export const gedeminCfgTemplate =
 -$Y+
 -$Z1
 -cg
--AWinTypes=Windows;WinProcs=Windows;DbiTypes=BDE;DbiProcs=BDE;DbiErrs=BDE;
+-AWinTypes=Windows;WinProcs=Windows;DbiTypes=BDE;DbiProcs=BDE;DbiErrs=BDE
 -H+
 -W+
 -M
@@ -182,7 +182,7 @@ export const portableFilesList = [
 ];
 
 export const gedeminVerRC =
-`1 VERSIONINFO LOADONCALL MOVEABLE DISCARDABLE IMPURE 
+`1 VERSIONINFO LOADONCALL MOVEABLE DISCARDABLE IMPURE
 FILEVERSION 2, 9, 5, <<BUILD_NUMBER>>
 PRODUCTVERSION 2, 9, 5, <<BUILD_NUMBER>>
 FILEFLAGSMASK VS_FFI_FILEFLAGSMASK
