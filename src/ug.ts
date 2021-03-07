@@ -12,7 +12,7 @@ import { existsSync, readFileSync, readdirSync, unlinkSync, copyFileSync, writeF
 import path from 'path';
 import { Log } from './log';
 import {
-   gedeminCfgTemplate, gedeminCfgVariables, gedeminSrcPath,
+   gedeminCfgTemplate as cfgFileTemplate, gedeminCfgVariables, gedeminSrcPath,
    gedeminCompilerSwitch, gedeminArchiveName, portableFilesList, gedeminVerRC} from './const';
 
 export interface IParams {
@@ -61,7 +61,7 @@ export function ug(log: Log) {
       };
 
       log.finishProcess();
-    }      
+    }
   }
 
   const paramsFile = process.argv[2];
@@ -144,55 +144,51 @@ export function ug(log: Log) {
    * Текущий файл сохраним с именем .current.cfg и восстановим в конце процесса.
    * Файл создадим из шаблона, подставив нужные значения в зависимости от типа компиляции.
    */
-  const prepareConfigProject = (project: string) => {
+  const prepareConfigFile = (project: Project) => {
     /** Файл конфигурации проекта для компиляции */
-    const gedeminCfgFileName = path.join(pathGedemin, `${project}.cfg`);
+    const cfgFileName = path.join(pathGedemin, `${project}.cfg`);
     /** Файл для сохранения текущей конфигурации */
-    const gedeminSavedCfgFileName = path.join(pathGedemin, `${project}.current.cfg`);
+    const savedCfgFileName = path.join(pathGedemin, `${project}.current.cfg`);
 
-    if (existsSync(gedeminCfgFileName)) {
-      copyFileSync(gedeminCfgFileName, gedeminSavedCfgFileName);
-      log.log(`Existing ${project}.cfg file saved as ${gedeminSavedCfgFileName}...`);
+    if (existsSync(cfgFileName)) {
+      copyFileSync(cfgFileName, savedCfgFileName);
+      log.log(`existing ${project}.cfg file saved as ${savedCfgFileName}...`);
     }
 
-    let srcPath = gedeminSrcPath.join(';');
-    srcPath = srcPath.replace(/<<DELPHI>>/gi, pathDelphi.replace(/\\/gi, '/'));
+    // мы используем один список папок с исходниками для компиляции всех проектов
+    const srcPath = gedeminSrcPath.join(';').replace(/<<DELPHI>>/gi, pathDelphi.replace(/\\/gi, '/'));
 
-    let cfgBody = gedeminCfgTemplate;
-    cfgBody = cfgBody.replace(/<<GEDEMIN_SRC_PATH>>/gi, srcPath);
-
-    const cfgVariables = gedeminCfgVariables[compilationType];
-
-    if (!cfgVariables) {
-      throw new Error(`No cfg data for compilation type: ${compilationType}`);
-    }
-
-    cfgBody = cfgBody.replace('<<C_SWITCH>>', cfgVariables.c_switch);
-    cfgBody = cfgBody.replace('<<D_SWITCH>>', cfgVariables.d_switch);
-    cfgBody = cfgBody.replace('<<O_SWITCH>>', cfgVariables.o_switch);
+    let cfgBody = cfgFileTemplate.replace(/<<GEDEMIN_SRC_PATH>>/gi, srcPath);
 
     if (project === 'gedemin') {
-      cfgBody = cfgBody.replace('<<COND>>', cfgVariables.cond);
+      const { d_switch, o_switch, cond } = gedeminCfgVariables[compilationType];
+
+      cfgBody = cfgBody.replace('<<D_SWITCH>>', d_switch);
+      cfgBody = cfgBody.replace('<<O_SWITCH>>', o_switch);
+      cfgBody = cfgBody.replace('<<COND>>', cond);
     } else {
-      cfgBody = cfgBody.replace('-D<<COND>>', '');
+      cfgBody = cfgBody.replace('<<D_SWITCH>>', '-');
+      cfgBody = cfgBody.replace('<<O_SWITCH>>', '+');
+      cfgBody = cfgBody.replace('<<COND>>', '');
     }
 
-    writeFileSync(gedeminCfgFileName, cfgBody);
+    writeFileSync(cfgFileName, cfgBody.trim());
 
-    log.log(`Configuration file has been prepared and saved as ${gedeminCfgFileName}...`);
+    log.log(`Configuration file has been prepared and saved as ${cfgFileName}...`);
   };
 
   /** Компиляция нового экзешника проекта по заданному типа */
-  const buildGedeminProject = (project: string) => {
-    /** Целевой файл */
-    const gedeminExeFileName = path.join(pathEXE, `${project}.exe`);
+  const buildProject = (project: Project) => {
+    /** Имя компилируемого файла */
+    const exeFileName = project + '.exe';
+    const exeFullFileName = path.join(pathEXE, exeFileName);
 
-    if (existsSync(gedeminExeFileName)) {
-      unlinkSync(gedeminExeFileName);
-      log.log(`previous ${project}.exe has been deleted...`);
+    if (existsSync(exeFullFileName)) {
+      unlinkSync(exeFullFileName);
+      log.log(`previous ${exeFileName} has been deleted...`);
     }
 
-    log.log(`building ${project}.exe...`);
+    log.log(`building ${exeFileName}...`);
     log.log(
       execFileSync(
         path.join(pathDelphi, 'Bin', 'dcc32.exe'),
@@ -200,24 +196,24 @@ export function ug(log: Log) {
         { ...basicExecOptions, cwd: pathGedemin }
       ).toString()
     );
-    log.log(`${project}.exe has been built...`);
+    log.log(`${exeFileName} has been built...`);
 
-    if (project === 'gedemin') {
-      log.log(execFileSync('StripReloc.exe', ['/b', `${project}.exe`], { ...basicExecOptions, cwd: pathEXE }).toString());
-      log.log('StripReloc passed...');
+    const exeOpt = { ...basicExecOptions, cwd: pathEXE };
 
-      if (compilationType === 'DEBUG') {
-        log.log(execFileSync('tdspack.exe', ['-e -o -a', `${project}.exe`], { ...basicExecOptions, cwd: pathEXE }).toString());
-        log.log('debug information has been packed...');
-      };
+    log.log(execFileSync('StripReloc.exe', ['/b', exeFileName], exeOpt).toString());
+    log.log('relocation section has been stripped from EXE file...');
+
+    if (project === 'gedemin' && compilationType === 'DEBUG') {
+      log.log(execFileSync('tdspack.exe', ['-e -o -a', exeFileName], exeOpt).toString());
+      log.log('debug information has been optimized...');
     }
 
-    log.log(execFileSync(path.join(binEditbin, 'editbin.exe'), ['/SWAPRUN:NET', `${project}.exe`], { ...basicExecOptions, cwd: pathEXE }).toString());
-    log.log('swaprun flag has been set on gedemin.exe file...');
+    log.log(execFileSync(path.join(binEditbin, 'editbin.exe'), ['/SWAPRUN:NET', exeFileName], exeOpt).toString());
+    log.log(`swaprun flag has been set on ${exeFileName} file...`);
 
-    log.log(`${project}.exe has been successfully built...`);
+    log.log(`${exeFileName} has been successfully built...`);
   };
- 
+
   /** Файл архива */
   const gedeminArchiveFileName = path.join(archiveDir, gedeminArchiveName[compilationType]);
   /**
@@ -246,27 +242,30 @@ export function ug(log: Log) {
     unlinkSync(lstFileName);
 
     if (existsSync(gedeminArchiveFileName)) {
-      log.log(`Portable archive has been created ${gedeminArchiveFileName}...`);
+      log.log(`portable archive has been created ${gedeminArchiveFileName}...`);
     } else {
       throw new Error('Can not create portable archive!');
     };
   };
 
   /** Восстановление сохраненных файлов конфигурации */
-  const configCleanUpProject = (project: string) => {
+  const cleanupConfigFile = (project: Project) => {
     /** Файл конфигурации проекта для компиляции */
-    const gedeminCfgFileName = path.join(pathGedemin, `${project}.cfg`);
-    /** Файл для сохранения текущей конфигурации */
-    const gedeminSavedCfgFileName = path.join(pathGedemin, `${project}.current.cfg`);
+    const cfgFileName = path.join(pathGedemin, project + '.cfg');
 
-    if (existsSync(gedeminSavedCfgFileName)) {
-      copyFileSync(gedeminSavedCfgFileName, gedeminCfgFileName);
-      log.log(`Previous ${project}.cfg file restored...`);
-      unlinkSync(gedeminSavedCfgFileName);
-      log.log(`Saved ${project}.cfg file deleted...`);
+    /** Файл для сохранения текущей конфигурации */
+    const savedCfgFileName = path.join(pathGedemin, project + '.current.cfg');
+
+    if (existsSync(savedCfgFileName)) {
+      copyFileSync(savedCfgFileName, cfgFileName);
+      log.log(`previous ${project}.cfg file has been restored...`);
+      unlinkSync(savedCfgFileName);
     };
   };
 
+
+  /** Инкремент версии */
+  const incVer = () => {
   /** RC-файл версии  */
   const gedeminVerRCFileName = path.join(pathGedemin, 'gedemin_ver.rc');
   /** RES-файл версии  */
@@ -274,14 +273,13 @@ export function ug(log: Log) {
   /** Путь рисунков */
   const pathImages = path.resolve(pathGedemin, '..\\images');
 
-  /** Инкремент версии */
-  const incVer = () => {
     const rcText = readFileSync(gedeminVerRCFileName).toString().trim().split('\n');
 
     if (rcText.length !== 31) {
       throw new Error('Invalid gedemin_ver.rc');
     }
 
+    // extract current build number from second string of .rc file: FILEVERSION 2, 9, 5, 11591
     const buildNumber = parseInt(rcText[1].split(',')[3].trim()) + 1;
 
     let newRC = gedeminVerRC;
@@ -290,7 +288,7 @@ export function ug(log: Log) {
 
     writeFileSync(gedeminVerRCFileName, newRC);
 
-    log.log(`Build number has been incremented to ${buildNumber}`);
+    log.log(`Build number has been incremented to ${buildNumber}...`);
     log.log('gedemin_ver.rc saved...');
 
     if (existsSync(gedeminVerResFileName)) {
@@ -305,28 +303,18 @@ export function ug(log: Log) {
         { ...basicExecOptions, cwd: pathGedemin }
       ).toString()
     );
-    log.log('gedemin_ver.res has been built...');
+    log.log('gedemin_ver.res has been successfully built...');
   };
 
   /** Список проектов для компиляции */
-  const ugProjectList = ['gedemin', 'gdcc', 'gedemin_upd']
-  /** Подговка файлов конфигурации для компиляции проектов */
-  const prepareConfig = () => {
-    ugProjectList.forEach(project => prepareConfigProject(project));
-  };
-  /** Компиляция проектов */
-  const buildGedemin = () => {
-    ugProjectList.forEach(project => buildGedeminProject(project));
-  };
-  /** Восстановление сохраненных файлов конфигурации */
-  const configCleanUp = () => {
-    ugProjectList.forEach(project => configCleanUpProject(project));    
-  };
-  
+  const ugProjectList = ['gedemin', 'gdcc', 'gedemin_upd'] as const;
+  type Project = typeof ugProjectList[0] | typeof ugProjectList[1] | typeof ugProjectList[2];
+
   /** Количество шагов процесса */
-  const Steps = 8;
+  const steps = 5 + ugProjectList.length * 3;
+
   /** Начало процесса */
-  log.startProcess('Gedemin compilation', Steps);
+  log.startProcess('Gedemin compilation', steps);
 
   log.log(`Read params: ${JSON.stringify(params, undefined, 2)}`);
   log.log(`Compilation type: ${compilationType}`);
@@ -335,12 +323,16 @@ export function ug(log: Log) {
   runProcess('Check prerequisites', checkPrerequisites, false);
   runProcess('Pull latest sources', pullSources, false);
   runProcess('Clear DCU folder', clearDCU, false);
-  runProcess('Prepare config files', prepareConfig, false);
   runProcess('Increment version', incVer, false);
-  runProcess('Build projects', buildGedemin, false);
-  runProcess('Config clean up', configCleanUp, false);
+
+  for (const pr of ugProjectList) {
+    runProcess(`Prepare config files for ${pr}`, () => prepareConfigFile(pr), false);
+    runProcess(`Build ${pr}`, () => buildProject(pr), false);
+    runProcess(`Clean up after building ${pr}`, () => cleanupConfigFile(pr), false);
+  }
+
   runProcess('Create portable version archive', createArhive, false);
-  
+
   /** Окончание процесса */
   log.finishProcess();
 };

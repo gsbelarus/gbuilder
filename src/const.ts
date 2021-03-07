@@ -74,19 +74,16 @@ export const gedeminCfgVariables = {
   PRODUCT: {
     d_switch: '-',
     o_switch: '+',
-    c_switch: '+',
     cond: 'SPLASH;MESSAGE;SYNEDIT;GEDEMIN;GED_LOC_RUS;FR4;WITH_INDY;'
   },
   DEBUG: {
     d_switch: '+',
     o_switch: '-',
-    c_switch: '+',
     cond: 'SPLASH;MESSAGE;SYNEDIT;GEDEMIN;GED_LOC_RUS;FR4;EXCMAGIC_GEDEMIN;WITH_INDY'
   },
   LOCK: {
     d_switch: '+',
     o_switch: '-',
-    c_switch: '-',
     cond: 'SPLASH;MESSAGE;SYNEDIT;GEDEMIN;GED_LOC_RUS;FR4;WITH_INDY'
   },
 }
@@ -94,7 +91,7 @@ export const gedeminCfgVariables = {
 export const gedeminCfgTemplate =
 `-$A+
 -$B-
--$C<<C_SWITCH>>
+-$C+
 -$D<<D_SWITCH>>
 -$E-
 -$F-
@@ -133,8 +130,7 @@ export const gedeminCfgTemplate =
 -O"<<GEDEMIN_SRC_PATH>>"
 -I"<<GEDEMIN_SRC_PATH>>"
 -R"<<GEDEMIN_SRC_PATH>>"
--D<<COND>>
-`;
+-D<<COND>>`;
 
 export const gedeminCompilerSwitch = {
   PRODUCT: '-b',
