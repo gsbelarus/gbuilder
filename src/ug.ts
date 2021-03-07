@@ -265,15 +265,14 @@ export function ug(log: Log) {
     };
   };
 
-
   /** Инкремент версии */
   const incVer = () => {
-  /** RC-файл версии  */
-  const gedeminVerRCFileName = path.join(pathGedemin, 'gedemin_ver.rc');
-  /** RES-файл версии  */
-  const gedeminVerResFileName = path.join(pathGedemin, 'gedemin_ver.res');
-  /** Путь рисунков */
-  const pathImages = path.resolve(pathGedemin, '..\\images');
+    /** RC-файл версии  */
+    const gedeminVerRCFileName = path.join(pathGedemin, 'gedemin_ver.rc');
+    /** RES-файл версии  */
+    const gedeminVerResFileName = path.join(pathGedemin, 'gedemin_ver.res');
+    /** Путь рисунков */
+    const pathImages = path.resolve(pathGedemin, '..\\images');
 
     const rcText = readFileSync(gedeminVerRCFileName).toString().trim().split('\n');
 
