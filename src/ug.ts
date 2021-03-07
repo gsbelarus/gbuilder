@@ -49,8 +49,10 @@ export function ug(log: Log) {
    *  @param fn функция
    *  @param skip пропустить выполнение
    */
-  const runProcess = (name: string, fn: () => void, skip?: boolean) => {
-    if (!skip) {
+  const runProcess = (name: string, fn: () => void, skip = false) => {
+    if (skip) {
+      log.log(`skipped ${name}...`);
+    } else {
       log.startProcess(name);
 
       try {
@@ -320,18 +322,18 @@ export function ug(log: Log) {
   log.log(`Compilation type: ${compilationType}`);
   log.log(`Gedemin root dir: ${rootGedeminDir}`);
 
-  runProcess('Check prerequisites', checkPrerequisites, false);
-  runProcess('Pull latest sources', pullSources, false);
-  runProcess('Clear DCU folder', clearDCU, false);
-  runProcess('Increment version', incVer, false);
+  runProcess('Check prerequisites', checkPrerequisites);
+  runProcess('Pull latest sources', pullSources);
+  runProcess('Clear DCU folder', clearDCU);
+  runProcess('Increment version', incVer);
 
   for (const pr of ugProjectList) {
-    runProcess(`Prepare config files for ${pr}`, () => prepareConfigFile(pr), false);
-    runProcess(`Build ${pr}`, () => buildProject(pr), false);
-    runProcess(`Clean up after building ${pr}`, () => cleanupConfigFile(pr), false);
+    runProcess(`Prepare config files for ${pr}`, () => prepareConfigFile(pr));
+    runProcess(`Build ${pr}`, () => buildProject(pr));
+    runProcess(`Clean up after building ${pr}`, () => cleanupConfigFile(pr));
   }
 
-  runProcess('Create portable version archive', createArhive, false);
+  runProcess('Create portable version archive', createArhive);
 
   /** Окончание процесса */
   log.finishProcess();
