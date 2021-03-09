@@ -13,7 +13,7 @@ import path from 'path';
 import { Log } from './log';
 import {
    gedeminCfgTemplate, gedeminCfgVariables, gedeminSrcPath,
-   gedeminCompilerSwitch, gedeminArchiveName, portableFilesList, gedeminVerRC} from './const';
+   gedeminCompilerSwitch, gedeminArchiveName, portableFilesList, verRC} from './const';
 
 export interface IParams {
   /**
@@ -271,33 +271,34 @@ export function ug(log: Log) {
   /** Инкремент версии */
   const incVer = (project: Project) => {
     /** RC-файл версии  */
-    const gedeminVerRCFileName = path.join(pathGedemin, `${project}_ver.rc`);
+    const verRCFileName = path.join(pathGedemin, `${project}_ver.rc`);
     /** RES-файл версии  */
-    const gedeminVerResFileName = path.join(pathGedemin, `${project}_ver.res`);
+    const verResFileName = path.join(pathGedemin, `${project}_ver.res`);
     /** Путь рисунков */
     const pathImages = path.resolve(pathGedemin, '..\\images');
 
-    if (project === 'gedemin') {
-      const rcText = readFileSync(gedeminVerRCFileName).toString().trim().split('\n');
-      if (rcText.length !== 31) {
-        throw new Error('Invalid gedemin_ver.rc');
-      }
-      // extract current build number from second string of .rc file: FILEVERSION 2, 9, 5, 11591
-      gedeminBuildNumber = parseInt(rcText[1].split(',')[3].trim()) + 1;
-    };
+    const rcText = readFileSync(verRCFileName).toString().trim().split('\n');
+    const fvIndex = rcText.findIndex( s => s.startsWith('FILEVERSION') );
 
-    let newRC = gedeminVerRC;
-    newRC = newRC.replace(/<<BUILD_NUMBER>>/gi, gedeminBuildNumber.toString());
+    if (fvIndex === -1) {
+      throw new Error(`Invalid ${verRCFileName} file format.`);
+    }
+
+    // extract current build number from second string of .rc file: FILEVERSION 2, 9, 5, 11591
+    const buildNumber = parseInt(rcText[fvIndex].split(',')[3].trim()) + 1;
+
+    let newRC = verRC[project];
+    newRC = newRC.replace(/<<BUILD_NUMBER>>/gi, buildNumber.toString());
     newRC = newRC.replace('<<YEAR>>', new Date().getFullYear().toString());
     newRC = newRC.replace(/<<PROJECT>>/gi, project);
 
-    writeFileSync(gedeminVerRCFileName, newRC);
+    writeFileSync(verRCFileName, newRC);
 
-    log.log(`Build number for ${project} has been incremented to ${gedeminBuildNumber}...`);
+    log.log(`build number for ${project} has been incremented to ${buildNumber}...`);
     log.log(`${project}_ver.rc saved...`);
 
-    if (existsSync(gedeminVerResFileName)) {
-      unlinkSync(gedeminVerResFileName);
+    if (existsSync(verResFileName)) {
+      unlinkSync(verResFileName);
       log.log(`previous ${project}_ver.res has been deleted...`);
     }
 
@@ -329,7 +330,6 @@ export function ug(log: Log) {
   runProcess('Pull latest sources', pullSources);
   runProcess('Clear DCU folder', clearDCU);
 
-  let gedeminBuildNumber = 0;
   for (const pr of ugProjectList) {
     runProcess(`Increment version for ${pr}`,  () => incVer(pr));
     runProcess(`Prepare config files for ${pr}`, () => prepareConfigFile(pr));

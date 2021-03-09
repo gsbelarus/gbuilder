@@ -177,7 +177,8 @@ export const portableFilesList = [
   'gsdbquery.dll'
 ];
 
-export const gedeminVerRC =
+export const verRC = {
+  gedemin:
 `1 VERSIONINFO LOADONCALL MOVEABLE DISCARDABLE IMPURE
 FILEVERSION 2, 9, 5, <<BUILD_NUMBER>>
 PRODUCTVERSION 2, 9, 5, <<BUILD_NUMBER>>
@@ -208,4 +209,74 @@ FILETYPE VFT_APP
   VALUE "Translation", 1049, 1251
  }
 
-}`;
+}`,
+
+  gdcc:
+`LANGUAGE LANG_RUSSIAN,1
+
+1 VERSIONINFO LOADONCALL MOVEABLE DISCARDABLE IMPURE
+FILEVERSION 2, 9, 12, <<BUILD_NUMBER>>
+PRODUCTVERSION 2, 9, 12, <<BUILD_NUMBER>>
+FILEFLAGSMASK VS_FFI_FILEFLAGSMASK
+FILEOS VOS__WINDOWS32
+FILETYPE VFT_APP
+{
+ BLOCK "StringFileInfo"
+ {
+  BLOCK "041904E3"
+  {
+   VALUE "CompanyName", "Golden Software of Belarus, Ltd\\000"
+   VALUE "FileDescription", "GDCC\\000"
+   VALUE "FileVersion", "2.9.12.<<BUILD_NUMBER>>\\000"
+   VALUE "InternalName", "Gedemin\\000"
+   VALUE "LegalCopyright", "Copyright (c) 2000-<<YEAR>> by Golden Software of Belarus, Ltd\\000"
+   VALUE "LegalTrademarks", "Gedemin\\000"
+   VALUE "OriginalFilename", "gdcc.exe\\000"
+   VALUE "ProductName", "Gedemin\\000"
+   VALUE "ProductVersion", "2.9.12\\000"
+   VALUE "Comments", "Long Live Belarus!\\000"
+  }
+ }
+
+ BLOCK "VarFileInfo"
+ {
+  VALUE "Translation", 1049, 1251
+ }
+}`,
+
+  gedemin_upd:
+`LANGUAGE LANG_RUSSIAN,1
+
+MAINICON ICON gedemin_blank.ico
+
+1 VERSIONINFO LOADONCALL MOVEABLE DISCARDABLE IMPURE
+FILEVERSION 2, 10, 0, <<BUILD_NUMBER>>
+PRODUCTVERSION 2, 10, 0, <<BUILD_NUMBER>>
+FILEFLAGSMASK VS_FFI_FILEFLAGSMASK
+FILEOS VOS__WINDOWS32
+FILETYPE VFT_APP
+{
+ BLOCK "StringFileInfo"
+ {
+  BLOCK "041904E3"
+  {
+   VALUE "CompanyName", "Golden Software of Belarus, Ltd\\000"
+   VALUE "FileDescription", "Gedemin Upd\\000"
+   VALUE "FileVersion", "2.10.<<BUILD_NUMBER>>\\000"
+   VALUE "InternalName", "Gedemin\\000"
+   VALUE "LegalCopyright", "Copyright (c) 2000-<<YEAR>> by Golden Software of Belarus, Ltd\\000"
+   VALUE "LegalTrademarks", "Gedemin\\000"
+   VALUE "OriginalFilename", "gedemin_upd.exe\\000"
+   VALUE "ProductName", "Gedemin\\000"
+   VALUE "ProductVersion", "2.10\\000"
+   VALUE "Comments", "Long Live Belarus!\\000"
+  }
+ }
+
+ BLOCK "VarFileInfo"
+ {
+  VALUE "Translation", 1049, 1251
+ }
+}`
+
+};
