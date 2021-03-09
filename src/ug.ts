@@ -12,7 +12,7 @@ import { existsSync, readFileSync, readdirSync, unlinkSync, copyFileSync, writeF
 import path from 'path';
 import { Log } from './log';
 import {
-   gedeminCfgTemplate as cfgFileTemplate, gedeminCfgVariables, gedeminSrcPath,
+   gedeminCfgTemplate, gedeminCfgVariables, gedeminSrcPath,
    gedeminCompilerSwitch, gedeminArchiveName, portableFilesList, gedeminVerRC} from './const';
 
 export interface IParams {
@@ -160,7 +160,7 @@ export function ug(log: Log) {
     // мы используем один список папок с исходниками для компиляции всех проектов
     const srcPath = gedeminSrcPath.join(';').replace(/<<DELPHI>>/gi, pathDelphi.replace(/\\/gi, '/'));
 
-    let cfgBody = cfgFileTemplate.replace(/<<GEDEMIN_SRC_PATH>>/gi, srcPath);
+    let cfgBody = gedeminCfgTemplate.replace(/<<GEDEMIN_SRC_PATH>>/gi, srcPath);
 
     if (project === 'gedemin') {
       const { d_switch, o_switch, cond } = gedeminCfgVariables[compilationType];
@@ -269,45 +269,46 @@ export function ug(log: Log) {
   //но для остальных утилит тоже надо сделать инкремент
 
   /** Инкремент версии */
-  const incVer = () => {
+  const incVer = (project: Project) => {
     /** RC-файл версии  */
-    const gedeminVerRCFileName = path.join(pathGedemin, 'gedemin_ver.rc');
+    const gedeminVerRCFileName = path.join(pathGedemin, `${project}_ver.rc`);
     /** RES-файл версии  */
-    const gedeminVerResFileName = path.join(pathGedemin, 'gedemin_ver.res');
+    const gedeminVerResFileName = path.join(pathGedemin, `${project}_ver.res`);
     /** Путь рисунков */
     const pathImages = path.resolve(pathGedemin, '..\\images');
 
-    const rcText = readFileSync(gedeminVerRCFileName).toString().trim().split('\n');
-
-    if (rcText.length !== 31) {
-      throw new Error('Invalid gedemin_ver.rc');
-    }
-
-    // extract current build number from second string of .rc file: FILEVERSION 2, 9, 5, 11591
-    const buildNumber = parseInt(rcText[1].split(',')[3].trim()) + 1;
+    if (project === 'gedemin') {
+      const rcText = readFileSync(gedeminVerRCFileName).toString().trim().split('\n');
+      if (rcText.length !== 31) {
+        throw new Error('Invalid gedemin_ver.rc');
+      }
+      // extract current build number from second string of .rc file: FILEVERSION 2, 9, 5, 11591
+      gedeminBuildNumber = parseInt(rcText[1].split(',')[3].trim()) + 1;
+    };
 
     let newRC = gedeminVerRC;
-    newRC = newRC.replace(/<<BUILD_NUMBER>>/gi, buildNumber.toString());
+    newRC = newRC.replace(/<<BUILD_NUMBER>>/gi, gedeminBuildNumber.toString());
     newRC = newRC.replace('<<YEAR>>', new Date().getFullYear().toString());
+    newRC = newRC.replace(/<<PROJECT>>/gi, project);
 
     writeFileSync(gedeminVerRCFileName, newRC);
 
-    log.log(`Build number has been incremented to ${buildNumber}...`);
-    log.log('gedemin_ver.rc saved...');
+    log.log(`Build number for ${project} has been incremented to ${gedeminBuildNumber}...`);
+    log.log(`${project}_ver.rc saved...`);
 
     if (existsSync(gedeminVerResFileName)) {
       unlinkSync(gedeminVerResFileName);
-      log.log('previous gedemin_ver.res has been deleted...');
+      log.log(`previous ${project}_ver.res has been deleted...`);
     }
 
     log.log(
       execFileSync(
         path.join(pathDelphi, 'Bin', 'brcc32.exe'),
-        ['-fogedemin_ver.res', `-i${pathImages}`, 'gedemin_ver.rc'],
+        [`-fo${project}_ver.res`, `-i${pathImages}`, `${project}_ver.rc`],
         { ...basicExecOptions, cwd: pathGedemin }
       ).toString()
     );
-    log.log('gedemin_ver.res has been successfully built...');
+    log.log(`${project}_ver.res has been successfully built...`);
   };
 
   /** Список проектов для компиляции */
@@ -315,7 +316,7 @@ export function ug(log: Log) {
   type Project = typeof ugProjectList[0] | typeof ugProjectList[1] | typeof ugProjectList[2];
 
   /** Количество шагов процесса */
-  const steps = 5 + ugProjectList.length * 3;
+  const steps = 4 + ugProjectList.length * 4;
 
   /** Начало процесса */
   log.startProcess('Gedemin compilation', steps);
@@ -327,13 +328,14 @@ export function ug(log: Log) {
   runProcess('Check prerequisites', checkPrerequisites);
   runProcess('Pull latest sources', pullSources);
   runProcess('Clear DCU folder', clearDCU);
-  runProcess('Increment version', incVer);
 
+  let gedeminBuildNumber = 0;
   for (const pr of ugProjectList) {
+    runProcess(`Increment version for ${pr}`,  () => incVer(pr));
     runProcess(`Prepare config files for ${pr}`, () => prepareConfigFile(pr));
     runProcess(`Build ${pr}`, () => buildProject(pr));
     runProcess(`Clean up after building ${pr}`, () => cleanupConfigFile(pr));
-  }
+  };
 
   runProcess('Create portable version archive', createArhive);
 
