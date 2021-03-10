@@ -8,7 +8,7 @@
  */
 
 import { execFileSync, ExecFileSyncOptions } from 'child_process';
-import { existsSync, readFileSync, readdirSync, unlinkSync, copyFileSync, writeFileSync } from 'fs';
+import { existsSync, readFileSync, readdirSync, unlinkSync, copyFileSync, writeFileSync, statSync, appendFileSync } from 'fs';
 import path from 'path';
 import { Log } from './log';
 import {
@@ -21,7 +21,8 @@ export interface IParams {
    *    выбор файла конфигурации, ключей компиляции, файла архива
    */
   compilationType: 'PRODUCT' | 'DEBUG' | 'LOCK';
-
+  /** Установить заданный размер исполнимого файла */
+  setExeSize: number;
   /**
    * Корневая папка с полными исходниками Гедымина.
    * В ней находятся папки Comp5 и Gedemin.
@@ -75,7 +76,7 @@ export function ug(log: Log) {
 
   const params = JSON.parse(readFileSync(paramsFile, {encoding:'utf8', flag:'r'})) as IParams;
 
-  const { compilationType, rootGedeminDir, archiveDir, pathDelphi, binEditbin, binWinRAR } = params;
+  const { compilationType, setExeSize, rootGedeminDir, archiveDir, pathDelphi, binEditbin, binWinRAR } = params;
 
   /** Основная папка проекта, где находятся .dpr, .cfg, .rc файлы */
   const pathGedemin = path.join(rootGedeminDir, 'Gedemin', 'Gedemin')
@@ -209,11 +210,18 @@ export function ug(log: Log) {
       log.log(execFileSync('tdspack.exe', ['-e -o -a', exeFileName], exeOpt).toString());
       log.log('debug information has been optimized...');
     }
-
+    
     log.log(execFileSync(path.join(binEditbin, 'editbin.exe'), ['/SWAPRUN:NET', exeFileName], exeOpt).toString());
     log.log(`swaprun flag has been set on ${exeFileName} file...`);
-
+    
     log.log(`${exeFileName} has been successfully built...`);
+    
+    const currenExeSize = statSync(exeFullFileName).size;
+    if (project === 'gedemin' && setExeSize > currenExeSize) {
+      const buf = Buffer.allocUnsafe(setExeSize - currenExeSize).fill(0x90);
+      appendFileSync(exeFullFileName, buf);
+      log.log(`${exeFileName} size has been increased to ${setExeSize}...`);
+    }
   };
 
   /** Файл архива */
@@ -290,7 +298,6 @@ export function ug(log: Log) {
     let newRC = verRC[project];
     newRC = newRC.replace(/<<BUILD_NUMBER>>/gi, buildNumber.toString());
     newRC = newRC.replace('<<YEAR>>', new Date().getFullYear().toString());
-    newRC = newRC.replace(/<<PROJECT>>/gi, project);
 
     writeFileSync(verRCFileName, newRC);
 
@@ -336,7 +343,6 @@ export function ug(log: Log) {
     runProcess(`Build ${pr}`, () => buildProject(pr));
     runProcess(`Clean up after building ${pr}`, () => cleanupConfigFile(pr));
   };
-
   runProcess('Create portable version archive', createArhive);
 
   /** Окончание процесса */
