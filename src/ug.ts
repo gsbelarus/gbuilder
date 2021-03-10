@@ -22,7 +22,7 @@ export interface IParams {
    */
   compilationType: 'PRODUCT' | 'DEBUG' | 'LOCK';
   /** Установить заданный размер исполнимого файла */
-  setExeSize: number;
+  setExeSize?: number;
   /**
    * Корневая папка с полными исходниками Гедымина.
    * В ней находятся папки Comp5 и Gedemin.
@@ -210,17 +210,29 @@ export function ug(log: Log) {
       log.log(execFileSync('tdspack.exe', ['-e -o -a', exeFileName], exeOpt).toString());
       log.log('debug information has been optimized...');
     }
-    
+
     log.log(execFileSync(path.join(binEditbin, 'editbin.exe'), ['/SWAPRUN:NET', exeFileName], exeOpt).toString());
     log.log(`swaprun flag has been set on ${exeFileName} file...`);
-    
+
     log.log(`${exeFileName} has been successfully built...`);
-    
-    const currenExeSize = statSync(exeFullFileName).size;
-    if (project === 'gedemin' && setExeSize > currenExeSize) {
-      const buf = Buffer.allocUnsafe(setExeSize - currenExeSize).fill(0x90);
-      appendFileSync(exeFullFileName, buf);
-      log.log(`${exeFileName} size has been increased to ${setExeSize}...`);
+  };
+
+  const setGedeminEXESize = () => {
+    if (setExeSize) {
+      const exeFullFileName = path.join(pathEXE, 'gedemin.exe');
+      const currentExeSize = statSync(exeFullFileName).size;
+
+      if (setExeSize < currentExeSize) {
+        throw new Error(`gedemin.exe is larger then needed exe size!`);
+      }
+
+      if (setExeSize > currentExeSize) {
+        const buf = Buffer.allocUnsafe(setExeSize - currentExeSize).fill(0x90);
+        appendFileSync(exeFullFileName, buf);
+        log.log(`gedemin.exe size has been set to ${setExeSize}...`);
+      }
+    } else {
+      log.log('gedemin.exe size is not specified. Nothing to set...');
     }
   };
 
@@ -324,7 +336,7 @@ export function ug(log: Log) {
   type Project = typeof ugProjectList[0] | typeof ugProjectList[1] | typeof ugProjectList[2];
 
   /** Количество шагов процесса */
-  const steps = 4 + ugProjectList.length * 4;
+  const steps = 5 + ugProjectList.length * 4;
 
   /** Начало процесса */
   log.startProcess('Gedemin compilation', steps);
@@ -343,6 +355,8 @@ export function ug(log: Log) {
     runProcess(`Build ${pr}`, () => buildProject(pr));
     runProcess(`Clean up after building ${pr}`, () => cleanupConfigFile(pr));
   };
+
+  runProcess('Set gedemin.exe size', setGedeminEXESize);
   runProcess('Create portable version archive', createArhive);
 
   /** Окончание процесса */
