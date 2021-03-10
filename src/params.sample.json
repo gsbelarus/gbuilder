@@ -1,5 +1,6 @@
 {
   "compilationType": "PRODUCT",
+  "setExeSize": 0,
   "rootGedeminDir": "c:\\golden\\gedemin",
   "archiveDir": "c:\\golden\\archive",
   "pathDelphi": "C:\\Program Files (x86)\\Borland\\Delphi5",
