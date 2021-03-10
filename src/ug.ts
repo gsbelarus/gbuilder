@@ -8,12 +8,11 @@
  */
 
 import { execFileSync, ExecFileSyncOptions } from 'child_process';
-import { existsSync, readFileSync, readdirSync, unlinkSync, copyFileSync, writeFileSync, statSync, appendFileSync } from 'fs';
+import { existsSync, readFileSync, readdirSync, unlinkSync, copyFileSync, writeFileSync, statSync, appendFileSync, createReadStream } from 'fs';
 import path from 'path';
 import { Log } from './log';
-import {
-   gedeminCfgTemplate, gedeminCfgVariables, gedeminSrcPath,
-   gedeminCompilerSwitch, gedeminArchiveName, portableFilesList, verRC} from './const';
+import { gedeminCfgTemplate, gedeminCfgVariables, gedeminSrcPath, gedeminCompilerSwitch, gedeminArchiveName, portableFilesList, verRC} from './const';
+import FormData from 'form-data';
 
 export interface IParams {
   /**
@@ -37,27 +36,29 @@ export interface IParams {
   binEditbin: string;
   /** Папка WinRAR */
   binWinRAR: string;
+  /** Upload files to web site */
+  upload?: boolean;
 };
 
 /**
  * Главная функция.
  * @param log Логгер.
  */
-export function ug(log: Log) {
+export async function ug(log: Log) {
 
   /** Обертка процесса
    *  @param name имя процесса
    *  @param fn функция
    *  @param skip пропустить выполнение
    */
-  const runProcess = (name: string, fn: () => void, skip = false) => {
+  const runProcess = async (name: string, fn: () => void, skip = false) => {
     if (skip) {
       log.log(`skipped ${name}...`);
     } else {
       log.startProcess(name);
 
       try {
-        fn();
+        await fn();
       } catch(e) {
         log.error(e.message);
         process.exit(1);
@@ -76,7 +77,7 @@ export function ug(log: Log) {
 
   const params = JSON.parse(readFileSync(paramsFile, {encoding:'utf8', flag:'r'})) as IParams;
 
-  const { compilationType, setExeSize, rootGedeminDir, archiveDir, pathDelphi, binEditbin, binWinRAR } = params;
+  const { compilationType, setExeSize, rootGedeminDir, archiveDir, pathDelphi, binEditbin, binWinRAR, upload } = params;
 
   /** Основная папка проекта, где находятся .dpr, .cfg, .rc файлы */
   const pathGedemin = path.join(rootGedeminDir, 'Gedemin', 'Gedemin')
@@ -238,6 +239,7 @@ export function ug(log: Log) {
 
   /** Файл архива */
   const gedeminArchiveFileName = path.join(archiveDir, gedeminArchiveName[compilationType]);
+
   /**
    *  Формирование/синхронизация архива по файлу списка gedemin.lst
    *    добавление файлов
@@ -331,12 +333,34 @@ export function ug(log: Log) {
     log.log(`${project}_ver.res has been successfully built...`);
   };
 
+  const uploadArhive = async () => {
+    if (upload) {
+      const form = new FormData();
+
+      form.append('data', createReadStream(gedeminArchiveFileName), {
+        filename: path.basename(gedeminArchiveFileName),
+        filepath: gedeminArchiveFileName,
+        contentType: 'application/zip',
+        knownLength: statSync(gedeminArchiveFileName).size
+      });
+
+      log.log(`uploading ${path.basename(gedeminArchiveFileName)}...`)
+
+      // исходники PHP скриптов приведены в папке PHP
+      await form.submit('http://gsbelarus.com/gs/content/upload2.php');
+
+      log.log(`archive ${path.basename(gedeminArchiveFileName)} has been uploaded...`)
+    } else {
+      log.log('skip uploading...');
+    }
+  };
+
   /** Список проектов для компиляции */
   const ugProjectList = ['gedemin', 'gdcc', 'gedemin_upd'] as const;
   type Project = typeof ugProjectList[0] | typeof ugProjectList[1] | typeof ugProjectList[2];
 
   /** Количество шагов процесса */
-  const steps = 5 + ugProjectList.length * 4;
+  const steps = 6 + ugProjectList.length * 4;
 
   /** Начало процесса */
   log.startProcess('Gedemin compilation', steps);
@@ -345,19 +369,20 @@ export function ug(log: Log) {
   log.log(`Compilation type: ${compilationType}`);
   log.log(`Gedemin root dir: ${rootGedeminDir}`);
 
-  runProcess('Check prerequisites', checkPrerequisites);
-  runProcess('Pull latest sources', pullSources);
-  runProcess('Clear DCU folder', clearDCU);
+  await runProcess('Check prerequisites', checkPrerequisites);
+  await runProcess('Pull latest sources', pullSources);
+  await runProcess('Clear DCU folder', clearDCU);
 
   for (const pr of ugProjectList) {
-    runProcess(`Increment version for ${pr}`,  () => incVer(pr));
-    runProcess(`Prepare config files for ${pr}`, () => prepareConfigFile(pr));
-    runProcess(`Build ${pr}`, () => buildProject(pr));
-    runProcess(`Clean up after building ${pr}`, () => cleanupConfigFile(pr));
+    await runProcess(`Increment version for ${pr}`,  () => incVer(pr));
+    await runProcess(`Prepare config files for ${pr}`, () => prepareConfigFile(pr));
+    await runProcess(`Build ${pr}`, () => buildProject(pr));
+    await runProcess(`Clean up after building ${pr}`, () => cleanupConfigFile(pr));
   };
 
-  runProcess('Set gedemin.exe size', setGedeminEXESize);
-  runProcess('Create portable version archive', createArhive);
+  await runProcess('Set gedemin.exe size', setGedeminEXESize);
+  await runProcess('Create portable version archive', createArhive);
+  await runProcess('Upload archive', uploadArhive);
 
   /** Окончание процесса */
   log.finishProcess();
