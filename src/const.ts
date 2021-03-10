@@ -173,8 +173,7 @@ export const portableFilesList = [
   'swipl/gd_pl_state.dat ',
   'swipl/libgmp-10.dll',
   'swipl/libswipl.dll',
-  'swipl/pthreadGC2.dll',
-  'gsdbquery.dll'
+  'swipl/pthreadGC2.dll'
 ];
 
 export const verRC = {
