@@ -176,8 +176,9 @@ export const portableFilesList = [
   'swipl/pthreadGC2.dll'
 ];
 
-export const verRC = {
-  gedemin:
+export const projectParams = {
+  gedemin: {
+    rc:
 `1 VERSIONINFO LOADONCALL MOVEABLE DISCARDABLE IMPURE
 FILEVERSION 2, 9, 5, <<BUILD_NUMBER>>
 PRODUCTVERSION 2, 9, 5, <<BUILD_NUMBER>>
@@ -209,8 +210,13 @@ FILETYPE VFT_APP
  }
 
 }`,
+    loc: 'Gedemin',
+    ext: 'exe',
+    dest: 'exe'
+  },
 
-  gdcc:
+  gdcc: {
+    rc:
 `LANGUAGE LANG_RUSSIAN,1
 
 1 VERSIONINFO LOADONCALL MOVEABLE DISCARDABLE IMPURE
@@ -242,8 +248,13 @@ FILETYPE VFT_APP
   VALUE "Translation", 1049, 1251
  }
 }`,
+    loc: 'Gedemin',
+    ext: 'exe',
+    dest: 'exe'
+  },
 
-  gedemin_upd:
+  gedemin_upd: {
+    rc:  
 `LANGUAGE LANG_RUSSIAN,1
 
 MAINICON ICON gedemin_blank.ico
@@ -277,8 +288,13 @@ FILETYPE VFT_APP
   VALUE "Translation", 1049, 1251
  }
 }`,
+    loc: 'Gedemin',
+    ext: 'exe',
+    dest: 'exe'
+  },
 
-  gudf:
+  gudf: {
+    rc:
 `LANGUAGE LANG_RUSSIAN,1
 
 1 VERSIONINFO LOADONCALL MOVEABLE DISCARDABLE IMPURE 
@@ -309,26 +325,58 @@ BLOCK "VarFileInfo"
  {
   VALUE "Translation", 1049, 1251
  } 
-}`
+}`,
+    loc: 'GUDF',
+    ext: 'dll',
+    dest: 'exe/udf'
+  }
 };
 
-export const gedeminProjectLocation = {
-  gedemin: 'Gedemin',
-  gdcc: 'Gedemin',
-  gedemin_upd: 'Gedemin',
-  gudf: 'GUDF'
-};
-
-export const gedeminProjectExt = {
-  gedemin: 'exe',
-  gdcc: 'exe',
-  gedemin_upd: 'exe',
-  gudf: 'dll'
-};
-
-export const gedeminProjectDest = {
-  gedemin: 'exe',
-  gdcc: 'exe',
-  gedemin_upd: 'exe',
-  gudf: 'exe/udf'
-};
+export const gedeminSQL = {
+  1: [
+  'gd_header.sql',
+  'gd_create.sql',
+  'gudf.sql',
+  'gd_domains.sql',
+  'gd_version.sql',
+  'gd_link.sql',
+  'gd_security.sql',
+  'gd_place.sql',
+  'gd_currency.sql',
+  'wg_tblcal.sql',
+  'gd_addressbook.sql',
+  'gd_ourcompany.sql',
+  'gd_ruid.sql',
+  'at_attribute.sql',
+  'gd_const.sql',
+  'gd_script.sql',
+  'gd_document.sql',
+  'at_sync_procedures.sql',
+  'flt_filter.sql',
+  'bn_bankstatement.sql',
+  'gd_upgrade.sql',
+  'bug_bugbase.sql',
+  'gd_command.sql',
+  'gd_good.sql',
+  'ac_accounting.sql',
+  'msg_messaging.sql',
+  'rp_registry.sql',
+  'rp_report.sql',
+  'evt_script.sql',
+  'inv_movement.sql',
+  'inv_price.sql',
+  'gd_tax.sql',
+  'at_setting.sql',
+  'gd_file.sql',
+  'gd_block_rule.sql',
+  'rpl_database.sql',
+  'gd_smtp.sql',
+  'gd_autotask.sql'
+],
+  2: [
+  'gd_constants.sql',
+  'gd_oper_const.sql',
+  'gd_securityrole.sql',
+  'gd_db_triggers.sql'    
+  ]
+}

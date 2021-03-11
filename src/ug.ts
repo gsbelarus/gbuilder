@@ -16,8 +16,7 @@ import path from 'path';
 import { Log } from './log';
 import {
   gedeminCfgTemplate, gedeminCfgVariables, gedeminSrcPath, gedeminCompilerSwitch,
-  gedeminArchiveName, portableFilesList,
-  verRC, gedeminProjectLocation, gedeminProjectExt, gedeminProjectDest
+  gedeminArchiveName, portableFilesList, projectParams, gedeminSQL
 } from './const';
 import FormData from 'form-data';
 
@@ -43,6 +42,8 @@ export interface IParams {
   binEditbin: string;
   /** Папка WinRAR */
   binWinRAR: string;
+  /** Папка Firebird */
+  binFirebird: string;
   /** Upload files to web site */
   upload?: boolean;
 };
@@ -88,6 +89,8 @@ export async function ug(log: Log) {
 
   /** В процессе компиляции DCU файлы помещаются в эту папку */
   const pathDCU = path.join(rootGedeminDir, 'Gedemin', 'DCU');
+  /** Папка SQL-файлов для создания эталонной БД */
+  const pathSQL = path.join(rootGedeminDir, 'Gedemin', 'SQL');
 
   /**
    * Снимаем исходники с гита.
@@ -166,7 +169,7 @@ export async function ug(log: Log) {
     const srcPath = gedeminSrcPath.join(';').replace(/<<DELPHI>>/gi, pathDelphi.replace(/\\/gi, '/'));
 
     let cfgBody = gedeminCfgTemplate.replace(/<<GEDEMIN_SRC_PATH>>/gi, srcPath);
-    cfgBody = cfgBody.replace('<<GEDEMIN_PROJECT_DEST>>', gedeminProjectDest[project]);
+    cfgBody = cfgBody.replace('<<GEDEMIN_PROJECT_DEST>>', projectParams[project].dest);
 
     if (project === 'gedemin') {
       const { d_switch, o_switch, cond } = gedeminCfgVariables[compilationType];
@@ -188,10 +191,10 @@ export async function ug(log: Log) {
   /** Компиляция проекта по заданному типу */
   const buildProject = (project: Project, pathProject: string) => {
     /** Целевая папка компиляции */
-    const pathEXE = path.join(rootGedeminDir, 'Gedemin', gedeminProjectDest[project]);
+    const pathEXE = path.join(rootGedeminDir, 'Gedemin', projectParams[project].dest);
 
     /** Имя компилируемого файла */
-    const exeFileName = project + '.' + gedeminProjectExt[project];
+    const exeFileName = project + '.' + projectParams[project].ext;
     const exeFullFileName = path.join(pathEXE, exeFileName);
 
     if (existsSync(exeFullFileName)) {
@@ -210,7 +213,7 @@ export async function ug(log: Log) {
     log.log(`${exeFileName} has been built...`);
 
     const exeOpt = { ...basicExecOptions, cwd: pathEXE };
-    if (gedeminProjectExt[project] === 'exe') {
+    if (projectParams[project].ext === 'exe') {
       log.log(execFileSync('StripReloc.exe', ['/b', exeFileName], exeOpt).toString());
       log.log('relocation section has been stripped from EXE file...');
     };
@@ -220,7 +223,7 @@ export async function ug(log: Log) {
       log.log('debug information has been optimized...');
     };
 
-    if (gedeminProjectExt[project] === 'exe') {
+    if (projectParams[project].ext === 'exe') {
       log.log(execFileSync(path.join(binEditbin, 'editbin.exe'), ['/SWAPRUN:NET', exeFileName], exeOpt).toString());
       log.log(`swaprun flag has been set on ${exeFileName} file...`);
     };
@@ -230,7 +233,7 @@ export async function ug(log: Log) {
   const setGedeminEXESize = () => {
     const project: Project = 'gedemin';
     /** Целевая папка компиляции */
-    const pathEXE = path.join(rootGedeminDir, 'Gedemin', gedeminProjectDest[project]);
+    const pathEXE = path.join(rootGedeminDir, 'Gedemin', projectParams[project].dest);
 
     if (setExeSize) {
       const exeFullFileName = path.join(pathEXE, 'gedemin.exe');
@@ -262,7 +265,7 @@ export async function ug(log: Log) {
   const createArhive = () => {
     const project: Project = 'gedemin';
     /** Целевая папка компиляции */
-    const pathEXE = path.join(rootGedeminDir, 'Gedemin', gedeminProjectDest[project]);
+    const pathEXE = path.join(rootGedeminDir, 'Gedemin', projectParams[project].dest);
 
     if (existsSync(gedeminArchiveFileName)) {
       unlinkSync(gedeminArchiveFileName);
@@ -326,7 +329,7 @@ export async function ug(log: Log) {
     // extract current build number from second string of .rc file: FILEVERSION 2, 9, 5, 11591
     const buildNumber = parseInt(rcText[fvIndex].split(',')[3].trim()) + 1;
 
-    let newRC = verRC[project];
+    let newRC = projectParams[project].rc;
     newRC = newRC.replace(/<<BUILD_NUMBER>>/gi, buildNumber.toString());
     newRC = newRC.replace('<<YEAR>>', new Date().getFullYear().toString());
 
@@ -372,6 +375,17 @@ export async function ug(log: Log) {
     }
   };
 
+  /** Создание эталонной БД */
+  const createEtalonDB = async () => {
+    let stage = 1;
+    let sqlText = readFileSync(path.join(pathSQL, gedeminSQL[stage][0])).toString();
+    
+    for (let i = 1; i < gedeminSQL[stage].length; i++) {
+      sqlText += readFileSync(path.join(pathSQL, gedeminSQL[stage][i])).toString();
+    };
+
+  };
+
   /** Список проектов для компиляции */
   const ugProjectList = ['gedemin', 'gdcc', 'gedemin_upd', 'gudf'] as const;
   type Project = typeof ugProjectList[0] | typeof ugProjectList[1] | typeof ugProjectList[2] | typeof ugProjectList[3];
@@ -392,7 +406,7 @@ export async function ug(log: Log) {
 
   for (const pr of ugProjectList) {
     /** Основная папка проекта, где находятся .dpr, .cfg, .rc файлы */
-    const pathProject = path.join(rootGedeminDir, 'Gedemin', gedeminProjectLocation[pr]);
+    const pathProject = path.join(rootGedeminDir, 'Gedemin', projectParams[pr].loc);
 
     await runProcess(`Increment version for ${pr}`,  () => incVer(pr, pathProject));
     await runProcess(`Prepare config files for ${pr}`, () => prepareConfigFile(pr, pathProject));
@@ -403,6 +417,8 @@ export async function ug(log: Log) {
   await runProcess('Set gedemin.exe size', setGedeminEXESize);
   await runProcess('Create portable version archive', createArhive);
   await runProcess('Upload archive', uploadArhive);
+
+  await runProcess('Create etalon database', createEtalonDB);
 
   /** Окончание процесса */
   log.finishProcess();
