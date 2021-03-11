@@ -314,21 +314,21 @@ BLOCK "VarFileInfo"
 
 export const gedeminProjectLocation = {
   gedemin: 'Gedemin',
-  dgcc: 'Gedemin',
+  gdcc: 'Gedemin',
   gedemin_upd: 'Gedemin',
   gudf: 'GUDF'
 };
 
 export const gedeminProjectExt = {
   gedemin: 'exe',
-  dgcc: 'exe',
+  gdcc: 'exe',
   gedemin_upd: 'exe',
   gudf: 'dll'
 };
 
 export const gedeminProjectDest = {
   gedemin: 'exe',
-  dgcc: 'exe',
+  gdcc: 'exe',
   gedemin_upd: 'exe',
   gudf: 'exe/udf'
 };

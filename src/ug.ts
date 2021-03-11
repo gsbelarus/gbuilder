@@ -210,18 +210,20 @@ export async function ug(log: Log) {
     log.log(`${exeFileName} has been built...`);
 
     const exeOpt = { ...basicExecOptions, cwd: pathEXE };
-
-    log.log(execFileSync('StripReloc.exe', ['/b', exeFileName], exeOpt).toString());
-    log.log('relocation section has been stripped from EXE file...');
+    if (gedeminProjectExt[project] === 'exe') {
+      log.log(execFileSync('StripReloc.exe', ['/b', exeFileName], exeOpt).toString());
+      log.log('relocation section has been stripped from EXE file...');
+    };
 
     if (project === 'gedemin' && compilationType === 'DEBUG') {
       log.log(execFileSync('tdspack.exe', ['-e -o -a', exeFileName], exeOpt).toString());
       log.log('debug information has been optimized...');
-    }
+    };
 
-    log.log(execFileSync(path.join(binEditbin, 'editbin.exe'), ['/SWAPRUN:NET', exeFileName], exeOpt).toString());
-    log.log(`swaprun flag has been set on ${exeFileName} file...`);
-
+    if (gedeminProjectExt[project] === 'exe') {
+      log.log(execFileSync(path.join(binEditbin, 'editbin.exe'), ['/SWAPRUN:NET', exeFileName], exeOpt).toString());
+      log.log(`swaprun flag has been set on ${exeFileName} file...`);
+    };
     log.log(`${exeFileName} has been successfully built...`);
   };
 
@@ -390,7 +392,10 @@ export async function ug(log: Log) {
 
   for (const pr of ugProjectList) {
     /** Основная папка проекта, где находятся .dpr, .cfg, .rc файлы */
+    log.log(pr);
+    log.log(gedeminProjectLocation[pr]);
     const pathProject = path.join(rootGedeminDir, 'Gedemin', gedeminProjectLocation[pr]);
+    log.log(pathProject);
 
     await runProcess(`Increment version for ${pr}`,  () => incVer(pr, pathProject));
     await runProcess(`Prepare config files for ${pr}`, () => prepareConfigFile(pr, pathProject));
@@ -400,7 +405,7 @@ export async function ug(log: Log) {
 
   await runProcess('Set gedemin.exe size', setGedeminEXESize);
   await runProcess('Create portable version archive', createArhive);
-  await runProcess('Upload archive', uploadArhive, true);
+  await runProcess('Upload archive', uploadArhive);
 
   /** Окончание процесса */
   log.finishProcess();
