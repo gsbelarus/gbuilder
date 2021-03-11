@@ -392,10 +392,7 @@ export async function ug(log: Log) {
 
   for (const pr of ugProjectList) {
     /** Основная папка проекта, где находятся .dpr, .cfg, .rc файлы */
-    log.log(pr);
-    log.log(gedeminProjectLocation[pr]);
     const pathProject = path.join(rootGedeminDir, 'Gedemin', gedeminProjectLocation[pr]);
-    log.log(pathProject);
 
     await runProcess(`Increment version for ${pr}`,  () => incVer(pr, pathProject));
     await runProcess(`Prepare config files for ${pr}`, () => prepareConfigFile(pr, pathProject));
