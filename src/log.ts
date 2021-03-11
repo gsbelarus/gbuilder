@@ -15,20 +15,20 @@ interface IProcess {
   messages: ILogMessage[];
 };
 
-interface ILog {
-  log: (...messages: string[]) => void;
+export interface ILog {
+  log: (color: number | undefined, ...messages: string[]) => void;
 };
 
 export class Log {
-  private _log: ILog;
+  private _log: ILog[];
   private _process?: IProcess;
 
-  constructor(log: ILog) {
+  constructor(log: ILog[]) {
     this._log = log;
   }
 
   private _fmtTime(date: Date) {
-    return dateFormat(date, 'hh:MM:ss');
+    return dateFormat(date, 'HH:MM:ss');
   }
 
   private _step() {
@@ -50,7 +50,7 @@ export class Log {
       this._process = process;
     }
 
-    this._log.log(`\x1b[33m${this._step()}${this._fmtTime(process.started)} STARTED: ${name}\x1b[0m`);
+    this._log.forEach( ({ log }) => log(33, `${this._step()}${this._fmtTime(process.started)} STARTED: ${name}`) );
   }
 
   finishProcess() {
@@ -70,13 +70,13 @@ export class Log {
       process.finished = new Date();
     }
 
-    this._log.log(`${step}${this._fmtTime(process.finished)} FINISHED: ${process.name}`);
+    this._log.forEach( ({ log }) => log(undefined, `${step}${this._fmtTime(process.finished)} FINISHED: ${process.name}`) );
   }
 
   log(...messages: string[]) {
     for (const s of messages) {
       for (const m of s.split('\n')) {
-        this._log.log(`${this._step()}${this._fmtTime(new Date())} ${m}`);
+        this._log.forEach( ({ log }) => log(undefined, `${this._step()}${this._fmtTime(new Date())} ${m}`) );
       }
     }
   }
@@ -84,7 +84,7 @@ export class Log {
   error(...messages: string[]) {
     for (const s of messages) {
       for (const m of s.split('\n')) {
-        this._log.log(`\x1b[31m${this._step()}${this._fmtTime(new Date())} ${m}\x1b[0m`);
+        this._log.forEach( ({ log }) => log(31, `${this._step()}${this._fmtTime(new Date())} ${m}`) );
       }
     }
   }

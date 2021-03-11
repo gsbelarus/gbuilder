@@ -46,13 +46,17 @@ export interface IParams {
   binFirebird: string;
   /** Upload files to web site */
   upload?: boolean;
+  /** */
+  logFile?: string;
+  /** */
+  maxLogSize?: number;
 };
 
 /**
  * Главная функция.
  * @param log Логгер.
  */
-export async function ug(log: Log) {
+export async function ug(params: IParams, log: Log) {
 
   /** Обертка процесса
    *  @param name имя процесса
@@ -75,15 +79,6 @@ export async function ug(log: Log) {
       log.finishProcess();
     }
   }
-
-  const paramsFile = process.argv[2];
-
-  if (!paramsFile || !existsSync(paramsFile)) {
-    console.error('Full name of the file with build process parameters must be specified as a first command line argument.');
-    return;
-  }
-
-  const params = JSON.parse(readFileSync(paramsFile, {encoding:'utf8', flag:'r'})) as IParams;
 
   const { compilationType, setExeSize, rootGedeminDir, archiveDir, pathDelphi, binEditbin, binWinRAR, upload } = params;
 
@@ -169,7 +164,7 @@ export async function ug(log: Log) {
     const srcPath = gedeminSrcPath.join(';').replace(/<<DELPHI>>/gi, pathDelphi.replace(/\\/gi, '/'));
 
     let cfgBody = gedeminCfgTemplate.replace(/<<GEDEMIN_SRC_PATH>>/gi, srcPath);
-    cfgBody = cfgBody.replace('<<GEDEMIN_PROJECT_DEST>>', projectParams[project].dest);
+    cfgBody = cfgBody.replace('<<GEDEMIN_PROJECT_DEST>>', projectParams[project].dest ?? 'EXE');
 
     if (project === 'gedemin') {
       const { d_switch, o_switch, cond } = gedeminCfgVariables[compilationType];
@@ -191,18 +186,18 @@ export async function ug(log: Log) {
   /** Компиляция проекта по заданному типу */
   const buildProject = (project: Project, pathProject: string) => {
     /** Целевая папка компиляции */
-    const pathEXE = path.join(rootGedeminDir, 'Gedemin', projectParams[project].dest);
+    const destDir = path.join(rootGedeminDir, 'Gedemin', projectParams[project].dest ?? 'EXE');
 
     /** Имя компилируемого файла */
-    const exeFileName = project + '.' + projectParams[project].ext;
-    const exeFullFileName = path.join(pathEXE, exeFileName);
+    const destFileName = project + (projectParams[project].ext ?? '.exe');
+    const destFullFileName = path.join(destDir, destFileName);
 
-    if (existsSync(exeFullFileName)) {
-      unlinkSync(exeFullFileName);
-      log.log(`previous ${exeFileName} has been deleted...`);
+    if (existsSync(destFullFileName)) {
+      unlinkSync(destFullFileName);
+      log.log(`previous ${destFileName} has been deleted...`);
     }
 
-    log.log(`building ${exeFileName}...`);
+    log.log(`building ${destFileName}...`);
     log.log(
       execFileSync(
         path.join(pathDelphi, 'Bin', 'dcc32.exe'),
@@ -210,30 +205,32 @@ export async function ug(log: Log) {
         { ...basicExecOptions, cwd: pathProject }
       ).toString()
     );
-    log.log(`${exeFileName} has been built...`);
+    log.log(`${destFileName} has been built...`);
 
-    const exeOpt = { ...basicExecOptions, cwd: pathEXE };
-    if (projectParams[project].ext === 'exe') {
-      log.log(execFileSync('StripReloc.exe', ['/b', exeFileName], exeOpt).toString());
+    const exeOpt = { ...basicExecOptions, cwd: destDir };
+
+    if (path.extname(destFileName) === '.exe') {
+      log.log(execFileSync('StripReloc.exe', ['/b', destFileName], exeOpt).toString());
       log.log('relocation section has been stripped from EXE file...');
     };
 
     if (project === 'gedemin' && compilationType === 'DEBUG') {
-      log.log(execFileSync('tdspack.exe', ['-e -o -a', exeFileName], exeOpt).toString());
+      log.log(execFileSync('tdspack.exe', ['-e -o -a', destFileName], exeOpt).toString());
       log.log('debug information has been optimized...');
     };
 
-    if (projectParams[project].ext === 'exe') {
-      log.log(execFileSync(path.join(binEditbin, 'editbin.exe'), ['/SWAPRUN:NET', exeFileName], exeOpt).toString());
-      log.log(`swaprun flag has been set on ${exeFileName} file...`);
+    if (path.extname(destFileName) === '.exe') {
+      log.log(execFileSync(path.join(binEditbin, 'editbin.exe'), ['/SWAPRUN:NET', destFileName], exeOpt).toString());
+      log.log(`swaprun flag has been set on ${destFileName} file...`);
     };
-    log.log(`${exeFileName} has been successfully built...`);
+
+    log.log(`${destFileName} has been successfully built...`);
   };
 
   const setGedeminEXESize = () => {
     const project: Project = 'gedemin';
     /** Целевая папка компиляции */
-    const pathEXE = path.join(rootGedeminDir, 'Gedemin', projectParams[project].dest);
+    const pathEXE = path.join(rootGedeminDir, 'Gedemin', projectParams[project].dest ?? 'EXE');
 
     if (setExeSize) {
       const exeFullFileName = path.join(pathEXE, 'gedemin.exe');
@@ -265,7 +262,7 @@ export async function ug(log: Log) {
   const createArhive = () => {
     const project: Project = 'gedemin';
     /** Целевая папка компиляции */
-    const pathEXE = path.join(rootGedeminDir, 'Gedemin', projectParams[project].dest);
+    const pathEXE = path.join(rootGedeminDir, 'Gedemin', projectParams[project].dest ?? 'EXE');
 
     if (existsSync(gedeminArchiveFileName)) {
       unlinkSync(gedeminArchiveFileName);
@@ -379,7 +376,7 @@ export async function ug(log: Log) {
   const createEtalonDB = async () => {
     let stage = 1;
     let sqlText = readFileSync(path.join(pathSQL, gedeminSQL[stage][0])).toString();
-    
+
     for (let i = 1; i < gedeminSQL[stage].length; i++) {
       sqlText += readFileSync(path.join(pathSQL, gedeminSQL[stage][i])).toString();
     };
@@ -406,7 +403,7 @@ export async function ug(log: Log) {
 
   for (const pr of ugProjectList) {
     /** Основная папка проекта, где находятся .dpr, .cfg, .rc файлы */
-    const pathProject = path.join(rootGedeminDir, 'Gedemin', projectParams[pr].loc);
+    const pathProject = path.join(rootGedeminDir, 'Gedemin', projectParams[pr].loc ?? 'Gedemin');
 
     await runProcess(`Increment version for ${pr}`,  () => incVer(pr, pathProject));
     await runProcess(`Prepare config files for ${pr}`, () => prepareConfigFile(pr, pathProject));

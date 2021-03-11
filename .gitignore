@@ -112,3 +112,4 @@ dist
 .editorconfig
 /res.txt
 /src/temp.ts
+log/log.txt

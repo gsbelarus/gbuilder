@@ -7,5 +7,7 @@
   "binEditbin": "",
   "binWinRAR": "C:\\Program Files\\WinRAR",
   "binFirebird": "C:\\Program Files (x86)\\Firebird\\Firebird_2_5\\bin",
-  "upload": true
+  "upload": false,
+  "logFile": "C:\\Golden\\NS\\gbuilder\\log\\log.txt",
+  "maxLogSize": 10000000
 }

@@ -176,7 +176,16 @@ export const portableFilesList = [
   'swipl/pthreadGC2.dll'
 ];
 
-export const projectParams = {
+interface IProjectParams {
+  [project: string]: {
+    rc: string;
+    loc?: 'GUDF';
+    ext?: '.dll';
+    dest?: 'EXE/UDF';
+  }
+};
+
+export const projectParams: IProjectParams = {
   gedemin: {
     rc:
 `1 VERSIONINFO LOADONCALL MOVEABLE DISCARDABLE IMPURE
@@ -209,10 +218,7 @@ FILETYPE VFT_APP
   VALUE "Translation", 1049, 1251
  }
 
-}`,
-    loc: 'Gedemin',
-    ext: 'exe',
-    dest: 'exe'
+}`
   },
 
   gdcc: {
@@ -247,14 +253,11 @@ FILETYPE VFT_APP
  {
   VALUE "Translation", 1049, 1251
  }
-}`,
-    loc: 'Gedemin',
-    ext: 'exe',
-    dest: 'exe'
+}`
   },
 
   gedemin_upd: {
-    rc:  
+    rc:
 `LANGUAGE LANG_RUSSIAN,1
 
 MAINICON ICON gedemin_blank.ico
@@ -287,17 +290,14 @@ FILETYPE VFT_APP
  {
   VALUE "Translation", 1049, 1251
  }
-}`,
-    loc: 'Gedemin',
-    ext: 'exe',
-    dest: 'exe'
+}`
   },
 
   gudf: {
     rc:
 `LANGUAGE LANG_RUSSIAN,1
 
-1 VERSIONINFO LOADONCALL MOVEABLE DISCARDABLE IMPURE 
+1 VERSIONINFO LOADONCALL MOVEABLE DISCARDABLE IMPURE
 FILEVERSION 2, 5, 0, <<BUILD_NUMBER>>
 PRODUCTVERSION 2, 5, 0, <<BUILD_NUMBER>>
 FILEFLAGSMASK VS_FFI_FILEFLAGSMASK
@@ -320,15 +320,15 @@ FILETYPE VFT_APP
    VALUE "Comments", "Long Live Belarus!\\000"
   }
  }
- 
+
 BLOCK "VarFileInfo"
  {
   VALUE "Translation", 1049, 1251
- } 
+ }
 }`,
     loc: 'GUDF',
-    ext: 'dll',
-    dest: 'exe/udf'
+    ext: '.dll',
+    dest: 'EXE/UDF'
   }
 };
 
@@ -377,6 +377,6 @@ export const gedeminSQL = {
   'gd_constants.sql',
   'gd_oper_const.sql',
   'gd_securityrole.sql',
-  'gd_db_triggers.sql'    
+  'gd_db_triggers.sql'
   ]
 }
