@@ -36,6 +36,8 @@ export interface IParams {
 
   /** Папка архива */
   archiveDir: string;
+  /** Папка БД */
+  baseDir: string;
   /** Папка Delphi */
   pathDelphi: string;
   /** Папка утилиты Editbin */
@@ -80,7 +82,12 @@ export async function ug(params: IParams, log: Log) {
     }
   }
 
-  const { compilationType, setExeSize, rootGedeminDir, archiveDir, pathDelphi, binEditbin, binWinRAR, upload } = params;
+  const {
+    compilationType, setExeSize,
+    rootGedeminDir, archiveDir, baseDir,
+    pathDelphi, binEditbin, binWinRAR, binFirebird,
+    upload
+  } = params;
 
   /** В процессе компиляции DCU файлы помещаются в эту папку */
   const pathDCU = path.join(rootGedeminDir, 'Gedemin', 'DCU');
@@ -374,12 +381,74 @@ export async function ug(params: IParams, log: Log) {
 
   /** Создание эталонной БД */
   const createEtalonDB = async () => {
+    const dbFileName = 'etalon.fdb';
+    const dbFullFileName = path.join(baseDir, dbFileName);
+    if (existsSync(dbFullFileName)) {
+      unlinkSync(dbFullFileName);
+      log.log(`previous ${dbFileName} has been deleted...`);
+    }
+
+    const con = `localhost/3050:${dbFullFileName}`;
+    let header = gedeminSQL.header.replace('<<FB_CONNECT>>', con);
+    header = header.replace('<<USER_NAME>>', 'SYSDBA');
+    header = header.replace('<<USER_PASS>>', 'masterkey');
+
+
+    const res = gedeminSQL[1]
+      .map( fn => readFileSync(path.join(pathSQL, fn)).toString() )
+      .join('\n');
+     writeFileSync(path.join(pathSQL, 'res.sql'), res);
+    return;
+
     let stage = 1;
-    let sqlText = readFileSync(path.join(pathSQL, gedeminSQL[stage][0])).toString();
+    let sqlFileName = gedeminSQL[stage][0];
+    let sqlText = readFileSync(path.join(pathSQL, sqlFileName)).toString();
+    log.log(
+      execFileSync(path.join(binFirebird, 'isql.exe'),
+        [ '-q' ],
+        { ...basicExecOptions, cwd: pathSQL,
+          input: header + sqlText}).toString()
+    );
+    log.log(`created database ${dbFileName}`);
 
     for (let i = 1; i < gedeminSQL[stage].length; i++) {
-      sqlText += readFileSync(path.join(pathSQL, gedeminSQL[stage][i])).toString();
+      sqlFileName = gedeminSQL[stage][i];
+      sqlText = readFileSync(path.join(pathSQL, sqlFileName)).toString();
+      log.log(`stage ${stage}: execute ${sqlFileName}...`);
+      log.log(
+        execFileSync(path.join(binFirebird, 'isql.exe'),
+          [ '-q', '-ch', 'WIN1251', '-s', '3', '-pag', '8192', '-e',
+            '-u', 'SYSDBA', '-p', 'masterkey', con ],
+          { ...basicExecOptions, cwd: pathSQL,
+            input: sqlText}).toString()
+      );
+      log.log(`stage ${stage}: ...finished ${sqlFileName}`);
     };
+
+    log.log(`execute makelbrbtree...`);
+    log.log(`${path.join(pathSQL, 'makelbrbtree.exe')} /sn ${con} /fo result2.sql`);
+    log.log(
+      execFileSync(path.join(pathSQL, 'makelbrbtree.exe'),
+        [ '/sn', con, '/fo', 'result2.sql' ],
+        { ...basicExecOptions, cwd: pathSQL}).toString()
+    );
+    log.log(`done makelbrbtree`);
+
+    stage = 2;
+    for (let i = 0; i < gedeminSQL[stage].length; i++) {
+      sqlFileName = gedeminSQL[stage][i];
+      sqlText = readFileSync(path.join(pathSQL, sqlFileName)).toString();
+      log.log(`stage ${stage}: execute ${sqlFileName}...`);
+      log.log(
+        execFileSync(path.join(binFirebird, 'isql.exe'),
+          [ '-q', '-ch', 'WIN1251', '-s', '3', '-pag', '8192', //'-e',
+            '-u', 'SYSDBA', '-p', 'masterkey', con ],
+          { ...basicExecOptions, cwd: pathSQL,
+            input: sqlText}).toString()
+      );
+      log.log(`stage ${stage}: ...finished ${sqlFileName}`);
+    };
+
 
   };
 
@@ -397,25 +466,25 @@ export async function ug(params: IParams, log: Log) {
   log.log(`Compilation type: ${compilationType}`);
   log.log(`Gedemin root dir: ${rootGedeminDir}`);
 
-  await runProcess('Check prerequisites', checkPrerequisites);
-  await runProcess('Pull latest sources', pullSources);
-  await runProcess('Clear DCU folder', clearDCU);
+  await runProcess('Check prerequisites', checkPrerequisites, true);
+  await runProcess('Pull latest sources', pullSources, true);
+  await runProcess('Clear DCU folder', clearDCU, true);
 
   for (const pr of ugProjectList) {
     /** Основная папка проекта, где находятся .dpr, .cfg, .rc файлы */
     const pathProject = path.join(rootGedeminDir, 'Gedemin', projectParams[pr].loc ?? 'Gedemin');
 
-    await runProcess(`Increment version for ${pr}`,  () => incVer(pr, pathProject));
-    await runProcess(`Prepare config files for ${pr}`, () => prepareConfigFile(pr, pathProject));
-    await runProcess(`Build ${pr}`, () => buildProject(pr, pathProject));
-    await runProcess(`Clean up after building ${pr}`, () => cleanupConfigFile(pr, pathProject));
+    await runProcess(`Increment version for ${pr}`,  () => incVer(pr, pathProject), true);
+    await runProcess(`Prepare config files for ${pr}`, () => prepareConfigFile(pr, pathProject), true);
+    await runProcess(`Build ${pr}`, () => buildProject(pr, pathProject), true);
+    await runProcess(`Clean up after building ${pr}`, () => cleanupConfigFile(pr, pathProject), true);
   };
 
-  await runProcess('Set gedemin.exe size', setGedeminEXESize);
-  await runProcess('Create portable version archive', createArhive);
-  await runProcess('Upload archive', uploadArhive);
+  await runProcess('Set gedemin.exe size', setGedeminEXESize, true);
+  await runProcess('Create portable version archive', createArhive, true);
+  await runProcess('Upload archive', uploadArhive, true);
 
-  await runProcess('Create etalon database', createEtalonDB);
+  await runProcess('Create etalon database', createEtalonDB, false);
 
   /** Окончание процесса */
   log.finishProcess();

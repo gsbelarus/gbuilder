@@ -3,6 +3,7 @@
   "setExeSize": 0,
   "rootGedeminDir": "c:\\golden\\gedemin",
   "archiveDir": "c:\\golden\\archive",
+  "baseDir": "c:\\golden\\base",
   "pathDelphi": "C:\\Program Files (x86)\\Borland\\Delphi5",
   "binEditbin": "",
   "binWinRAR": "C:\\Program Files\\WinRAR",
