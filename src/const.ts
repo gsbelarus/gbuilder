@@ -122,7 +122,7 @@ export const gedeminCfgTemplate =
 -M
 -$M16384,1048576
 -K$00400000
--E"../exe"
+-E"../<<GEDEMIN_PROJECT_DEST>>"
 -N"../dcu"
 -LE"../bpl"
 -LN"../bpl"
@@ -276,6 +276,59 @@ FILETYPE VFT_APP
  {
   VALUE "Translation", 1049, 1251
  }
-}`
+}`,
 
+  gudf:
+`LANGUAGE LANG_RUSSIAN,1
+
+1 VERSIONINFO LOADONCALL MOVEABLE DISCARDABLE IMPURE 
+FILEVERSION 2, 5, 0, <<BUILD_NUMBER>>
+PRODUCTVERSION 2, 5, 0, <<BUILD_NUMBER>>
+FILEFLAGSMASK VS_FFI_FILEFLAGSMASK
+FILEOS VOS__WINDOWS32
+FILETYPE VFT_APP
+{
+ BLOCK "StringFileInfo"
+ {
+  BLOCK "041904E3"
+  {
+   VALUE "CompanyName", "Golden Software of Belarus, Ltd\\000"
+   VALUE "FileDescription", "GUDF.DLL\\000"
+   VALUE "FileVersion", "2.5.<<BUILD_NUMBER>>\\000"
+   VALUE "InternalName", "GUDF\\000"
+   VALUE "LegalCopyright", "Copyright (c) 2000-<<YEAR>> by Golden Software of Belarus, Ltd\\000"
+   VALUE "LegalTrademarks", "Gedemin\\000"
+   VALUE "OriginalFilename", "gudf.dll\\000"
+   VALUE "ProductName", "Gedemin\\000"
+   VALUE "ProductVersion", "2.5\\000"
+   VALUE "Comments", "Long Live Belarus!\\000"
+  }
+ }
+ 
+BLOCK "VarFileInfo"
+ {
+  VALUE "Translation", 1049, 1251
+ } 
+}`
+};
+
+export const gedeminProjectLocation = {
+  gedemin: 'Gedemin',
+  dgcc: 'Gedemin',
+  gedemin_upd: 'Gedemin',
+  gudf: 'GUDF'
+};
+
+export const gedeminProjectExt = {
+  gedemin: 'exe',
+  dgcc: 'exe',
+  gedemin_upd: 'exe',
+  gudf: 'dll'
+};
+
+export const gedeminProjectDest = {
+  gedemin: 'exe',
+  dgcc: 'exe',
+  gedemin_upd: 'exe',
+  gudf: 'exe/udf'
 };

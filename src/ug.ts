@@ -8,10 +8,17 @@
  */
 
 import { execFileSync, ExecFileSyncOptions } from 'child_process';
-import { existsSync, readFileSync, readdirSync, unlinkSync, copyFileSync, writeFileSync, statSync, appendFileSync, createReadStream } from 'fs';
+import {
+  existsSync, readFileSync, readdirSync, unlinkSync, copyFileSync, writeFileSync,
+  statSync, appendFileSync, createReadStream
+} from 'fs';
 import path from 'path';
 import { Log } from './log';
-import { gedeminCfgTemplate, gedeminCfgVariables, gedeminSrcPath, gedeminCompilerSwitch, gedeminArchiveName, portableFilesList, verRC} from './const';
+import {
+  gedeminCfgTemplate, gedeminCfgVariables, gedeminSrcPath, gedeminCompilerSwitch,
+  gedeminArchiveName, portableFilesList,
+  verRC, gedeminProjectLocation, gedeminProjectExt, gedeminProjectDest
+} from './const';
 import FormData from 'form-data';
 
 export interface IParams {
@@ -79,12 +86,8 @@ export async function ug(log: Log) {
 
   const { compilationType, setExeSize, rootGedeminDir, archiveDir, pathDelphi, binEditbin, binWinRAR, upload } = params;
 
-  /** Основная папка проекта, где находятся .dpr, .cfg, .rc файлы */
-  const pathGedemin = path.join(rootGedeminDir, 'Gedemin', 'Gedemin')
   /** В процессе компиляции DCU файлы помещаются в эту папку */
   const pathDCU = path.join(rootGedeminDir, 'Gedemin', 'DCU');
-  /** Целевая папка компиляции */
-  const pathEXE = path.join(rootGedeminDir, 'Gedemin', 'EXE');
 
   /**
    * Снимаем исходники с гита.
@@ -148,11 +151,11 @@ export async function ug(log: Log) {
    * Текущий файл сохраним с именем .current.cfg и восстановим в конце процесса.
    * Файл создадим из шаблона, подставив нужные значения в зависимости от типа компиляции.
    */
-  const prepareConfigFile = (project: Project) => {
+  const prepareConfigFile = (project: Project, pathProject: string) => {
     /** Файл конфигурации проекта для компиляции */
-    const cfgFileName = path.join(pathGedemin, `${project}.cfg`);
+    const cfgFileName = path.join(pathProject, `${project}.cfg`);
     /** Файл для сохранения текущей конфигурации */
-    const savedCfgFileName = path.join(pathGedemin, `${project}.current.cfg`);
+    const savedCfgFileName = path.join(pathProject, `${project}.current.cfg`);
 
     if (existsSync(cfgFileName)) {
       copyFileSync(cfgFileName, savedCfgFileName);
@@ -163,6 +166,7 @@ export async function ug(log: Log) {
     const srcPath = gedeminSrcPath.join(';').replace(/<<DELPHI>>/gi, pathDelphi.replace(/\\/gi, '/'));
 
     let cfgBody = gedeminCfgTemplate.replace(/<<GEDEMIN_SRC_PATH>>/gi, srcPath);
+    cfgBody = cfgBody.replace('<<GEDEMIN_PROJECT_DEST>>', gedeminProjectDest[project]);
 
     if (project === 'gedemin') {
       const { d_switch, o_switch, cond } = gedeminCfgVariables[compilationType];
@@ -181,10 +185,13 @@ export async function ug(log: Log) {
     log.log(`Configuration file has been prepared and saved as ${cfgFileName}...`);
   };
 
-  /** Компиляция нового экзешника проекта по заданному типа */
-  const buildProject = (project: Project) => {
+  /** Компиляция проекта по заданному типу */
+  const buildProject = (project: Project, pathProject: string) => {
+    /** Целевая папка компиляции */
+    const pathEXE = path.join(rootGedeminDir, 'Gedemin', gedeminProjectDest[project]);
+
     /** Имя компилируемого файла */
-    const exeFileName = project + '.exe';
+    const exeFileName = project + '.' + gedeminProjectExt[project];
     const exeFullFileName = path.join(pathEXE, exeFileName);
 
     if (existsSync(exeFullFileName)) {
@@ -197,7 +204,7 @@ export async function ug(log: Log) {
       execFileSync(
         path.join(pathDelphi, 'Bin', 'dcc32.exe'),
         [gedeminCompilerSwitch[compilationType], `${project}.dpr`],
-        { ...basicExecOptions, cwd: pathGedemin }
+        { ...basicExecOptions, cwd: pathProject }
       ).toString()
     );
     log.log(`${exeFileName} has been built...`);
@@ -219,6 +226,10 @@ export async function ug(log: Log) {
   };
 
   const setGedeminEXESize = () => {
+    const project: Project = 'gedemin';
+    /** Целевая папка компиляции */
+    const pathEXE = path.join(rootGedeminDir, 'Gedemin', gedeminProjectDest[project]);
+
     if (setExeSize) {
       const exeFullFileName = path.join(pathEXE, 'gedemin.exe');
       const currentExeSize = statSync(exeFullFileName).size;
@@ -233,7 +244,7 @@ export async function ug(log: Log) {
         log.log(`gedemin.exe size has been set to ${setExeSize}...`);
       }
     } else {
-      log.log('gedemin.exe size is not specified. Nothing to set...');
+      log.log(`gedemin.exe size is not specified. Nothing to set...`);
     }
   };
 
@@ -247,6 +258,10 @@ export async function ug(log: Log) {
    *    удаление файлов, которых нет в списке
    */
   const createArhive = () => {
+    const project: Project = 'gedemin';
+    /** Целевая папка компиляции */
+    const pathEXE = path.join(rootGedeminDir, 'Gedemin', gedeminProjectDest[project]);
+
     if (existsSync(gedeminArchiveFileName)) {
       unlinkSync(gedeminArchiveFileName);
     }
@@ -273,12 +288,12 @@ export async function ug(log: Log) {
   };
 
   /** Восстановление сохраненных файлов конфигурации */
-  const cleanupConfigFile = (project: Project) => {
+  const cleanupConfigFile = (project: Project, pathProject: string) => {
     /** Файл конфигурации проекта для компиляции */
-    const cfgFileName = path.join(pathGedemin, project + '.cfg');
+    const cfgFileName = path.join(pathProject, project + '.cfg');
 
     /** Файл для сохранения текущей конфигурации */
-    const savedCfgFileName = path.join(pathGedemin, project + '.current.cfg');
+    const savedCfgFileName = path.join(pathProject, project + '.current.cfg');
 
     if (existsSync(savedCfgFileName)) {
       copyFileSync(savedCfgFileName, cfgFileName);
@@ -291,13 +306,13 @@ export async function ug(log: Log) {
   //но для остальных утилит тоже надо сделать инкремент
 
   /** Инкремент версии */
-  const incVer = (project: Project) => {
+  const incVer = (project: Project, pathProject: string) => {
     /** RC-файл версии  */
-    const verRCFileName = path.join(pathGedemin, `${project}_ver.rc`);
+    const verRCFileName = path.join(pathProject, `${project}_ver.rc`);
     /** RES-файл версии  */
-    const verResFileName = path.join(pathGedemin, `${project}_ver.res`);
+    const verResFileName = path.join(pathProject, `${project}_ver.res`);
     /** Путь рисунков */
-    const pathImages = path.resolve(pathGedemin, '..\\images');
+    const pathImages = path.resolve(pathProject, '..\\images');
 
     const rcText = readFileSync(verRCFileName).toString().trim().split('\n');
     const fvIndex = rcText.findIndex( s => s.startsWith('FILEVERSION') );
@@ -327,7 +342,7 @@ export async function ug(log: Log) {
       execFileSync(
         path.join(pathDelphi, 'Bin', 'brcc32.exe'),
         [`-fo${project}_ver.res`, `-i${pathImages}`, `${project}_ver.rc`],
-        { ...basicExecOptions, cwd: pathGedemin }
+        { ...basicExecOptions, cwd: pathProject }
       ).toString()
     );
     log.log(`${project}_ver.res has been successfully built...`);
@@ -356,8 +371,8 @@ export async function ug(log: Log) {
   };
 
   /** Список проектов для компиляции */
-  const ugProjectList = ['gedemin', 'gdcc', 'gedemin_upd'] as const;
-  type Project = typeof ugProjectList[0] | typeof ugProjectList[1] | typeof ugProjectList[2];
+  const ugProjectList = ['gedemin', 'gdcc', 'gedemin_upd', 'gudf'] as const;
+  type Project = typeof ugProjectList[0] | typeof ugProjectList[1] | typeof ugProjectList[2] | typeof ugProjectList[3];
 
   /** Количество шагов процесса */
   const steps = 6 + ugProjectList.length * 4;
@@ -374,15 +389,18 @@ export async function ug(log: Log) {
   await runProcess('Clear DCU folder', clearDCU);
 
   for (const pr of ugProjectList) {
-    await runProcess(`Increment version for ${pr}`,  () => incVer(pr));
-    await runProcess(`Prepare config files for ${pr}`, () => prepareConfigFile(pr));
-    await runProcess(`Build ${pr}`, () => buildProject(pr));
-    await runProcess(`Clean up after building ${pr}`, () => cleanupConfigFile(pr));
+    /** Основная папка проекта, где находятся .dpr, .cfg, .rc файлы */
+    const pathProject = path.join(rootGedeminDir, 'Gedemin', gedeminProjectLocation[pr]);
+
+    await runProcess(`Increment version for ${pr}`,  () => incVer(pr, pathProject));
+    await runProcess(`Prepare config files for ${pr}`, () => prepareConfigFile(pr, pathProject));
+    await runProcess(`Build ${pr}`, () => buildProject(pr, pathProject));
+    await runProcess(`Clean up after building ${pr}`, () => cleanupConfigFile(pr, pathProject));
   };
 
   await runProcess('Set gedemin.exe size', setGedeminEXESize);
   await runProcess('Create portable version archive', createArhive);
-  await runProcess('Upload archive', uploadArhive);
+  await runProcess('Upload archive', uploadArhive, true);
 
   /** Окончание процесса */
   log.finishProcess();
