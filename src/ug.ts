@@ -434,10 +434,10 @@ export async function ug(params: IParams, log: Log) {
 
     const opt = { ...basicExecOptions, cwd: pathSQL };
 
-    log.log(`first execute ${sqlScriptFN}...`);
-    execFileSync(path.join(binFirebird, 'isql.exe'), [ '-q', '-i', sqlScriptFN], opt);
-    if (existsSync(dbFullFileName)) {
-      log.log(`${dbFileName} has been created...`);
+    log.log(`first pass...`);
+    execFileSync(path.join(binFirebird, 'isql.exe'), ['-q', '-i', sqlScriptFN], opt);
+    if (!existsSync(dbFullFileName)) {
+      throw new Error('Can not create database!');
     };
 
     const project = 'makelbrbtree';
@@ -490,7 +490,7 @@ export async function ug(params: IParams, log: Log) {
       log.log(`previous ${sqlScriptEtalon} has been deleted...`);
     };
     writeFileSync(sqlScriptEtalon, Buffer.concat([sqlScriptHeaderEtalon, sqlScriptBody, sqlScriptBody2]));
-    log.log(`${sqlScriptEtalon} has been saved...`);    
+    log.log(`${sqlScriptEtalon} has been saved...`);
 
     const gedeminArchiveFileName = path.join(archiveDir, 'etalon.rar');
     log.log(
