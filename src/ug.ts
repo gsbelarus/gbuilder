@@ -52,6 +52,8 @@ export interface IParams {
   logFile?: string;
   /** */
   maxLogSize?: number;
+  /** */
+  srcBranch: string;
 };
 
 /**
@@ -85,7 +87,7 @@ export async function ug(params: IParams, log: Log) {
   const {
     compilationType, setExeSize,
     rootGedeminDir, archiveDir, baseDir,
-    pathDelphi, binEditbin, binWinRAR, binFirebird,
+    pathDelphi, binEditbin, binWinRAR, srcBranch,
     upload
   } = params;
 
@@ -127,16 +129,20 @@ export async function ug(params: IParams, log: Log) {
       throw new Error(`Database dir "${baseDir}" not found!`);
     }
 
+    if (!srcBranch) {
+      throw new Error(`Git branch is not specified!`);
+    }
+
     log.log('everything is ok!');
   };
 
   /** Снятие из гита последних исходников */
   const pullSources = () => {
     const opt = { ...basicExecOptions, cwd: rootGedeminDir };
-    log.log('git checkout master...');
-    log.log(execFileSync('git', ['checkout', 'master'], opt).toString());
-    log.log('git pull origin master...');
-    log.log(execFileSync('git', ['pull', 'origin', 'master'], opt).toString());
+    log.log(`git checkout ${srcBranch}...`);
+    log.log(execFileSync('git', ['checkout', srcBranch], opt).toString());
+    log.log(`git pull...`);
+    log.log(execFileSync('git', ['pull'], opt).toString());
   };
 
   /** Очистка папки DCU */
