@@ -14,21 +14,24 @@ const f = async () => {
     const params = JSON.parse(readFileSync(paramsFile, {encoding:'utf8', flag:'r'})) as IParams;
     const logBuffer: string[] = [];
 
-    const loggers: ILog[] = [{
-      log: (color: number | undefined, ...messages: string[]) => {
-        const s = messages.join('\n').trimRight();
+    const loggers: ILog[] = [
+      {
+        log: (color: number | undefined, ...messages: string[]) => {
+          const s = messages.join('\n').trimRight();
 
-        if (s) {
-          if (color === undefined) {
-            console.log(s)
-          } else {
-            console.log(`\x1b[${color}m${s}\x1b[0m`);
+          if (s) {
+            if (color === undefined) {
+              console.log(s)
+            } else {
+              console.log(`\x1b[${color}m${s}\x1b[0m`);
+            }
           }
-
-          logBuffer.push(s);
         }
+      },
+      {
+        log: (_, ...messages: string[]) => messages.forEach( m => logBuffer.push(m) )
       }
-    }];
+    ];
 
     await ug(params, new Log(loggers));
 
