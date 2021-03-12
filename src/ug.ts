@@ -10,7 +10,7 @@
 import { execFileSync, ExecFileSyncOptions } from 'child_process';
 import {
   existsSync, readFileSync, readdirSync, unlinkSync, copyFileSync, writeFileSync,
-  statSync, appendFileSync, createReadStream
+  statSync, appendFileSync, createReadStream, mkdirSync
 } from 'fs';
 import path from 'path';
 import { Log } from './log';
@@ -131,6 +131,11 @@ export async function ug(params: IParams, log: Log) {
 
     if (!srcBranch) {
       throw new Error(`Git branch is not specified!`);
+    }
+
+    if (!existsSync(pathDCU)) {
+      mkdirSync(pathDCU);
+      log.log(`directory ${pathDCU} has been created...`);
     }
 
     log.log('everything is ok!');
