@@ -54,6 +54,8 @@ export interface IParams {
   maxLogSize?: number;
   /** */
   srcBranch: string;
+  /** */
+  commitIncBuildNumber?: boolean;
 };
 
 /**
@@ -88,7 +90,7 @@ export async function ug(params: IParams, log: Log) {
     compilationType, setExeSize,
     rootGedeminDir, archiveDir, baseDir,
     pathDelphi, binEditbin, binWinRAR, srcBranch,
-    upload
+    upload, commitIncBuildNumber
   } = params;
 
   /** В процессе компиляции DCU файлы помещаются в эту папку */
@@ -152,11 +154,15 @@ export async function ug(params: IParams, log: Log) {
 
   /** */
   const pushIncBuildNumber = () => {
-    const opt = { ...basicExecOptions, cwd: rootGedeminDir };
-    log.log(`git commit -a -m "Inc build number"...`);
-    log.log(execFileSync('git', ['commit', '-a', '-m', '"Inc build number"'], opt).toString());
-    log.log(`git push...`);
-    log.log(execFileSync('git', ['push'], opt).toString());
+    if (commitIncBuildNumber) {
+      const opt = { ...basicExecOptions, cwd: rootGedeminDir };
+      log.log(`git commit -a -m "Inc build number"...`);
+      log.log(execFileSync('git', ['commit', '-a', '-m', '"Inc build number"'], opt).toString());
+      log.log(`git push...`);
+      log.log(execFileSync('git', ['push'], opt).toString());
+    } else {
+      log.log('local changes are not committed...')
+    }
   };
 
   /** Очистка папки DCU */
