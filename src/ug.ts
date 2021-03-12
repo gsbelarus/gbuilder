@@ -157,7 +157,7 @@ export async function ug(params: IParams, log: Log) {
     if (commitIncBuildNumber) {
       const opt = { ...basicExecOptions, cwd: rootGedeminDir };
       log.log(`git commit -a -m "Inc build number"...`);
-      log.log(execFileSync('git', ['commit', '-a', '-m', '"Inc build number"'], opt).toString());
+      log.log(execFileSync('git', ['commit', '-a', '-m', 'Inc build number'], opt).toString());
       log.log(`git push...`);
       log.log(execFileSync('git', ['push'], opt).toString());
     } else {
