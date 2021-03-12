@@ -89,14 +89,16 @@ export async function ug(params: IParams, log: Log) {
   const {
     compilationType, setExeSize,
     rootGedeminDir, archiveDir, baseDir,
-    pathDelphi, binEditbin, binWinRAR, srcBranch,
-    upload, commitIncBuildNumber
+    pathDelphi, binEditbin, binWinRAR, binFirebird,
+    upload, srcBranch, commitIncBuildNumber
   } = params;
 
   /** В процессе компиляции DCU файлы помещаются в эту папку */
   const pathDCU = path.join(rootGedeminDir, 'Gedemin', 'DCU');
   /** Папка SQL-файлов для создания эталонной БД */
   const pathSQL = path.join(rootGedeminDir, 'Gedemin', 'SQL');
+  /** Папка утилиты MakeLBRBTree */
+  const pathLBRBTree = path.join(rootGedeminDir, 'Gedemin', 'Utility', 'MakeLBRBTree');
 
   /**
    * Снимаем исходники с гита.
@@ -417,9 +419,8 @@ export async function ug(params: IParams, log: Log) {
     if (existsSync(dbFullFileName)) {
       unlinkSync(dbFullFileName);
       log.log(`previous ${dbFileName} has been deleted...`);
-    }
+    };
 
-    const sqlScriptFN = path.join(pathSQL, 'res.sql');
     const connectionString = `localhost/3050:${dbFullFileName}`;
     const sqlScriptHeader = Buffer.from(gedeminSQL.header
       .replace('<<FB_CONNECT>>', connectionString)
@@ -427,58 +428,88 @@ export async function ug(params: IParams, log: Log) {
       .replace('<<USER_PASS>>', 'masterkey'));
     const sqlScriptBody = Buffer.concat(gedeminSQL[1].map( fn => readFileSync(path.join(pathSQL, fn), { encoding: undefined }) ) );
 
+    const sqlScriptFN = path.join(pathSQL, gedeminSQL[0][0]);
     writeFileSync(sqlScriptFN, Buffer.concat([sqlScriptHeader, sqlScriptBody]));
-
     log.log(`${sqlScriptFN} has been saved...`);
 
-    // let stage = 1;
-    // let sqlFileName = gedeminSQL[stage][0];
-    // let sqlText = readFileSync(path.join(pathSQL, sqlFileName)).toString();
-    // log.log(
-    //   execFileSync(path.join(binFirebird, 'isql.exe'),
-    //     [ '-q' ],
-    //     { ...basicExecOptions, cwd: pathSQL,
-    //       input: header + sqlText}).toString()
-    // );
-    // log.log(`created database ${dbFileName}`);
+    const opt = { ...basicExecOptions, cwd: pathSQL };
 
-    // for (let i = 1; i < gedeminSQL[stage].length; i++) {
-    //   sqlFileName = gedeminSQL[stage][i];
-    //   sqlText = readFileSync(path.join(pathSQL, sqlFileName)).toString();
-    //   log.log(`stage ${stage}: execute ${sqlFileName}...`);
-    //   log.log(
-    //     execFileSync(path.join(binFirebird, 'isql.exe'),
-    //       [ '-q', '-ch', 'WIN1251', '-s', '3', '-pag', '8192', '-e',
-    //         '-u', 'SYSDBA', '-p', 'masterkey', con ],
-    //       { ...basicExecOptions, cwd: pathSQL,
-    //         input: sqlText}).toString()
-    //   );
-    //   log.log(`stage ${stage}: ...finished ${sqlFileName}`);
-    // };
+    log.log(`first execute ${sqlScriptFN}...`);
+    execFileSync(path.join(binFirebird, 'isql.exe'), [ '-q', '-i', sqlScriptFN], opt);
+    if (existsSync(dbFullFileName)) {
+      log.log(`${dbFileName} has been created...`);
+    };
 
-    // log.log(`execute makelbrbtree...`);
-    // log.log(`${path.join(pathSQL, 'makelbrbtree.exe')} /sn ${con} /fo result2.sql`);
-    // log.log(
-    //   execFileSync(path.join(pathSQL, 'makelbrbtree.exe'),
-    //     [ '/sn', con, '/fo', 'result2.sql' ],
-    //     { ...basicExecOptions, cwd: pathSQL}).toString()
-    // );
-    // log.log(`done makelbrbtree`);
+    const project = 'makelbrbtree';
+    const destDir = pathSQL;
+    const pathProject = pathLBRBTree;
 
-    // stage = 2;
-    // for (let i = 0; i < gedeminSQL[stage].length; i++) {
-    //   sqlFileName = gedeminSQL[stage][i];
-    //   sqlText = readFileSync(path.join(pathSQL, sqlFileName)).toString();
-    //   log.log(`stage ${stage}: execute ${sqlFileName}...`);
-    //   log.log(
-    //     execFileSync(path.join(binFirebird, 'isql.exe'),
-    //       [ '-q', '-ch', 'WIN1251', '-s', '3', '-pag', '8192', //'-e',
-    //         '-u', 'SYSDBA', '-p', 'masterkey', con ],
-    //       { ...basicExecOptions, cwd: pathSQL,
-    //         input: sqlText}).toString()
-    //   );
-    //   log.log(`stage ${stage}: ...finished ${sqlFileName}`);
-    // };
+    const destFileName = `${project}.exe`;
+    const destFullFileName = path.join(destDir, destFileName);
+    if (existsSync(destFullFileName)) {
+      unlinkSync(destFullFileName);
+      log.log(`previous ${destFileName} has been deleted...`);
+    };
+
+    log.log(`building ${destFileName}...`);
+    log.log(
+      execFileSync(
+        path.join(pathDelphi, 'Bin', 'dcc32.exe'),
+        ['-b', `${project}.dpr`],
+        { ...basicExecOptions, cwd: pathProject }
+      ).toString()
+    );
+    log.log(`${destFileName} has been built...`);
+
+    const sqlScriptFN2 = path.join(pathSQL, gedeminSQL[0][1]);
+    log.log(`execute makelbrbtree...`);
+    execFileSync(path.join(pathSQL, 'makelbrbtree.exe'), [ '/sn', connectionString, '/fo', sqlScriptFN2 ], opt)
+    log.log(`${sqlScriptFN2} has been saved...`);
+
+    const sqlScriptBody2 = Buffer.concat([gedeminSQL[0][1], ...gedeminSQL[2]].map( fn => readFileSync(path.join(pathSQL, fn), { encoding: undefined }) ) );
+    writeFileSync(sqlScriptFN, Buffer.concat([sqlScriptHeader, sqlScriptBody, sqlScriptBody2]));
+    log.log(`${sqlScriptFN} has been saved...`);
+
+    if (existsSync(dbFullFileName)) {
+      unlinkSync(dbFullFileName);
+      log.log(`previous ${dbFileName} has been deleted...`);
+    };
+
+    log.log(`second execute ${sqlScriptFN}...`);
+    execFileSync(path.join(binFirebird, 'isql.exe'), [ '-q', '-i', sqlScriptFN], opt);
+    if (existsSync(dbFullFileName)) {
+      log.log(`${dbFileName} has been created...`);
+    };
+
+    const sqlScriptHeaderEtalon = Buffer.from(gedeminSQL.header
+      .replace('<<FB_CONNECT>>', 'put_your_database_name')
+      .replace('<<USER_NAME>>', 'SYSDBA')
+      .replace('<<USER_PASS>>', 'masterkey'));
+    const sqlScriptEtalon = path.join(pathSQL, 'etalon.sql');
+    if (existsSync(sqlScriptEtalon)) {
+      log.log(`previous ${sqlScriptEtalon} has been deleted...`);
+    };
+    writeFileSync(sqlScriptEtalon, Buffer.concat([sqlScriptHeaderEtalon, sqlScriptBody, sqlScriptBody2]));
+    log.log(`${sqlScriptEtalon} has been saved...`);    
+
+    const gedeminArchiveFileName = path.join(archiveDir, 'etalon.rar');
+    log.log(
+      execFileSync(path.join(binWinRAR, 'WinRAR.exe'),
+        [ 'a', '-u', '-as', '-ibck', gedeminArchiveFileName],
+        { ...basicExecOptions, cwd: baseDir }).toString()
+    );
+    if (existsSync(gedeminArchiveFileName)) {
+      log.log(`portable archive has been created ${gedeminArchiveFileName}...`);
+    } else {
+      throw new Error('Can not create etalon database archive!');
+    };
+
+    [sqlScriptFN, sqlScriptFN2, destFullFileName].forEach( fn => {
+      if (existsSync(fn)) {
+        unlinkSync(fn);
+        log.log(`${fn} has been deleted...`);
+      };
+    });
   };
 
   /** Список проектов для компиляции */
@@ -486,7 +517,7 @@ export async function ug(params: IParams, log: Log) {
   type Project = typeof ugProjectList[0] | typeof ugProjectList[1] | typeof ugProjectList[2] | typeof ugProjectList[3];
 
   /** Количество шагов процесса */
-  const steps = 7 + ugProjectList.length * 4;
+  const steps = 8 + ugProjectList.length * 4;
 
   /** Начало процесса */
   log.startProcess('Gedemin compilation', steps);
@@ -494,6 +525,8 @@ export async function ug(params: IParams, log: Log) {
   log.log(`Read params: ${JSON.stringify(params, undefined, 2)}`);
   log.log(`Compilation type: ${compilationType}`);
   log.log(`Gedemin root dir: ${rootGedeminDir}`);
+  log.log(`Archive dir: ${archiveDir}`);
+  log.log(`Database dir: ${baseDir}`);
 
   await runProcess('Check prerequisites', checkPrerequisites);
   await runProcess('Pull latest sources', pullSources);

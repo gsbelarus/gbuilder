@@ -333,6 +333,10 @@ BLOCK "VarFileInfo"
 };
 
 export const gedeminSQL = {
+  0: [
+    'result.sql',
+    'result2.sql'
+    ],
   1: [
   'gd_header.sql',
   'gd_create.sql',
@@ -374,19 +378,17 @@ export const gedeminSQL = {
   'gd_autotask.sql'
 ],
   2: [
-  'result2.sql',
-  'gd_constants.sql',
-  'gd_oper_const.sql',
-  'gd_securityrole.sql',
-  'gd_db_triggers.sql'
-  ],
+    'gd_constants.sql',
+    'gd_oper_const.sql',
+    'gd_securityrole.sql',
+    'gd_db_triggers.sql'
+    ],
   header:
 `SET NAMES WIN1251;
 SET SQL DIALECT 3;
 CREATE DATABASE '<<FB_CONNECT>>'
-  USER '<<USER_NAME>>'
-  PASSWORD '<<USER_PASS>>'
-  PAGE_SIZE 8192
-  DEFAULT CHARACTER SET WIN1251;
+USER '<<USER_NAME>>' PASSWORD '<<USER_PASS>>'
+PAGE_SIZE 8192
+DEFAULT CHARACTER SET WIN1251;
 `
 };
