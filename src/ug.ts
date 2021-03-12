@@ -204,7 +204,7 @@ export async function ug(params: IParams, log: Log) {
 
     let cfgBody = gedeminCfgTemplate.replace(/<<GEDEMIN_SRC_PATH>>/gi, srcPath);
     cfgBody = cfgBody.replace('<<GEDEMIN_PROJECT_DEST>>', projectParams[project].dest ?? 'EXE');
-
+    
     if (project === 'gedemin') {
       const { d_switch, o_switch, cond } = gedeminCfgVariables[compilationType];
 
@@ -215,7 +215,11 @@ export async function ug(params: IParams, log: Log) {
       cfgBody = cfgBody.replace('<<D_SWITCH>>', '-');
       cfgBody = cfgBody.replace('<<O_SWITCH>>', '+');
       cfgBody = cfgBody.replace('<<COND>>', '');
-    }
+    };
+    
+    if (project === 'makelbrbtree') {
+      cfgBody = cfgBody.replace(/\.\.\//gi,'../../');
+    };
 
     writeFileSync(cfgFileName, cfgBody.trim());
 
@@ -248,7 +252,7 @@ export async function ug(params: IParams, log: Log) {
 
     const exeOpt = { ...basicExecOptions, cwd: destDir };
 
-    if (path.extname(destFileName) === '.exe') {
+    if (path.extname(destFileName) === '.exe' && project !== 'makelbrbtree') {
       log.log(execFileSync('StripReloc.exe', ['/b', destFileName], exeOpt).toString());
       log.log('relocation section has been stripped from EXE file...');
     };
@@ -299,7 +303,7 @@ export async function ug(params: IParams, log: Log) {
    *    удаление файлов, которых нет в списке
    */
   const createArhive = () => {
-    const project: Project = 'gedemin';
+    let project: Project = 'gedemin';
     /** Целевая папка компиляции */
     const pathEXE = path.join(rootGedeminDir, 'Gedemin', projectParams[project].dest ?? 'EXE');
 
@@ -326,6 +330,32 @@ export async function ug(params: IParams, log: Log) {
     } else {
       throw new Error('Can not create portable archive!');
     };
+
+    const etalonArchiveFileName = path.join(archiveDir, 'etalon.rar');
+    log.log(
+      execFileSync(path.join(binWinRAR, 'WinRAR.exe'),
+        [ 'a', '-u', '-as', '-ibck', etalonArchiveFileName, 'ETALON.FDB'],
+        { ...basicExecOptions, cwd: baseDir }).toString()
+    );
+    if (existsSync(etalonArchiveFileName)) {
+      log.log(`portable archive has been created ${etalonArchiveFileName}...`);
+    } else {
+      throw new Error('Can not create etalon database archive!');
+    };
+
+    project = 'gudf';
+    const gudfArchiveFileName = path.join(archiveDir, 'gudf.rar');
+    const pathGUDF = path.join(rootGedeminDir, 'Gedemin', projectParams[project].dest ?? 'EXE')    
+    log.log(
+      execFileSync(path.join(binWinRAR, 'WinRAR.exe'),
+        [ 'a', '-u', '-as', '-ibck', gudfArchiveFileName, 'gudf.dll'],
+        { ...basicExecOptions, cwd: pathGUDF }).toString()
+    );
+    if (existsSync(gudfArchiveFileName)) {
+      log.log(`portable archive has been created ${gudfArchiveFileName}...`);
+    } else {
+      throw new Error('Can not create etalon database archive!');
+    };
   };
 
   /** Восстановление сохраненных файлов конфигурации */
@@ -348,6 +378,12 @@ export async function ug(params: IParams, log: Log) {
 
   /** Инкремент версии */
   const incVer = (project: Project, pathProject: string) => {
+    if (projectParams[project].rc === '') {
+      log.log(`empty template for ${project}_ver.rc`);
+      log.log(`skip incrementing...`);      
+      return;
+    };
+    
     /** RC-файл версии  */
     const verRCFileName = path.join(pathProject, `${project}_ver.rc`);
     /** RES-файл версии  */
@@ -440,27 +476,6 @@ export async function ug(params: IParams, log: Log) {
       log.log(`${dbFileName} has been created...`);
     };
 
-    const project = 'makelbrbtree';
-    const destDir = pathSQL;
-    const pathProject = pathLBRBTree;
-
-    const destFileName = `${project}.exe`;
-    const destFullFileName = path.join(destDir, destFileName);
-    if (existsSync(destFullFileName)) {
-      unlinkSync(destFullFileName);
-      log.log(`previous ${destFileName} has been deleted...`);
-    };
-
-    log.log(`building ${destFileName}...`);
-    log.log(
-      execFileSync(
-        path.join(pathDelphi, 'Bin', 'dcc32.exe'),
-        ['-b', `${project}.dpr`],
-        { ...basicExecOptions, cwd: pathProject }
-      ).toString()
-    );
-    log.log(`${destFileName} has been built...`);
-
     const sqlScriptFN2 = path.join(pathSQL, gedeminSQL[0][1]);
     log.log(`execute makelbrbtree...`);
     execFileSync(path.join(pathSQL, 'makelbrbtree.exe'), [ '/sn', connectionString, '/fo', sqlScriptFN2 ], opt)
@@ -492,19 +507,7 @@ export async function ug(params: IParams, log: Log) {
     writeFileSync(sqlScriptEtalon, Buffer.concat([sqlScriptHeaderEtalon, sqlScriptBody, sqlScriptBody2]));
     log.log(`${sqlScriptEtalon} has been saved...`);    
 
-    const gedeminArchiveFileName = path.join(archiveDir, 'etalon.rar');
-    log.log(
-      execFileSync(path.join(binWinRAR, 'WinRAR.exe'),
-        [ 'a', '-u', '-as', '-ibck', gedeminArchiveFileName],
-        { ...basicExecOptions, cwd: baseDir }).toString()
-    );
-    if (existsSync(gedeminArchiveFileName)) {
-      log.log(`portable archive has been created ${gedeminArchiveFileName}...`);
-    } else {
-      throw new Error('Can not create etalon database archive!');
-    };
-
-    [sqlScriptFN, sqlScriptFN2, destFullFileName].forEach( fn => {
+    [sqlScriptFN, sqlScriptFN2].forEach( fn => {
       if (existsSync(fn)) {
         unlinkSync(fn);
         log.log(`${fn} has been deleted...`);
@@ -513,8 +516,10 @@ export async function ug(params: IParams, log: Log) {
   };
 
   /** Список проектов для компиляции */
-  const ugProjectList = ['gedemin', 'gdcc', 'gedemin_upd', 'gudf'] as const;
-  type Project = typeof ugProjectList[0] | typeof ugProjectList[1] | typeof ugProjectList[2] | typeof ugProjectList[3];
+  const ugProjectList = ['gedemin', 'gdcc', 'gedemin_upd', 'gudf', 'makelbrbtree'] as const;
+  type Project = 
+    typeof ugProjectList[0] | typeof ugProjectList[1] | typeof ugProjectList[2] | 
+    typeof ugProjectList[3] | typeof ugProjectList[4];
 
   /** Количество шагов процесса */
   const steps = 8 + ugProjectList.length * 4;
@@ -543,10 +548,9 @@ export async function ug(params: IParams, log: Log) {
   };
 
   await runProcess('Set gedemin.exe size', setGedeminEXESize);
+  await runProcess('Create etalon database', createEtalonDB);  
   await runProcess('Create portable version archive', createArhive);
   await runProcess('Upload archive', uploadArhive);
-
-  await runProcess('Create etalon database', createEtalonDB);
   await runProcess('Inc build number', pushIncBuildNumber);
 
   /** Окончание процесса */
