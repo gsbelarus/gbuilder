@@ -150,6 +150,15 @@ export async function ug(params: IParams, log: Log) {
     log.log(execFileSync('git', ['pull'], opt).toString());
   };
 
+  /** */
+  const pushIncBuildNumber = () => {
+    const opt = { ...basicExecOptions, cwd: rootGedeminDir };
+    log.log(`git commit -a -m "Inc build number"...`);
+    log.log(execFileSync('git', ['commit', '-a', '-m', '"Inc build number"'], opt).toString());
+    log.log(`git push...`);
+    log.log(execFileSync('git', ['push'], opt).toString());
+  };
+
   /** Очистка папки DCU */
   const clearDCU = () => {
     let cnt = 0;
@@ -471,7 +480,7 @@ export async function ug(params: IParams, log: Log) {
   type Project = typeof ugProjectList[0] | typeof ugProjectList[1] | typeof ugProjectList[2] | typeof ugProjectList[3];
 
   /** Количество шагов процесса */
-  const steps = 6 + ugProjectList.length * 4;
+  const steps = 7 + ugProjectList.length * 4;
 
   /** Начало процесса */
   log.startProcess('Gedemin compilation', steps);
@@ -499,6 +508,7 @@ export async function ug(params: IParams, log: Log) {
   await runProcess('Upload archive', uploadArhive);
 
   await runProcess('Create etalon database', createEtalonDB);
+  await runProcess('Inc build number', pushIncBuildNumber);
 
   /** Окончание процесса */
   log.finishProcess();
