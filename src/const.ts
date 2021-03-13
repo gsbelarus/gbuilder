@@ -1,5 +1,15 @@
 export const gedeminSrcPath = [
+  '../queryfilter',
+  '../classtree',
+  '../component',
+  '../component/gdc',
   '../component/indy',
+  '../component/qexport/delphi5',
+  '../component/repository',
+  '../component/repository/gd',
+  '../Component/SynEdit/Source',
+  '../Component/tb2k/Source',
+  '../component/textdiff',
   '../common/tdbf',
   '../jcl/Source',
   '../jcl/Source/windows',
@@ -17,12 +27,6 @@ export const gedeminSrcPath = [
   '../FastReport 4/LibD5',
   '../setup',
   '../imports',
-  '../component',
-  '../component/textdiff',
-  '../component/gdc',
-  '../component/repository',
-  '../Component/tb2k/Source',
-  '../Component/SynEdit/Source',
   '../common',
   '<<DELPHI>>/Source/Vcl',
   '<<DELPHI>>/Source/Toolsapi',
@@ -49,11 +53,10 @@ export const gedeminSrcPath = [
   '../log',
   '../directorygood',
   '../messaging',
-  '../queryfilter',
-  '../classtree',
   '../attr',
   '../storage',
   '../newtransaction',
+  '../realization',
   '../bank',
   '../gudf',
   '../protect',
@@ -62,8 +65,10 @@ export const gedeminSrcPath = [
   '../tax',
   '../backup',
   '<<DELPHI>>/Imports',
-  '../component/repository/gd',
-  '../test/dunit/src',
+  '../planning',
+  '../Department',
+  '../1stclass/source',
+    '../test/dunit/src',
   '../test/GedeminTest'
 ];
 
@@ -179,9 +184,9 @@ export const portableFilesList = [
 interface IProjectParams {
   [project: string]: {
     rc: string;
-    loc?: 'GUDF';
+    loc?: 'GUDF' | 'Utility/MakeLBRBTree';
     ext?: '.dll';
-    dest?: 'EXE/UDF';
+    dest?: 'EXE/UDF' | 'SQL';
   }
 };
 
@@ -329,6 +334,12 @@ BLOCK "VarFileInfo"
     loc: 'GUDF',
     ext: '.dll',
     dest: 'EXE/UDF'
+  },
+
+  makelbrbtree: {
+    rc: '',
+    loc: 'Utility/MakeLBRBTree',
+    dest: 'SQL'
   }
 };
 
