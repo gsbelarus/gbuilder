@@ -97,8 +97,6 @@ export async function ug(params: IParams, log: Log) {
   const pathDCU = path.join(rootGedeminDir, 'Gedemin', 'DCU');
   /** Папка SQL-файлов для создания эталонной БД */
   const pathSQL = path.join(rootGedeminDir, 'Gedemin', 'SQL');
-  /** Папка утилиты MakeLBRBTree */
-  const pathLBRBTree = path.join(rootGedeminDir, 'Gedemin', 'Utility', 'MakeLBRBTree');
 
   /**
    * Снимаем исходники с гита.
@@ -188,7 +186,7 @@ export async function ug(params: IParams, log: Log) {
    * Текущий файл сохраним с именем .current.cfg и восстановим в конце процесса.
    * Файл создадим из шаблона, подставив нужные значения в зависимости от типа компиляции.
    */
-  const prepareConfigFile = (project: Project, pathProject: string) => {
+  const prepareConfigFile = (project: Project, pathProject: string, cfgAdjust?: (cfg: string) => string) => {
     /** Файл конфигурации проекта для компиляции */
     const cfgFileName = path.join(pathProject, `${project}.cfg`);
     /** Файл для сохранения текущей конфигурации */
@@ -204,7 +202,7 @@ export async function ug(params: IParams, log: Log) {
 
     let cfgBody = gedeminCfgTemplate.replace(/<<GEDEMIN_SRC_PATH>>/gi, srcPath);
     cfgBody = cfgBody.replace('<<GEDEMIN_PROJECT_DEST>>', projectParams[project].dest ?? 'EXE');
-    
+
     if (project === 'gedemin') {
       const { d_switch, o_switch, cond } = gedeminCfgVariables[compilationType];
 
@@ -216,10 +214,10 @@ export async function ug(params: IParams, log: Log) {
       cfgBody = cfgBody.replace('<<O_SWITCH>>', '+');
       cfgBody = cfgBody.replace('<<COND>>', '');
     };
-    
-    if (project === 'makelbrbtree') {
-      cfgBody = cfgBody.replace(/\.\.\//gi,'../../');
-    };
+
+    if (cfgAdjust) {
+      cfgBody = cfgAdjust(cfgBody);
+    }
 
     writeFileSync(cfgFileName, cfgBody.trim());
 
@@ -345,7 +343,7 @@ export async function ug(params: IParams, log: Log) {
 
     project = 'gudf';
     const gudfArchiveFileName = path.join(archiveDir, 'gudf.rar');
-    const pathGUDF = path.join(rootGedeminDir, 'Gedemin', projectParams[project].dest ?? 'EXE')    
+    const pathGUDF = path.join(rootGedeminDir, 'Gedemin', projectParams[project].dest ?? 'EXE')
     log.log(
       execFileSync(path.join(binWinRAR, 'WinRAR.exe'),
         [ 'a', '-u', '-as', '-ibck', gudfArchiveFileName, 'gudf.dll'],
@@ -378,12 +376,14 @@ export async function ug(params: IParams, log: Log) {
 
   /** Инкремент версии */
   const incVer = (project: Project, pathProject: string) => {
-    if (projectParams[project].rc === '') {
-      log.log(`empty template for ${project}_ver.rc`);
-      log.log(`skip incrementing...`);      
+    const { rc } = projectParams[project];
+
+    if (!rc) {
+      log.log(`project ${project} doesn't have a version resource...`);
+      log.log(`skip incrementation...`);
       return;
     };
-    
+
     /** RC-файл версии  */
     const verRCFileName = path.join(pathProject, `${project}_ver.rc`);
     /** RES-файл версии  */
@@ -401,7 +401,7 @@ export async function ug(params: IParams, log: Log) {
     // extract current build number from second string of .rc file: FILEVERSION 2, 9, 5, 11591
     const buildNumber = parseInt(rcText[fvIndex].split(',')[3].trim()) + 1;
 
-    let newRC = projectParams[project].rc;
+    let newRC = rc;
     newRC = newRC.replace(/<<BUILD_NUMBER>>/gi, buildNumber.toString());
     newRC = newRC.replace('<<YEAR>>', new Date().getFullYear().toString());
 
@@ -516,10 +516,8 @@ export async function ug(params: IParams, log: Log) {
   };
 
   /** Список проектов для компиляции */
-  const ugProjectList = ['gedemin', 'gdcc', 'gedemin_upd', 'gudf', 'makelbrbtree'] as const;
-  type Project = 
-    typeof ugProjectList[0] | typeof ugProjectList[1] | typeof ugProjectList[2] | 
-    typeof ugProjectList[3] | typeof ugProjectList[4];
+  type Project = 'gedemin' | 'gdcc' | 'gedemin_upd' | 'gudf' | 'makelbrbtree';
+  const ugProjectList: Project[] = ['gedemin', 'gdcc', 'gedemin_upd', 'gudf', 'makelbrbtree'];
 
   /** Количество шагов процесса */
   const steps = 8 + ugProjectList.length * 4;
@@ -538,17 +536,20 @@ export async function ug(params: IParams, log: Log) {
   await runProcess('Clear DCU folder', clearDCU);
 
   for (const pr of ugProjectList) {
+    const { loc } = projectParams[pr];
+    const adjustFn = pr === 'makelbrbtree' ? (s: string) => s.replace(/\.\.\//gi,'../../') : undefined
+
     /** Основная папка проекта, где находятся .dpr, .cfg, .rc файлы */
-    const pathProject = path.join(rootGedeminDir, 'Gedemin', projectParams[pr].loc ?? 'Gedemin');
+    const pathProject = path.join(rootGedeminDir, 'Gedemin', loc ?? 'Gedemin');
 
     await runProcess(`Increment version for ${pr}`,  () => incVer(pr, pathProject));
-    await runProcess(`Prepare config files for ${pr}`, () => prepareConfigFile(pr, pathProject));
+    await runProcess(`Prepare config files for ${pr}`, () => prepareConfigFile(pr, pathProject, adjustFn ));
     await runProcess(`Build ${pr}`, () => buildProject(pr, pathProject));
     await runProcess(`Clean up after building ${pr}`, () => cleanupConfigFile(pr, pathProject));
   };
 
   await runProcess('Set gedemin.exe size', setGedeminEXESize);
-  await runProcess('Create etalon database', createEtalonDB);  
+  await runProcess('Create etalon database', createEtalonDB);
   await runProcess('Create portable version archive', createArhive);
   await runProcess('Upload archive', uploadArhive);
   await runProcess('Inc build number', pushIncBuildNumber);

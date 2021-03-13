@@ -183,7 +183,7 @@ export const portableFilesList = [
 
 interface IProjectParams {
   [project: string]: {
-    rc: string;
+    rc?: string;
     loc?: 'GUDF' | 'Utility/MakeLBRBTree';
     ext?: '.dll';
     dest?: 'EXE/UDF' | 'SQL';
@@ -337,7 +337,6 @@ BLOCK "VarFileInfo"
   },
 
   makelbrbtree: {
-    rc: '',
     loc: 'Utility/MakeLBRBTree',
     dest: 'SQL'
   }
