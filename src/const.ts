@@ -181,16 +181,18 @@ export const portableFilesList = [
   'swipl/pthreadGC2.dll'
 ];
 
-interface IProjectParams {
-  [project: string]: {
-    rc?: string;
-    loc?: 'GUDF' | 'Utility/MakeLBRBTree';
-    ext?: '.dll';
-    dest?: 'EXE/UDF' | 'SQL';
-  }
+interface IProject {
+  rc?: string;
+  loc?: 'GUDF' | 'Utility/MakeLBRBTree';
+  ext?: '.dll';
+  dest?: 'EXE/UDF' | 'SQL';
 };
 
-export const projectParams: IProjectParams = {
+interface IProjects {
+  [project: string]: IProject;
+};
+
+export const projects: IProjects = {
   gedemin: {
     rc:
 `1 VERSIONINFO LOADONCALL MOVEABLE DISCARDABLE IMPURE
@@ -343,56 +345,52 @@ BLOCK "VarFileInfo"
 };
 
 export const gedeminSQL = {
-  0: [
-    'result.sql',
-    'result2.sql'
-    ],
-  1: [
-  'gd_header.sql',
-  'gd_create.sql',
-  'gudf.sql',
-  'gd_domains.sql',
-  'gd_version.sql',
-  'gd_link.sql',
-  'gd_security.sql',
-  'gd_place.sql',
-  'gd_currency.sql',
-  'wg_tblcal.sql',
-  'gd_addressbook.sql',
-  'gd_ourcompany.sql',
-  'gd_ruid.sql',
-  'at_attribute.sql',
-  'gd_const.sql',
-  'gd_script.sql',
-  'gd_document.sql',
-  'at_sync_procedures.sql',
-  'flt_filter.sql',
-  'bn_bankstatement.sql',
-  'gd_upgrade.sql',
-  'bug_bugbase.sql',
-  'gd_command.sql',
-  'gd_good.sql',
-  'ac_accounting.sql',
-  'msg_messaging.sql',
-  'rp_registry.sql',
-  'rp_report.sql',
-  'evt_script.sql',
-  'inv_movement.sql',
-  'inv_price.sql',
-  'gd_tax.sql',
-  'at_setting.sql',
-  'gd_file.sql',
-  'gd_block_rule.sql',
-  'rpl_database.sql',
-  'gd_smtp.sql',
-  'gd_autotask.sql'
-],
-  2: [
+  firstPass: [
+    'gd_header.sql',
+    'gd_create.sql',
+    'gudf.sql',
+    'gd_domains.sql',
+    'gd_version.sql',
+    'gd_link.sql',
+    'gd_security.sql',
+    'gd_place.sql',
+    'gd_currency.sql',
+    'wg_tblcal.sql',
+    'gd_addressbook.sql',
+    'gd_ourcompany.sql',
+    'gd_ruid.sql',
+    'at_attribute.sql',
+    'gd_const.sql',
+    'gd_script.sql',
+    'gd_document.sql',
+    'at_sync_procedures.sql',
+    'flt_filter.sql',
+    'bn_bankstatement.sql',
+    'gd_upgrade.sql',
+    'bug_bugbase.sql',
+    'gd_command.sql',
+    'gd_good.sql',
+    'ac_accounting.sql',
+    'msg_messaging.sql',
+    'rp_registry.sql',
+    'rp_report.sql',
+    'evt_script.sql',
+    'inv_movement.sql',
+    'inv_price.sql',
+    'gd_tax.sql',
+    'at_setting.sql',
+    'gd_file.sql',
+    'gd_block_rule.sql',
+    'rpl_database.sql',
+    'gd_smtp.sql',
+    'gd_autotask.sql'
+  ],
+  secondPass: [
     'gd_constants.sql',
     'gd_oper_const.sql',
     'gd_securityrole.sql',
     'gd_db_triggers.sql'
-    ],
+  ],
   header:
 `SET NAMES WIN1251;
 SET SQL DIALECT 3;

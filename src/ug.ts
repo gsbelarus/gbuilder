@@ -16,7 +16,7 @@ import path from 'path';
 import { Log } from './log';
 import {
   gedeminCfgTemplate, gedeminCfgVariables, gedeminSrcPath, gedeminCompilerSwitch,
-  gedeminArchiveName, portableFilesList, projectParams, gedeminSQL
+  gedeminArchiveName, portableFilesList, projects, gedeminSQL
 } from './const';
 import FormData from 'form-data';
 
@@ -56,6 +56,12 @@ export interface IParams {
   srcBranch: string;
   /** */
   commitIncBuildNumber?: boolean;
+  /** Строка подключения к серверу файреберд. Имя сервера и порт. По-умолчанию localhost/3050 */
+  fbConnect?: string;
+  /** Имя пользователя для подключения к серверу файреберд. По-умолчанию, SYSDBA */
+  fbUser?: string;
+  /** Пароль пользователя файреберд */
+  fbPassword?: string;
 };
 
 /**
@@ -87,10 +93,9 @@ export async function ug(params: IParams, log: Log) {
   }
 
   const {
-    compilationType, setExeSize,
-    rootGedeminDir, archiveDir, baseDir,
-    pathDelphi, binEditbin, binWinRAR, binFirebird,
-    upload, srcBranch, commitIncBuildNumber
+    compilationType, setExeSize, rootGedeminDir, archiveDir, baseDir,
+    pathDelphi, binEditbin, binWinRAR, binFirebird, upload, srcBranch,
+    commitIncBuildNumber, fbConnect, fbUser, fbPassword
   } = params;
 
   /** В процессе компиляции DCU файлы помещаются в эту папку */
@@ -119,6 +124,19 @@ export async function ug(params: IParams, log: Log) {
     stdio: ['pipe', 'pipe', 'pipe'],
     maxBuffer: 1024 * 1024 * 64,
     timeout: 5 * 60 * 1000
+  };
+
+  const packFiles = (arcName: string, fileName: string, cwd: string) => log.log(
+    execFileSync(path.join(binWinRAR, 'WinRAR.exe'),
+      [ 'a', '-u', '-as', '-ibck', arcName, fileName ],
+      { ...basicExecOptions, cwd }).toString()
+  );
+
+  const deleteFile = (fn: string, msg?: string) => {
+    if (existsSync(fn)) {
+      unlinkSync(fn);
+      msg && log.log(msg);
+    }
   };
 
   /** Проверяем наличие необходимых файлов, программ, папок */
@@ -186,7 +204,9 @@ export async function ug(params: IParams, log: Log) {
    * Текущий файл сохраним с именем .current.cfg и восстановим в конце процесса.
    * Файл создадим из шаблона, подставив нужные значения в зависимости от типа компиляции.
    */
-  const prepareConfigFile = (project: Project, pathProject: string, cfgAdjust?: (cfg: string) => string) => {
+  const prepareConfigFile = (project: ProjectID, pathProject: string) => {
+    const { dest, loc } = projects[project];
+
     /** Файл конфигурации проекта для компиляции */
     const cfgFileName = path.join(pathProject, `${project}.cfg`);
     /** Файл для сохранения текущей конфигурации */
@@ -201,7 +221,7 @@ export async function ug(params: IParams, log: Log) {
     const srcPath = gedeminSrcPath.join(';').replace(/<<DELPHI>>/gi, pathDelphi.replace(/\\/gi, '/'));
 
     let cfgBody = gedeminCfgTemplate.replace(/<<GEDEMIN_SRC_PATH>>/gi, srcPath);
-    cfgBody = cfgBody.replace('<<GEDEMIN_PROJECT_DEST>>', projectParams[project].dest ?? 'EXE');
+    cfgBody = cfgBody.replace('<<GEDEMIN_PROJECT_DEST>>', dest ?? 'EXE');
 
     if (project === 'gedemin') {
       const { d_switch, o_switch, cond } = gedeminCfgVariables[compilationType];
@@ -215,8 +235,8 @@ export async function ug(params: IParams, log: Log) {
       cfgBody = cfgBody.replace('<<COND>>', '');
     };
 
-    if (cfgAdjust) {
-      cfgBody = cfgAdjust(cfgBody);
+    if (loc && loc.indexOf('/') > -1) {
+      cfgBody = cfgBody.replace(/\.\.\//gi,'../../');
     }
 
     writeFileSync(cfgFileName, cfgBody.trim());
@@ -225,18 +245,17 @@ export async function ug(params: IParams, log: Log) {
   };
 
   /** Компиляция проекта по заданному типу */
-  const buildProject = (project: Project, pathProject: string) => {
+  const buildProject = (project: ProjectID, pathProject: string) => {
+    const { dest, ext } = projects[project];
+
     /** Целевая папка компиляции */
-    const destDir = path.join(rootGedeminDir, 'Gedemin', projectParams[project].dest ?? 'EXE');
+    const destDir = path.join(rootGedeminDir, 'Gedemin', dest ?? 'EXE');
 
     /** Имя компилируемого файла */
-    const destFileName = project + (projectParams[project].ext ?? '.exe');
+    const destFileName = project + (ext ?? '.exe');
     const destFullFileName = path.join(destDir, destFileName);
 
-    if (existsSync(destFullFileName)) {
-      unlinkSync(destFullFileName);
-      log.log(`previous ${destFileName} has been deleted...`);
-    }
+    deleteFile(destFullFileName, `previous ${destFileName} has been deleted...`);
 
     log.log(`building ${destFileName}...`);
     log.log(
@@ -250,28 +269,31 @@ export async function ug(params: IParams, log: Log) {
 
     const exeOpt = { ...basicExecOptions, cwd: destDir };
 
-    if (path.extname(destFileName) === '.exe' && project !== 'makelbrbtree') {
-      log.log(execFileSync('StripReloc.exe', ['/b', destFileName], exeOpt).toString());
-      log.log('relocation section has been stripped from EXE file...');
-    };
+    // утилиты, которые мы применяем ниже находятся в папке EXE (папка по-умолчанию)
+    // не будем применять их для проектов, которые компилируются в другие папки
+    if (!dest) {
+      if (path.extname(destFileName) === '.exe') {
+        log.log(execFileSync('StripReloc.exe', ['/b', destFileName], exeOpt).toString());
+        log.log('relocation section has been stripped from EXE file...');
+      };
 
-    if (project === 'gedemin' && compilationType === 'DEBUG') {
-      log.log(execFileSync('tdspack.exe', ['-e -o -a', destFileName], exeOpt).toString());
-      log.log('debug information has been optimized...');
-    };
+      if (project === 'gedemin' && compilationType === 'DEBUG') {
+        log.log(execFileSync('tdspack.exe', ['-e -o -a', destFileName], exeOpt).toString());
+        log.log('debug information has been optimized...');
+      };
 
-    if (path.extname(destFileName) === '.exe') {
-      log.log(execFileSync(path.join(binEditbin, 'editbin.exe'), ['/SWAPRUN:NET', destFileName], exeOpt).toString());
-      log.log(`swaprun flag has been set on ${destFileName} file...`);
-    };
+      if (path.extname(destFileName) === '.exe') {
+        log.log(execFileSync(path.join(binEditbin, 'editbin.exe'), ['/SWAPRUN:NET', destFileName], exeOpt).toString());
+        log.log(`swaprun flag has been set on ${destFileName} file...`);
+      };
+    }
 
     log.log(`${destFileName} has been successfully built...`);
   };
 
   const setGedeminEXESize = () => {
-    const project: Project = 'gedemin';
     /** Целевая папка компиляции */
-    const pathEXE = path.join(rootGedeminDir, 'Gedemin', projectParams[project].dest ?? 'EXE');
+    const pathEXE = path.join(rootGedeminDir, 'Gedemin', projects['gedemin'].dest ?? 'EXE');
 
     if (setExeSize) {
       const exeFullFileName = path.join(pathEXE, 'gedemin.exe');
@@ -293,6 +315,8 @@ export async function ug(params: IParams, log: Log) {
 
   /** Файл архива */
   const gedeminArchiveFileName = path.join(archiveDir, gedeminArchiveName[compilationType]);
+  const etalonArchiveFileName = path.join(archiveDir, 'etalon.rar');
+  const gudfArchiveFileName = path.join(archiveDir, 'gudf.rar');
 
   /**
    *  Формирование/синхронизация архива по файлу списка gedemin.lst
@@ -301,26 +325,14 @@ export async function ug(params: IParams, log: Log) {
    *    удаление файлов, которых нет в списке
    */
   const createArhive = () => {
-    let project: Project = 'gedemin';
     /** Целевая папка компиляции */
-    const pathEXE = path.join(rootGedeminDir, 'Gedemin', projectParams[project].dest ?? 'EXE');
+    const pathEXE = path.join(rootGedeminDir, 'Gedemin', projects['gedemin'].dest ?? 'EXE');
 
-    if (existsSync(gedeminArchiveFileName)) {
-      unlinkSync(gedeminArchiveFileName);
-    }
+    deleteFile(gedeminArchiveFileName);
 
     const lstFileName = path.join(archiveDir, 'gedemin.lst');
-
     writeFileSync(lstFileName, portableFilesList.join('\n'), { encoding: 'utf-8' });
-
-    log.log(
-      execFileSync(path.join(binWinRAR, 'WinRAR.exe'),
-        [ 'a', '-u', '-as', '-ibck',
-          gedeminArchiveFileName,
-          '@' + lstFileName ],
-        { ...basicExecOptions, cwd: pathEXE }).toString()
-    );
-
+    packFiles(gedeminArchiveFileName, '@' + lstFileName, pathEXE);
     unlinkSync(lstFileName);
 
     if (existsSync(gedeminArchiveFileName)) {
@@ -329,35 +341,25 @@ export async function ug(params: IParams, log: Log) {
       throw new Error('Can not create portable archive!');
     };
 
-    const etalonArchiveFileName = path.join(archiveDir, 'etalon.rar');
-    log.log(
-      execFileSync(path.join(binWinRAR, 'WinRAR.exe'),
-        [ 'a', '-u', '-as', '-ibck', etalonArchiveFileName, 'ETALON.FDB'],
-        { ...basicExecOptions, cwd: baseDir }).toString()
-    );
+    packFiles(etalonArchiveFileName, 'ETALON.FDB', baseDir);
+
     if (existsSync(etalonArchiveFileName)) {
-      log.log(`portable archive has been created ${etalonArchiveFileName}...`);
+      log.log(`etalon db archive has been created ${etalonArchiveFileName}...`);
     } else {
-      throw new Error('Can not create etalon database archive!');
+      throw new Error('Can not create etalon db archive!');
     };
 
-    project = 'gudf';
-    const gudfArchiveFileName = path.join(archiveDir, 'gudf.rar');
-    const pathGUDF = path.join(rootGedeminDir, 'Gedemin', projectParams[project].dest ?? 'EXE')
-    log.log(
-      execFileSync(path.join(binWinRAR, 'WinRAR.exe'),
-        [ 'a', '-u', '-as', '-ibck', gudfArchiveFileName, 'gudf.dll'],
-        { ...basicExecOptions, cwd: pathGUDF }).toString()
-    );
+    const pathGUDF = path.join(rootGedeminDir, 'Gedemin', projects['gudf'].dest ?? 'EXE')
+    packFiles(gudfArchiveFileName, 'gudf.dll', pathGUDF);
     if (existsSync(gudfArchiveFileName)) {
-      log.log(`portable archive has been created ${gudfArchiveFileName}...`);
+      log.log(`gudf.dll archive has been created ${gudfArchiveFileName}...`);
     } else {
-      throw new Error('Can not create etalon database archive!');
+      throw new Error('Can not create gudf.dll archive!');
     };
   };
 
   /** Восстановление сохраненных файлов конфигурации */
-  const cleanupConfigFile = (project: Project, pathProject: string) => {
+  const cleanupConfigFile = (project: ProjectID, pathProject: string) => {
     /** Файл конфигурации проекта для компиляции */
     const cfgFileName = path.join(pathProject, project + '.cfg');
 
@@ -375,8 +377,8 @@ export async function ug(params: IParams, log: Log) {
   //но для остальных утилит тоже надо сделать инкремент
 
   /** Инкремент версии */
-  const incVer = (project: Project, pathProject: string) => {
-    const { rc } = projectParams[project];
+  const incVer = (project: ProjectID, pathProject: string) => {
+    const { rc } = projects[project];
 
     if (!rc) {
       log.log(`project ${project} doesn't have a version resource...`);
@@ -410,10 +412,7 @@ export async function ug(params: IParams, log: Log) {
     log.log(`build number for ${project} has been incremented to ${buildNumber}...`);
     log.log(`${project}_ver.rc saved...`);
 
-    if (existsSync(verResFileName)) {
-      unlinkSync(verResFileName);
-      log.log(`previous ${project}_ver.res has been deleted...`);
-    }
+    deleteFile(verResFileName, `previous ${project}_ver.res has been deleted...`);
 
     log.log(
       execFileSync(
@@ -427,21 +426,23 @@ export async function ug(params: IParams, log: Log) {
 
   const uploadArhive = async () => {
     if (upload) {
-      const form = new FormData();
+      for (const arc of [gedeminArchiveFileName, gudfArchiveFileName, etalonArchiveFileName]) {
+        const form = new FormData();
 
-      form.append('data', createReadStream(gedeminArchiveFileName), {
-        filename: path.basename(gedeminArchiveFileName),
-        filepath: gedeminArchiveFileName,
-        contentType: 'application/zip',
-        knownLength: statSync(gedeminArchiveFileName).size
-      });
+        form.append('data', createReadStream(arc), {
+          filename: path.basename(arc),
+          filepath: arc,
+          contentType: 'application/zip',
+          knownLength: statSync(arc).size
+        });
 
-      log.log(`uploading ${path.basename(gedeminArchiveFileName)}...`)
+        log.log(`uploading ${path.basename(arc)}...`)
 
-      // исходники PHP скриптов приведены в папке PHP
-      await form.submit('http://gsbelarus.com/gs/content/upload2.php');
+        // исходники PHP скриптов приведены в папке PHP
+        await form.submit('http://gsbelarus.com/gs/content/upload2.php');
 
-      log.log(`archive ${path.basename(gedeminArchiveFileName)} has been uploaded...`)
+        log.log(`archive ${path.basename(arc)} has been uploaded...`)
+      }
     } else {
       log.log('skip uploading...');
     }
@@ -452,19 +453,16 @@ export async function ug(params: IParams, log: Log) {
     const dbFileName = 'etalon.fdb';
     const dbFullFileName = path.join(baseDir, dbFileName);
 
-    if (existsSync(dbFullFileName)) {
-      unlinkSync(dbFullFileName);
-      log.log(`previous ${dbFileName} has been deleted...`);
-    };
+    deleteFile(dbFullFileName, `previous ${dbFileName} has been deleted...`);
 
-    const connectionString = `localhost/3050:${dbFullFileName}`;
+    const connectionString = `${fbConnect ?? 'localhost/3050'}${fbConnect ? ':' : ''}${dbFullFileName}`;
     const sqlScriptHeader = Buffer.from(gedeminSQL.header
       .replace('<<FB_CONNECT>>', connectionString)
-      .replace('<<USER_NAME>>', 'SYSDBA')
-      .replace('<<USER_PASS>>', 'masterkey'));
-    const sqlScriptBody = Buffer.concat(gedeminSQL[1].map( fn => readFileSync(path.join(pathSQL, fn), { encoding: undefined }) ) );
+      .replace('<<USER_NAME>>', fbUser ?? 'SYSDBA')
+      .replace('<<USER_PASS>>', fbPassword ?? 'masterkey'));
+    const sqlScriptBody = Buffer.concat(gedeminSQL.firstPass.map( fn => readFileSync(path.join(pathSQL, fn), { encoding: undefined }) ) );
 
-    const sqlScriptFN = path.join(pathSQL, gedeminSQL[0][0]);
+    const sqlScriptFN = path.join(pathSQL, 'result.sql');
     writeFileSync(sqlScriptFN, Buffer.concat([sqlScriptHeader, sqlScriptBody]));
     log.log(`${sqlScriptFN} has been saved...`);
 
@@ -476,21 +474,18 @@ export async function ug(params: IParams, log: Log) {
       throw new Error('Can not create database!');
     };
 
-    const sqlScriptFN2 = path.join(pathSQL, gedeminSQL[0][1]);
+    const sqlScriptFN2 = path.join(pathSQL, 'result2.sql');
     log.log(`execute makelbrbtree...`);
-    execFileSync(path.join(pathSQL, 'makelbrbtree.exe'), [ '/sn', connectionString, '/fo', sqlScriptFN2 ], opt)
+    execFileSync(path.join(pathSQL, 'makelbrbtree.exe'), [ '/sn', connectionString, '/fo', sqlScriptFN2 ], opt);
     log.log(`${sqlScriptFN2} has been saved...`);
 
-    const sqlScriptBody2 = Buffer.concat([gedeminSQL[0][1], ...gedeminSQL[2]].map( fn => readFileSync(path.join(pathSQL, fn), { encoding: undefined }) ) );
+    const sqlScriptBody2 = Buffer.concat(['result2.sql', ...gedeminSQL.secondPass].map( fn => readFileSync(path.join(pathSQL, fn), { encoding: undefined }) ) );
     writeFileSync(sqlScriptFN, Buffer.concat([sqlScriptHeader, sqlScriptBody, sqlScriptBody2]));
     log.log(`${sqlScriptFN} has been saved...`);
 
-    if (existsSync(dbFullFileName)) {
-      unlinkSync(dbFullFileName);
-      log.log(`previous ${dbFileName} has been deleted...`);
-    };
+    deleteFile(dbFullFileName, `previous ${dbFileName} has been deleted...`);
 
-    log.log(`second execute ${sqlScriptFN}...`);
+    log.log(`second pass...`);
     execFileSync(path.join(binFirebird, 'isql.exe'), [ '-q', '-i', sqlScriptFN], opt);
     if (existsSync(dbFullFileName)) {
       log.log(`${dbFileName} has been created...`);
@@ -499,7 +494,7 @@ export async function ug(params: IParams, log: Log) {
     const sqlScriptHeaderEtalon = Buffer.from(gedeminSQL.header
       .replace('<<FB_CONNECT>>', 'put_your_database_name')
       .replace('<<USER_NAME>>', 'SYSDBA')
-      .replace('<<USER_PASS>>', 'masterkey'));
+      .replace('<<USER_PASS>>', 'SYSDBA_password'));
     const sqlScriptEtalon = path.join(pathSQL, 'etalon.sql');
     if (existsSync(sqlScriptEtalon)) {
       log.log(`previous ${sqlScriptEtalon} has been deleted...`);
@@ -507,17 +502,12 @@ export async function ug(params: IParams, log: Log) {
     writeFileSync(sqlScriptEtalon, Buffer.concat([sqlScriptHeaderEtalon, sqlScriptBody, sqlScriptBody2]));
     log.log(`${sqlScriptEtalon} has been saved...`);
 
-    [sqlScriptFN, sqlScriptFN2].forEach( fn => {
-      if (existsSync(fn)) {
-        unlinkSync(fn);
-        log.log(`${fn} has been deleted...`);
-      };
-    });
+    [sqlScriptFN, sqlScriptFN2].forEach( fn => deleteFile(fn, `${fn} has been deleted...`) );
   };
 
   /** Список проектов для компиляции */
-  type Project = 'gedemin' | 'gdcc' | 'gedemin_upd' | 'gudf' | 'makelbrbtree';
-  const ugProjectList: Project[] = ['gedemin', 'gdcc', 'gedemin_upd', 'gudf', 'makelbrbtree'];
+  type ProjectID = 'gedemin' | 'gdcc' | 'gedemin_upd' | 'gudf' | 'makelbrbtree';
+  const ugProjectList: ProjectID[] = ['gedemin', 'gdcc', 'gedemin_upd', 'gudf', 'makelbrbtree'];
 
   /** Количество шагов процесса */
   const steps = 8 + ugProjectList.length * 4;
@@ -536,14 +526,13 @@ export async function ug(params: IParams, log: Log) {
   await runProcess('Clear DCU folder', clearDCU);
 
   for (const pr of ugProjectList) {
-    const { loc } = projectParams[pr];
-    const adjustFn = pr === 'makelbrbtree' ? (s: string) => s.replace(/\.\.\//gi,'../../') : undefined
+    const { loc } = projects[pr];
 
     /** Основная папка проекта, где находятся .dpr, .cfg, .rc файлы */
     const pathProject = path.join(rootGedeminDir, 'Gedemin', loc ?? 'Gedemin');
 
     await runProcess(`Increment version for ${pr}`,  () => incVer(pr, pathProject));
-    await runProcess(`Prepare config files for ${pr}`, () => prepareConfigFile(pr, pathProject, adjustFn ));
+    await runProcess(`Prepare config files for ${pr}`, () => prepareConfigFile(pr, pathProject));
     await runProcess(`Build ${pr}`, () => buildProject(pr, pathProject));
     await runProcess(`Clean up after building ${pr}`, () => cleanupConfigFile(pr, pathProject));
   };

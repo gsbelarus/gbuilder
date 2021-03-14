@@ -11,7 +11,14 @@ const f = async () => {
   if (!paramsFile || !existsSync(paramsFile)) {
     console.error('Full name of the file with build process parameters must be specified as a first command line argument.');
   } else {
-    const params = JSON.parse(readFileSync(paramsFile, {encoding:'utf8', flag:'r'})) as IParams;
+    let params;
+
+    try {
+      params = JSON.parse(readFileSync(paramsFile, {encoding:'utf8', flag:'r'})) as IParams;
+    } catch(e) {
+      throw new Error(`Error parsing JSON file ${paramsFile}. ${e}`);
+    }
+
     const logBuffer: string[] = [];
 
     const loggers: ILog[] = [
