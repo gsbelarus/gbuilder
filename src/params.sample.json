@@ -4,6 +4,7 @@
   "rootGedeminDir": "c:\\golden\\gedemin",
   "archiveDir": "c:\\golden\\archive",
   "baseDir": "c:\\golden\\base",
+  "instDir": "c:\\golden\\gedemin_local_fb",  
   "pathDelphi": "C:\\Program Files (x86)\\Borland\\Delphi5",
   "binEditbin": "",
   "binWinRAR": "C:\\Program Files\\WinRAR",

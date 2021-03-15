@@ -175,10 +175,20 @@ export const portableFilesList = [
   'swipl/lib/memfile.dll',
   'swipl/lib/process.dll',
   'swipl/lib/readutil.dll',
-  'swipl/gd_pl_state.dat ',
+  'swipl/gd_pl_state.dat',
   'swipl/libgmp-10.dll',
   'swipl/libswipl.dll',
   'swipl/pthreadGC2.dll'
+];
+
+/**
+ * Список файлов инстоляции для обновления
+ */
+ export const instFilesList = [
+  'gedemin.exe',
+  'gedemin_upd.exe',
+  'gdcc.exe',
+  'udf/gudf.dll'  
 ];
 
 interface IProject {

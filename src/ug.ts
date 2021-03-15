@@ -89,11 +89,12 @@ export async function ug(params: IParams, log: Log) {
       };
 
       log.finishProcess();
-    }
-  }
+    };
+  };
 
   const {
-    compilationType, setExeSize, rootGedeminDir, archiveDir, baseDir,
+    compilationType, setExeSize,
+    rootGedeminDir, archiveDir, baseDir,
     pathDelphi, binEditbin, binWinRAR, binFirebird, upload, srcBranch,
     commitIncBuildNumber, fbConnect, fbUser, fbPassword
   } = params;
@@ -508,6 +509,10 @@ export async function ug(params: IParams, log: Log) {
   /** Список проектов для компиляции */
   type ProjectID = 'gedemin' | 'gdcc' | 'gedemin_upd' | 'gudf' | 'makelbrbtree';
   const ugProjectList: ProjectID[] = ['gedemin', 'gdcc', 'gedemin_upd', 'gudf', 'makelbrbtree'];
+
+  /** Список проектов для инстоляции */
+  type InstID = 'business' | 'devel';
+  const ugInstList: InstID[] = ['business', 'devel'];
 
   /** Количество шагов процесса */
   const steps = 8 + ugProjectList.length * 4;
