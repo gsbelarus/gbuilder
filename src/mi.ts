@@ -1,3 +1,10 @@
+/**
+ * Текущий функционал
+ *    Обновление файлов для истоляции из целевой папки компиляции
+ *    -
+ *    -
+ */
+
 import { execFileSync, ExecFileSyncOptions } from 'child_process';
 import {
   existsSync, readFileSync, readdirSync, unlinkSync, copyFileSync, writeFileSync,
@@ -11,7 +18,7 @@ import {
 } from './const';
 import FormData from 'form-data';
 
-export interface IParamsInst {
+export interface IParams {
   /**
    * Корневая папка с полными исходниками Гедымина.
    * В ней находятся папки Comp5 и Gedemin.
@@ -41,7 +48,7 @@ export interface IParamsInst {
  * Главная функция.
  * @param log Логгер.
  */
- export async function ug(params: IParamsInst, log: Log) {
+ export async function mi(params: IParams, log: Log) {
 
   /** Обертка процесса
    *  @param name имя процесса
@@ -89,6 +96,18 @@ export interface IParamsInst {
     }
   };
 
+  const checkDir = (destFullFileName: string) => {
+    const pathArr = destFullFileName.split(path.sep);
+    let currentDir = pathArr[0];
+    for (let i = 1; i < pathArr.length - 1; i++) {
+      currentDir = path.join(currentDir, pathArr[i]);
+      if (!existsSync(currentDir)) {
+        mkdirSync(currentDir);
+        log.log(`directory ${currentDir} has been created...`);
+      };
+    };
+  };
+
   /** Проверяем наличие необходимых файлов, программ, папок */
   const checkPrerequisites = () => {
     if (!baseDir || !existsSync(baseDir)) {
@@ -122,6 +141,7 @@ export interface IParamsInst {
           log.log(`file ${fDest} has been updated...`);
         };
       } else {
+        checkDir(fDest);
         copyFileSync(fSrc, fDest);
         log.log(`file ${fDest} has been added...`);
       };
@@ -129,16 +149,16 @@ export interface IParamsInst {
   };
 
   /** Создание истоляций */
-  const makeInstallation = (inst: InstID) => {
-    log.log(`makeInstallation ${inst}`);
+  const makeInstallation = (project: ProjectID) => {
+    log.log(`makeInstallation ${project}`);
   };
 
   /** Список проектов для инстоляции */
-  type InstID = 'business' | 'devel';
-  const ugInstList: InstID[] = ['business', 'devel'];
+  type ProjectID = 'business' | 'devel';
+  const miProjectList: ProjectID[] = ['business', 'devel'];
 
   /** Количество шагов процесса */
-  const steps = 1 + ugInstList.length * 1;
+  const steps = 1 + miProjectList.length * 1;
 
   /** Начало процесса */
   log.startProcess('Gedemin installation', steps);
@@ -151,8 +171,8 @@ export interface IParamsInst {
   await runProcess('Check prerequisites', checkPrerequisites);
   await runProcess('Prepare installation', prepareInstallation);
 
-  for (const inst of ugInstList) {  
-    await runProcess('', () => makeInstallation(inst)); 
+  for (const pr of miProjectList) {  
+    await runProcess('', () => makeInstallation(pr)); 
   };
 
   /** Окончание процесса */

@@ -510,10 +510,6 @@ export async function ug(params: IParams, log: Log) {
   type ProjectID = 'gedemin' | 'gdcc' | 'gedemin_upd' | 'gudf' | 'makelbrbtree';
   const ugProjectList: ProjectID[] = ['gedemin', 'gdcc', 'gedemin_upd', 'gudf', 'makelbrbtree'];
 
-  /** Список проектов для инстоляции */
-  type InstID = 'business' | 'devel';
-  const ugInstList: InstID[] = ['business', 'devel'];
-
   /** Количество шагов процесса */
   const steps = 8 + ugProjectList.length * 4;
 
