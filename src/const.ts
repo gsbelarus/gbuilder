@@ -191,6 +191,30 @@ export const portableFilesList = [
   'udf/gudf.dll'  
 ];
 
+/**
+ * FSFN -- полное имя файла с пакетом настроек        
+ * DBN  -- только имя (без расширения) файла БД       
+ * SFN  -- имя файла заставки в каталоге images\splash
+ * IFN  -- имя файла проекта установки, без расширения
+ * AFN  -- имя файла с архивом установки              
+ * TFN  -- имя файла в каталоге дистрибутива установки
+ */
+export const instProjects = {
+  business: {
+    FSFN: 'Общие/Комплексная автоматизация.yml',
+    SFN: 'complex.jpg',
+    IFN: 'businesslocal',
+    AFN: 'compl_setup.rar',
+    TFN: 'Комплексная автоматизация'
+  },
+  devel: {
+    FSFN: 'Общие/Общие данные.yml',
+    SFN: 'complex.jpg',
+    IFN: 'devellocal',
+    AFN: 'devel_setup.rar',
+    TFN: 'Разработчик'
+  }
+};
 interface IProject {
   rc?: string;
   loc?: 'GUDF' | 'Utility/MakeLBRBTree';
