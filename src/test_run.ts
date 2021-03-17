@@ -1,7 +1,8 @@
 import { ILog, Log } from './log';
-import { IParams, ug } from './ug';
+import { ug } from './ug';
 import { existsSync, readFileSync, statSync, unlinkSync } from 'fs';
 import { open } from 'fs/promises';
+import { IParams } from './types';
 
 const defMaxLogSize = 10 * 1024 * 1024;
 

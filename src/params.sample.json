@@ -18,5 +18,6 @@
   "srcBranch": "india",
   "fbConnect": "localhost/3050",
   "fbUser": "SYSDBA",
-  "fbPassword": "password"
+  "fbPassword": "password",
+  "pat": "look at https://github.com/settings/tokens"
 }
