@@ -8,7 +8,7 @@
  *    -Создание архива установчного файла
  */
 
-import { execFileSync, ExecFileSyncOptions } from 'child_process';
+import { execFileSync, execSync, ExecFileSyncOptions, ExecSyncOptions } from 'child_process';
 import {
   existsSync, readFileSync, readdirSync, unlinkSync, copyFileSync, writeFileSync,
   statSync, appendFileSync, createReadStream, mkdirSync
@@ -83,7 +83,7 @@ export interface IParams {
   };
 
   const {
-    rootGedeminDir, baseDir, instDir, settingDir, distribDir,
+    rootGedeminDir, baseDir, instDir, settingDir, distribDir, archiveDir,
     binFirebird, binWinRAR, binInnoSetup, upload,
     fbConnect, fbUser, fbPassword
   } = params;
@@ -98,10 +98,16 @@ export interface IParams {
     maxBuffer: 1024 * 1024 * 64,
     timeout: 1 * 60 * 60 * 1000
   };
+
+  const basicCmdOptions: ExecSyncOptions = {
+    stdio: ['pipe', 'pipe', 'pipe'],
+    maxBuffer: 1024 * 1024 * 64,
+    timeout: 1 * 60 * 60 * 1000
+  };
   
   const packFiles = (arcName: string, fileName: string, cwd: string) => log.log(
     execFileSync(path.join(binWinRAR, 'WinRAR.exe'),
-      [ 'a', '-m5', '-ep', '-u', '-as', '-ibck', arcName, fileName ],
+      [ 'a', '-ep', '-u', '-as', '-ibck', arcName, fileName ],
       { ...basicExecOptions, cwd }).toString()
   );
 
@@ -171,63 +177,67 @@ export interface IParams {
     const dbProjectFullFileName = path.join(pathInstDB, `${project}.fdb`);
 
     /** Копирование эталонной БД в БД проекта истоляции */
-    // deleteFile(dbProjectFullFileName, `previous ${project}.fdb has been deleted...`);
-    // copyFileSync(dbFullFileName, dbProjectFullFileName);
-    // log.log(`${dbProjectFullFileName} has been copied from ${dbFullFileName}`);
+    deleteFile(dbProjectFullFileName, `previous ${project}.fdb has been deleted...`);
+    copyFileSync(dbFullFileName, dbProjectFullFileName);
+    log.log(`${dbProjectFullFileName} has been copied from ${dbFullFileName}`);
 
     /** Загрузка пакета настроек */
     const connectionString = `${fbConnect ?? 'localhost/3050'}${fbConnect ? ':' : ''}${dbProjectFullFileName}`;
     const settingFullFileName = path.join(settingDir, instProjects[project].FSFN);
     let opt = { ...basicExecOptions, cwd: instDir };
-    // log.log(
-    //   execFileSync(
-    //     path.join(instDir, 'gedemin.exe'),
-    //     [ '/sn', connectionString, '/user', 'Administrator', '/password', 'Administrator',
-    //       '/sp', settingDir, '/rd', '/q', '/sl',
-    //       '/sfn', settingFullFileName, '/ns' ],
-    //     opt).toString()
-    // );
-    // log.log(`${settingFullFileName} has been loaded...`);
+    log.log(
+      execFileSync(
+        path.join(instDir, 'gedemin.exe'),
+        [ '/sn', connectionString, '/user', 'Administrator', '/password', 'Administrator',
+          '/sp', settingDir, '/rd', '/q', '/sl',
+          '/sfn', settingFullFileName, '/ns' ],
+        opt).toString()
+    );
+    log.log(`${settingFullFileName} has been loaded...`);
 
     const imgSrcFullFileName = path.join(rootGedeminDir, 'Gedemin', 'Images', 'Splash', instProjects[project].SFN);
     const imgDestFullFileName = path.join(instDir, 'gedemin.jpg');
-    // deleteFile(imgDestFullFileName, `previous gedemin.jpg has been deleted...`);
-    // copyFileSync(imgSrcFullFileName, imgDestFullFileName);
-    // log.log(`${imgDestFullFileName} has been copied from ${imgSrcFullFileName}`);
+    deleteFile(imgDestFullFileName, `previous gedemin.jpg has been deleted...`);
+    copyFileSync(imgSrcFullFileName, imgDestFullFileName);
+    log.log(`${imgDestFullFileName} has been copied from ${imgSrcFullFileName}`);
 
     const bkProjectFullFileName = path.join(pathInstDB, `${project}.bk`);
-    // deleteFile(bkProjectFullFileName, `previous ${bkProjectFullFileName} has been deleted...`);
-    // execFileSync(
-    //   path.join(binFirebird, 'gbak.exe'),
-    //   [ '-b', connectionString, bkProjectFullFileName,
-    //     '-user', fbUser ?? 'SYSDBA', '-pas', fbPassword ?? 'masterkey' ],
-    //   opt);
-    // log.log(`${bkProjectFullFileName} has been created...`);
+    deleteFile(bkProjectFullFileName, `previous ${bkProjectFullFileName} has been deleted...`);
+    execFileSync(
+      path.join(binFirebird, 'gbak.exe'),
+      [ '-b', connectionString, bkProjectFullFileName,
+        '-user', fbUser ?? 'SYSDBA', '-pas', fbPassword ?? 'masterkey' ],
+      opt);
+    log.log(`${bkProjectFullFileName} has been created...`);
 
     const setupPath = path.join(distribDir, instProjects[project].TFN);
-    log.log(`setupPath: ${setupPath}`);
     const setupFullFileName = path.join(setupPath, 'setup.exe');
-    log.log(`setupFullFileName: ${setupFullFileName}`);
     deleteFile(setupFullFileName, `previous ${setupFullFileName} has been deleted...`);
+    
+    const issFileName = instProjects[project].IFN + '.iss';
+    const issFullFileName = path.join(pathISS, issFileName);
+    opt = { ...basicExecOptions, cwd: pathISS };
+    // not works
+    // execFileSync(
+    //   path.join(binInnoSetup, 'iscc.exe'),
+    //   [`"${issFullFileName}" /O"${setupPath}" /Fsetup /Q`],
+    //   opt);
 
-    const issFullFileName = path.join(pathISS, instProjects[project].IFN) + '.iss';
-    opt = opt = { ...basicExecOptions, cwd: pathISS };
-    log.log(`pathISS: ${pathISS}`);
-    execFileSync(
-      path.join(binInnoSetup, 'iscc.exe'),
-      [ `"${issFullFileName}" /o"${setupPath}" /fsetup /qp` ],
-      opt);
+    execSync(
+      `"${path.join(binInnoSetup, 'iscc.exe')}"` +
+      ` "${issFullFileName}" /O"${setupPath}" /Fsetup /Q`,
+      basicCmdOptions);
+    log.log(`Project ${project} has been distributed into ${setupPath}`);  
     
-    // if exist "%TFN%\setup.exe" del "%TFN%\setup.exe"
-    // "%inno_setup_path%\iscc.exe" "%setup_path%\%IFN%.iss" /o"%TFN%" /fsetup /qp
-    // if not exist "%TFN%\setup.exe" goto Error
-    // echo Make install Gedemin completed!
-    
+    const arcFullFileName = path.join(archiveDir, instProjects[project].AFN);
+    packFiles(arcFullFileName, setupFullFileName, distribDir);
+    log.log(`Project ${project} has been packed into ${arcFullFileName}`);
+
     };
 
   /** Список проектов для инстоляции */
   type ProjectID = 'business' | 'devel';
-  const miProjectList: ProjectID[] = ['business', 'devel'];
+  const miProjectList: ProjectID[] = [/*'business',*/ 'devel'];
 
   /** Количество шагов процесса */
   const steps = 1 + miProjectList.length * 1;
