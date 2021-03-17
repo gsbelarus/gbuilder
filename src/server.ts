@@ -6,6 +6,7 @@ import { Octokit } from '@octokit/core';
 import { existsSync, readFileSync } from 'fs';
 import { IParams } from './types';
 import { buildGedemin } from './buildGedemin';
+import dateFormat from 'dateformat';
 
 // {
 //   "method": "POST",
@@ -481,6 +482,15 @@ import { buildGedemin } from './buildGedemin';
 //   }
 // }
 
+interface ILog {
+  logged: Date;
+  state: string;
+  commitMessage: string;
+  url: string;
+};
+
+const log: ILog[] = [];
+
 const getPAT = () => {
   const paramsFile = process.argv[2];
 
@@ -500,7 +510,8 @@ const router = new Router();
 const octokit = new Octokit({ auth: getPAT() });
 
 router.get('/', ctx => {
-  ctx.response.body = 'Webhook server is working...';
+  const l = log.map( ({ logged, state, commitMessage, url }) => `<li>${dateFormat(logged, 'dd.mm.yy HH:MM:ss')} -- ${state} -- <a href="${url}">${commitMessage}</a></li>` )
+  ctx.response.body = `<html><body>Webhook server is working...<p/><ul>${l.join()}</ul></body></html>`;
 });
 
 type Fn = () => Promise<void>;
@@ -510,6 +521,7 @@ router.post('/webhook/gedemin', async (ctx) => {
   const body = (ctx.request as any).body;
   const sha = body.head_commit.id;
   const commitMessage = body.head_commit.message;
+  const url = body.head_commit.url;
 
   console.log(JSON.stringify(ctx.request, undefined, 2));
   //console.log(JSON.stringify(body, undefined, 2));
@@ -522,6 +534,7 @@ router.post('/webhook/gedemin', async (ctx) => {
       state
     })
     .then( () => console.log(`state set to ${state}...`) )
+    .then( () => { log.push({ logged: new Date(), state, commitMessage, url }) } )
 
   if (commitMessage === 'Inc build number') {
     queue.push( () => updateState('success') );
