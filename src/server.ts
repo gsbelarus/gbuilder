@@ -510,8 +510,8 @@ const router = new Router();
 const octokit = new Octokit({ auth: getPAT() });
 
 router.get('/', ctx => {
-  const l = log.map( ({ logged, state, commitMessage, url }) => `<li>${dateFormat(logged, 'dd.mm.yy HH:MM:ss')} -- ${state} -- <a href="${url}">${commitMessage}</a></li>` )
-  ctx.response.body = `<html><body>Webhook server is working...<p/><ul>${l.join()}</ul></body></html>`;
+  const l = log.map( ({ logged, state, commitMessage, url }) => `${dateFormat(logged, 'dd.mm.yy HH:MM:ss')} -- ${state} -- <a href="${url}">${commitMessage}</a>` )
+  ctx.response.body = `<html><body><pre>Webhook server is working...</pre><p/><pre>${l.join('\n')}</pre></body></html>`;
 });
 
 type Fn = () => Promise<void>;
