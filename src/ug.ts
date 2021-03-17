@@ -37,14 +37,7 @@ export async function ug(params: IParams, log: Log) {
       log.log(`skipped ${name}...`);
     } else {
       log.startProcess(name);
-
-      try {
-        await fn();
-      } catch(e) {
-        log.error(e.message);
-        process.exit(1);
-      };
-
+      await fn();
       log.finishProcess();
     };
   };

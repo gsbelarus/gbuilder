@@ -5,6 +5,7 @@ import bodyParser from 'koa-bodyparser';
 import { Octokit } from '@octokit/core';
 import { existsSync, readFileSync } from 'fs';
 import { IParams } from './types';
+import { buildGedemin } from './buildGedemin';
 
 // {
 //   "method": "POST",
@@ -502,21 +503,43 @@ router.get('/', ctx => {
   ctx.response.body = 'Webhook server is working...';
 });
 
-router.post('/webhook/gedemin', ctx => {
+type Fn = () => Promise<void>;
+const queue: Fn[] = [];
+
+router.post('/webhook/gedemin', async (ctx) => {
   const body = (ctx.request as any).body;
+  const sha = body.head_commit.id;
+  const commitMessage = body.head_commit.message;
 
   console.log(JSON.stringify(ctx.request, undefined, 2));
-  console.log(JSON.stringify(body, undefined, 2));
+  //console.log(JSON.stringify(body, undefined, 2));
 
-  if (Array.isArray(body.commits) && body.commits.length === 1 && body.commits[0].message === 'Inc build number') {
-    octokit
-      .request('POST /repos/{owner}/{repo}/statuses/{sha}', {
-        owner: 'GoldenSoftwareLtd',
-        repo: 'gedemin-private',
-        sha: body.commits[0].id,
-        state: 'success'
-      })
-      .then( res => console.log(JSON.stringify(res, undefined, 2)) )
+  const updateState = state => octokit
+    .request('POST /repos/{owner}/{repo}/statuses/{sha}', {
+      owner: 'GoldenSoftwareLtd',
+      repo: 'gedemin-private',
+      sha,
+      state
+    })
+    .then( () => console.log(`state set to ${state}...`) )
+
+  if (commitMessage === 'Inc build number') {
+    queue.push( () => updateState('success') );
+  } else {
+    queue.push( async () => {
+      await updateState('pending');
+      try {
+        await buildGedemin();
+        await updateState('success');
+      } catch(e) {
+        await updateState('error');
+        console.error(e.message);
+      }
+    });
+  }
+
+  while (queue.length) {
+    await queue.shift()!();
   }
 });
 
