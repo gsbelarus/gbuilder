@@ -175,12 +175,46 @@ export const portableFilesList = [
   'swipl/lib/memfile.dll',
   'swipl/lib/process.dll',
   'swipl/lib/readutil.dll',
-  'swipl/gd_pl_state.dat ',
+  'swipl/gd_pl_state.dat',
   'swipl/libgmp-10.dll',
   'swipl/libswipl.dll',
   'swipl/pthreadGC2.dll'
 ];
 
+/**
+ * Список файлов инстоляции для обновления
+ */
+ export const instFilesList = [
+  'gedemin.exe',
+  'gedemin_upd.exe',
+  'gdcc.exe',
+  'udf/gudf.dll'  
+];
+
+/**
+ * FSFN -- полное имя файла с пакетом настроек        
+ * DBN  -- только имя (без расширения) файла БД       
+ * SFN  -- имя файла заставки в каталоге images\splash
+ * IFN  -- имя файла проекта установки, без расширения
+ * AFN  -- имя файла с архивом установки              
+ * TFN  -- имя файла в каталоге дистрибутива установки
+ */
+export const instProjects = {
+  business: {
+    FSFN: 'Общие/Комплексная автоматизация.yml',
+    SFN: 'complex.jpg',
+    IFN: 'businesslocal',
+    AFN: 'compl_setup.rar',
+    TFN: 'Комплексная автоматизация'
+  },
+  devel: {
+    FSFN: 'Общие/Общие данные.yml',
+    SFN: 'complex.jpg',
+    IFN: 'devellocal',
+    AFN: 'devel_setup.rar',
+    TFN: 'Разработчик'
+  }
+};
 interface IProject {
   rc?: string;
   loc?: 'GUDF' | 'Utility/MakeLBRBTree';

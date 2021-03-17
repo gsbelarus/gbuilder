@@ -89,11 +89,12 @@ export async function ug(params: IParams, log: Log) {
       };
 
       log.finishProcess();
-    }
-  }
+    };
+  };
 
   const {
-    compilationType, setExeSize, rootGedeminDir, archiveDir, baseDir,
+    compilationType, setExeSize,
+    rootGedeminDir, archiveDir, baseDir,
     pathDelphi, binEditbin, binWinRAR, binFirebird, upload, srcBranch,
     commitIncBuildNumber, fbConnect, fbUser, fbPassword
   } = params;
