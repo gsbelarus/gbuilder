@@ -26,13 +26,13 @@ export interface IParams {
   rootGedeminDir: string;
   /** Папка архива */
   archiveDir: string;
-  /** Папка БД */  
+  /** Папка БД */
   baseDir: string;
   /** Папка файлов для инстоляции */
   instDir: string;
   /** Папка дистрибутивов */
   distribDir: string;
-  /** Папка настроек */  
+  /** Папка настроек */
   settingDir: string;
   /** Папка Firebird */
   binFirebird: string;
@@ -104,7 +104,7 @@ export interface IParams {
     maxBuffer: 1024 * 1024 * 64,
     timeout: 1 * 60 * 60 * 1000
   };
-  
+
   const packFiles = (arcName: string, fileName: string, cwd: string) => log.log(
     execFileSync(path.join(binWinRAR, 'WinRAR.exe'),
       [ 'a', '-ep', '-u', '-as', '-ibck', arcName, fileName ],
@@ -118,15 +118,11 @@ export interface IParams {
     }
   };
 
-  const checkDir = (destFullFileName: string) => {
-    const pathArr = destFullFileName.split(path.sep);
-    let currentDir = pathArr[0];
-    for (let i = 1; i < pathArr.length - 1; i++) {
-      currentDir = path.join(currentDir, pathArr[i]);
-      if (!existsSync(currentDir)) {
-        mkdirSync(currentDir);
-        log.log(`directory ${currentDir} has been created...`);
-      };
+  const assureDir = (destFullFileName: string) => {
+    const { dir } = path.parse(destFullFileName);
+    if (!existsSync(dir)) {
+      mkdirSync(dir, { recursive: true });
+      log.log(`directory ${dir} has been created...`);
     };
   };
 
@@ -163,7 +159,7 @@ export interface IParams {
           log.log(`file ${fDest} has been updated...`);
         };
       } else {
-        checkDir(fDest);
+        assureDir(fDest);
         copyFileSync(fSrc, fDest);
         log.log(`file ${fDest} has been added...`);
       };
@@ -213,7 +209,7 @@ export interface IParams {
     const setupPath = path.join(distribDir, instProjects[project].TFN);
     const setupFullFileName = path.join(setupPath, 'setup.exe');
     deleteFile(setupFullFileName, `previous ${setupFullFileName} has been deleted...`);
-    
+
     const issFileName = instProjects[project].IFN + '.iss';
     const issFullFileName = path.join(pathISS, issFileName);
     opt = { ...basicExecOptions, cwd: pathISS };
@@ -227,8 +223,8 @@ export interface IParams {
       `"${path.join(binInnoSetup, 'iscc.exe')}"` +
       ` "${issFullFileName}" /O"${setupPath}" /Fsetup /Q`,
       basicCmdOptions);
-    log.log(`Project ${project} has been distributed into ${setupPath}`);  
-    
+    log.log(`Project ${project} has been distributed into ${setupPath}`);
+
     const arcFullFileName = path.join(archiveDir, instProjects[project].AFN);
     packFiles(arcFullFileName, setupFullFileName, distribDir);
     log.log(`Project ${project} has been packed into ${arcFullFileName}`);
@@ -248,13 +244,13 @@ export interface IParams {
   log.log(`Read params: ${JSON.stringify(params, undefined, 2)}`);
   log.log(`Gedemin root dir: ${rootGedeminDir}`);
   log.log(`Database dir: ${baseDir}`);
-  log.log(`Installation dir: ${instDir}`);  
+  log.log(`Installation dir: ${instDir}`);
 
   await runProcess('Check prerequisites', checkPrerequisites);
   await runProcess('Prepare installation', prepareInstallation);
 
-  for (const pr of miProjectList) {  
-    await runProcess('Make installation', () => makeInstallation(pr)); 
+  for (const pr of miProjectList) {
+    await runProcess('Make installation', () => makeInstallation(pr));
   };
 
   /** Окончание процесса */
