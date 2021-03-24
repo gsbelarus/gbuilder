@@ -43,11 +43,13 @@ export const buildGedemin = async () => {
 
     await ug(params, new Log(loggers));
 
-    if (params.logFile) {
-      if (existsSync(params.logFile)) {
-        if (statSync(params.logFile).size > (params.maxLogSize ?? defMaxLogSize)) {
+    const { logFile, maxLogSize } = params;
+
+    if (logFile) {
+      if (existsSync(logFile)) {
+        if (statSync(logFile).size > (maxLogSize ?? defMaxLogSize)) {
           try {
-            unlinkSync(params.logFile);
+            unlinkSync(logFile);
           } catch {
             //...
           }
@@ -55,7 +57,7 @@ export const buildGedemin = async () => {
       }
 
       try {
-        const fh = await open(params.logFile, 'a');
+        const fh = await open(logFile, 'a');
         await fh.appendFile(logBuffer.join('\n'));
         await fh.close();
       } catch (e) {
