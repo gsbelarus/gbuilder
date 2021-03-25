@@ -11,17 +11,24 @@ export interface IParams {
    * В ней находятся папки Comp5 и Gedemin.
    */
   rootGedeminDir: string;
-
   /** Папка архива */
   archiveDir: string;
   /** Папка БД */
   baseDir: string;
+  /** Папка файлов для инстоляции */
+  instDir: string;
+  /** Папка дистрибутивов */
+  distribDir: string;
+  /** Папка настроек */
+  settingDir: string;
   /** Папка Delphi */
   pathDelphi: string;
   /** Папка утилиты Editbin */
   binEditbin: string;
   /** Папка WinRAR */
   binWinRAR: string;
+  /** Папка InnoSetup */
+  binInnoSetup: string;
   /** Папка Firebird */
   binFirebird: string;
   /** Upload files to web site */

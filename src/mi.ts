@@ -16,43 +16,7 @@ import {
 import path from 'path';
 import { Log } from './log';
 import { portableFilesList, projects, instFilesList, instProjects } from './const';
-import FormData from 'form-data';
-
-export interface IParams {
-  /**
-   * Корневая папка с полными исходниками Гедымина.
-   * В ней находятся папки Comp5 и Gedemin.
-   */
-  rootGedeminDir: string;
-  /** Папка архива */
-  archiveDir: string;
-  /** Папка БД */
-  baseDir: string;
-  /** Папка файлов для инстоляции */
-  instDir: string;
-  /** Папка дистрибутивов */
-  distribDir: string;
-  /** Папка настроек */
-  settingDir: string;
-  /** Папка Firebird */
-  binFirebird: string;
-  /** Папка WinRAR */
-  binWinRAR: string;
-  /** Папка InnoSetup */
-  binInnoSetup: string;
-  /** Upload files to web site */
-  upload?: boolean;
-  /** */
-  logFile?: string;
-  /** */
-  maxLogSize?: number;
-  /** Строка подключения к серверу файреберд. Имя сервера и порт. По-умолчанию localhost/3050 */
-  fbConnect?: string;
-  /** Имя пользователя для подключения к серверу файреберд. По-умолчанию, SYSDBA */
-  fbUser?: string;
-  /** Пароль пользователя файреберд */
-  fbPassword?: string;
-};
+import { IParams } from './types';
 
 /**
  * Главная функция.
