@@ -8,12 +8,13 @@
  *    -Создание архива установчного файла
  */
 
-import { execFileSync, execSync, ExecFileSyncOptions, ExecSyncOptions } from 'child_process';
+import { execFileSync, execSync } from 'child_process';
 import { existsSync, unlinkSync, copyFileSync, statSync, mkdirSync } from 'fs';
 import path from 'path';
 import { Log } from './log';
 import { portableFilesList, projects, instFilesList, instProjects } from './const';
 import { IParams } from './types';
+import { basicCmdOptions, basicExecOptions, prepareRunProcess } from './utils';
 
 /**
  * Главная функция.
@@ -21,50 +22,15 @@ import { IParams } from './types';
  */
  export async function mi(params: IParams, log: Log) {
 
-  /** Обертка процесса
-   *  @param name имя процесса
-   *  @param fn функция
-   *  @param skip пропустить выполнение
-   */
-  const runProcess = async (name: string, fn: () => void, skip = false) => {
-    if (skip) {
-      log.log(`skipped ${name}...`);
-    } else {
-      log.startProcess(name);
+  const runProcess = prepareRunProcess(log);
 
-      try {
-        await fn();
-      } catch(e) {
-        log.error(e.message);
-        process.exit(1);
-      };
-
-      log.finishProcess();
-    };
-  };
-
-  const {
-    rootGedeminDir, baseDir, instDir, settingDir, distribDir, archiveDir,
-    binFirebird, binWinRAR, binInnoSetup, upload,
-    fbConnect, fbUser, fbPassword
-  } = params;
+  const { rootGedeminDir, baseDir, instDir, settingDir, distribDir, archiveDir,
+    binFirebird, binWinRAR, binInnoSetup, fbConnect, fbUser, fbPassword } = params;
 
   /** Папка ISS-файлов для создания истоляции */
   const pathISS = path.join(rootGedeminDir, 'Gedemin', 'Setup', 'InnoSetup');
   /** Папка файлов БД для создания истоляции */
   const pathInstDB = path.join(instDir, 'database');
-
-  const basicExecOptions: ExecFileSyncOptions = {
-    stdio: ['pipe', 'pipe', 'pipe'],
-    maxBuffer: 1024 * 1024 * 64,
-    timeout: 1 * 60 * 60 * 1000
-  };
-
-  const basicCmdOptions: ExecSyncOptions = {
-    stdio: ['pipe', 'pipe', 'pipe'],
-    maxBuffer: 1024 * 1024 * 64,
-    timeout: 1 * 60 * 60 * 1000
-  };
 
   const packFiles = (arcName: string, fileName: string, cwd: string) => log.log(
     execFileSync(path.join(binWinRAR, 'WinRAR.exe'),

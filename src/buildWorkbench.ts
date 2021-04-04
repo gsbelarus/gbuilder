@@ -44,7 +44,13 @@ export const buildWorkbench = async (ug: BuildFunc) => {
       }
     ];
 
-    await ug(params, new Log(loggers));
+    const log = new Log(loggers);
+
+    try {
+      await ug(params, log);
+    } catch(e) {
+      log.error(e.message);
+    }
 
     const { logFile, maxLogSize } = params;
 

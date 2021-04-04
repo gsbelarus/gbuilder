@@ -7,7 +7,7 @@
  *    Формирование архива по файлу списка
  */
 
-import { execFileSync, ExecFileSyncOptions } from 'child_process';
+import { execFileSync } from 'child_process';
 import {
   existsSync, readFileSync, readdirSync, unlinkSync, copyFileSync, writeFileSync,
   statSync, appendFileSync, createReadStream, mkdirSync
@@ -20,6 +20,7 @@ import {
 } from './const';
 import FormData from 'form-data';
 import { IParams } from './types';
+import { basicExecOptions, prepareRunProcess } from './utils';
 
 /**
  * Главная функция.
@@ -27,20 +28,7 @@ import { IParams } from './types';
  */
 export async function ug(params: IParams, log: Log) {
 
-  /** Обертка процесса
-   *  @param name имя процесса
-   *  @param fn функция
-   *  @param skip пропустить выполнение
-   */
-  const runProcess = async (name: string, fn: () => void, skip = false) => {
-    if (skip) {
-      log.log(`skipped ${name}...`);
-    } else {
-      log.startProcess(name);
-      await fn();
-      log.finishProcess();
-    };
-  };
+  const runProcess = prepareRunProcess(log);
 
   const {
     compilationType, setExeSize,
@@ -63,19 +51,6 @@ export async function ug(params: IParams, log: Log) {
    * то надо отразить в инструкции по развертыванию,
    * что гит должен быть настроен, логин пароль введен и т.п.
    */
-
-  /**
-   * Параметры execFileSync
-   *    Компиляция работает c maxBuffer 2M примерно 30 сек (i5 8G SSD),
-   *    на всякий случай maxBuffer и timeout ставим больше;
-   *    гит и прочие программы вписываются в параметры для компиляции,
-   *    т.е. для выполнения execFileSync к параметрам basicExecOptions добавляем только cwd
-   */
-  const basicExecOptions: ExecFileSyncOptions = {
-    stdio: ['pipe', 'pipe', 'pipe'],
-    maxBuffer: 1024 * 1024 * 64,
-    timeout: 5 * 60 * 1000
-  };
 
   const packFiles = (arcName: string, fileName: string, cwd: string) => log.log(
     execFileSync(path.join(binWinRAR, 'WinRAR.exe'),
