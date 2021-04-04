@@ -9,10 +9,7 @@
  */
 
 import { execFileSync, execSync, ExecFileSyncOptions, ExecSyncOptions } from 'child_process';
-import {
-  existsSync, readFileSync, readdirSync, unlinkSync, copyFileSync, writeFileSync,
-  statSync, appendFileSync, createReadStream, mkdirSync
-} from 'fs';
+import { existsSync, unlinkSync, copyFileSync, statSync, mkdirSync } from 'fs';
 import path from 'path';
 import { Log } from './log';
 import { portableFilesList, projects, instFilesList, instProjects } from './const';

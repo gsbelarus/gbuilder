@@ -5,8 +5,9 @@ import bodyParser from 'koa-bodyparser';
 import { Octokit } from '@octokit/core';
 import { existsSync, readFileSync } from 'fs';
 import { IParams } from './types';
-import { buildGedemin } from './buildGedemin';
+import { buildWorkbench } from './buildWorkbench';
 import dateFormat from 'dateformat';
+import { ug } from './ug';
 
 // {
 //   "method": "POST",
@@ -542,7 +543,7 @@ router.post('/webhook/gedemin', async (ctx) => {
     queue.push( async () => {
       await updateState('pending');
       try {
-        await buildGedemin();
+        await buildWorkbench(ug);
         await updateState('success');
       } catch(e) {
         await updateState('error');

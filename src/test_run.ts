@@ -1,3 +1,4 @@
-import { buildGedemin } from './buildGedemin';
+import { buildWorkbench } from './buildWorkbench';
+import { ug } from './ug';
 
-buildGedemin();
+buildWorkbench(ug);

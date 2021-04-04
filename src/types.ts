@@ -1,3 +1,5 @@
+import { Log } from "./log";
+
 export interface IParams {
   /**
    * Тип компиляции:
@@ -50,3 +52,5 @@ export interface IParams {
   /** personal access token for github */
   pat?: string;
 };
+
+export type BuildFunc = (params: IParams, log: Log) => Promise<void>;

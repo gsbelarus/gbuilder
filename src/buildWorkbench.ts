@@ -1,12 +1,15 @@
 import { ILog, Log } from './log';
-import { ug } from './ug';
 import { existsSync, readFileSync, statSync, unlinkSync } from 'fs';
 import { open } from 'fs/promises';
-import { IParams } from './types';
+import { BuildFunc, IParams } from './types';
 
 const defMaxLogSize = 10 * 1024 * 1024;
 
-export const buildGedemin = async () => {
+/**
+ * Функция организует загрузку параметров, инициализацию лога ивызов функции компиляции.
+ * @param ug Функция компиляции проекта.
+ */
+export const buildWorkbench = async (ug: BuildFunc) => {
   const paramsFile = process.argv[2];
 
   if (!paramsFile || !existsSync(paramsFile)) {
