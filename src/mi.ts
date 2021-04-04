@@ -14,7 +14,7 @@ import path from 'path';
 import { Log } from './log';
 import { portableFilesList, projects, instFilesList, instProjects } from './const';
 import { IParams } from './types';
-import { basicCmdOptions, basicExecOptions, prepareRunProcess } from './utils';
+import { basicCmdOptions, basicExecOptions, bindLog } from './utils';
 
 /**
  * Главная функция.
@@ -22,36 +22,15 @@ import { basicCmdOptions, basicExecOptions, prepareRunProcess } from './utils';
  */
  export async function mi(params: IParams, log: Log) {
 
-  const runProcess = prepareRunProcess(log);
+  const { runProcess, packFiles, deleteFile, assureFileDir, assureDir } = bindLog(params, log);
 
   const { rootGedeminDir, baseDir, instDir, settingDir, distribDir, archiveDir,
-    binFirebird, binWinRAR, binInnoSetup, fbConnect, fbUser, fbPassword } = params;
+    binFirebird, binInnoSetup, fbConnect, fbUser, fbPassword } = params;
 
   /** Папка ISS-файлов для создания истоляции */
   const pathISS = path.join(rootGedeminDir, 'Gedemin', 'Setup', 'InnoSetup');
   /** Папка файлов БД для создания истоляции */
   const pathInstDB = path.join(instDir, 'database');
-
-  const packFiles = (arcName: string, fileName: string, cwd: string) => log.log(
-    execFileSync(path.join(binWinRAR, 'WinRAR.exe'),
-      [ 'a', '-ep', '-u', '-as', '-ibck', arcName, fileName ],
-      { ...basicExecOptions, cwd }).toString()
-  );
-
-  const deleteFile = (fn: string, msg?: string) => {
-    if (existsSync(fn)) {
-      unlinkSync(fn);
-      msg && log.log(msg);
-    }
-  };
-
-  const assureDir = (destFullFileName: string) => {
-    const { dir } = path.parse(destFullFileName);
-    if (!existsSync(dir)) {
-      mkdirSync(dir, { recursive: true });
-      log.log(`directory ${dir} has been created...`);
-    };
-  };
 
   /** Проверяем наличие необходимых файлов, программ, папок */
   const checkPrerequisites = () => {
@@ -63,10 +42,7 @@ import { basicCmdOptions, basicExecOptions, prepareRunProcess } from './utils';
       throw new Error(`Installation dir "${instDir}" not found!`);
     }
 
-    if (!existsSync(pathInstDB)) {
-      mkdirSync(pathInstDB);
-      log.log(`directory ${pathInstDB} has been created...`);
-    }
+    assureDir(pathInstDB);
 
     log.log('everything is ok!');
   };
@@ -86,7 +62,7 @@ import { basicCmdOptions, basicExecOptions, prepareRunProcess } from './utils';
           log.log(`file ${fDest} has been updated...`);
         };
       } else {
-        assureDir(fDest);
+        assureFileDir(fDest);
         copyFileSync(fSrc, fDest);
         log.log(`file ${fDest} has been added...`);
       };

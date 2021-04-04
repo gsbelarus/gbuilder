@@ -20,7 +20,7 @@ import {
 } from './const';
 import FormData from 'form-data';
 import { IParams } from './types';
-import { basicExecOptions, prepareRunProcess } from './utils';
+import { basicExecOptions, bindLog } from './utils';
 
 /**
  * Главная функция.
@@ -28,14 +28,10 @@ import { basicExecOptions, prepareRunProcess } from './utils';
  */
 export async function ug(params: IParams, log: Log) {
 
-  const runProcess = prepareRunProcess(log);
-
-  const {
-    compilationType, setExeSize,
-    rootGedeminDir, archiveDir, baseDir,
-    pathDelphi, binEditbin, binWinRAR, binFirebird, upload, srcBranch,
-    commitIncBuildNumber, fbConnect, fbUser, fbPassword
-  } = params;
+  const { runProcess, packFiles, deleteFile, assureDir } = bindLog(params, log);
+  const { compilationType, setExeSize, rootGedeminDir, archiveDir, baseDir,
+    pathDelphi, binEditbin, binFirebird, upload, srcBranch, commitIncBuildNumber,
+    fbConnect, fbUser, fbPassword } = params;
 
   /** В процессе компиляции DCU файлы помещаются в эту папку */
   const pathDCU = path.join(rootGedeminDir, 'Gedemin', 'DCU');
@@ -52,19 +48,6 @@ export async function ug(params: IParams, log: Log) {
    * что гит должен быть настроен, логин пароль введен и т.п.
    */
 
-  const packFiles = (arcName: string, fileName: string, cwd: string) => log.log(
-    execFileSync(path.join(binWinRAR, 'WinRAR.exe'),
-      [ 'a', '-u', '-as', '-ibck', arcName, fileName ],
-      { ...basicExecOptions, cwd }).toString()
-  );
-
-  const deleteFile = (fn: string, msg?: string) => {
-    if (existsSync(fn)) {
-      unlinkSync(fn);
-      msg && log.log(msg);
-    }
-  };
-
   /** Проверяем наличие необходимых файлов, программ, папок */
   const checkPrerequisites = () => {
     if (!archiveDir || !existsSync(archiveDir)) {
@@ -79,10 +62,7 @@ export async function ug(params: IParams, log: Log) {
       throw new Error(`Git branch is not specified!`);
     }
 
-    if (!existsSync(pathDCU)) {
-      mkdirSync(pathDCU);
-      log.log(`directory ${pathDCU} has been created...`);
-    }
+    assureDir(pathDCU);
 
     log.log('everything is ok!');
   };
