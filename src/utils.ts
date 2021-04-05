@@ -5,11 +5,11 @@ import path from 'path';
 import { existsSync, mkdirSync, unlinkSync } from 'fs';
 
 export const bindLog = (params: IParams, log: Log) => ({
-  runProcesses: async (n: string, processes: Processes) => {
-    log.startProcess(n, processes.length);
-    for (const { name, fn: processFunc } of processes) {
+  runProcesses: async (name: string, processes: Processes) => {
+    log.startProcess(name, processes.length);
+    for (const { name, fn } of processes) {
       log.startProcess(name);
-      await processFunc();
+      await fn();
       log.finishProcess();
     }
     log.finishProcess();
