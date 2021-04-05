@@ -10,8 +10,7 @@
 import { execFileSync } from 'child_process';
 import {
   existsSync, readFileSync, readdirSync, unlinkSync, copyFileSync, writeFileSync,
-  statSync, appendFileSync, createReadStream, mkdirSync
-} from 'fs';
+  statSync, appendFileSync, createReadStream } from 'fs';
 import path from 'path';
 import { Log } from './log';
 import {
@@ -28,7 +27,7 @@ import { basicExecOptions, bindLog } from './utils';
  */
 export async function ug(params: IParams, log: Log) {
 
-  const { runProcess, packFiles, deleteFile, assureDir } = bindLog(params, log);
+  const { runProcesses, packFiles, deleteFile, assureDir } = bindLog(params, log);
   const { compilationType, setExeSize, rootGedeminDir, archiveDir, baseDir,
     pathDelphi, binEditbin, binFirebird, upload, srcBranch, commitIncBuildNumber,
     fbConnect, fbUser, fbPassword } = params;
@@ -415,39 +414,32 @@ export async function ug(params: IParams, log: Log) {
   type ProjectID = 'gedemin' | 'gdcc' | 'gedemin_upd' | 'gudf' | 'makelbrbtree';
   const ugProjectList: ProjectID[] = ['gedemin', 'gdcc', 'gedemin_upd', 'gudf', 'makelbrbtree'];
 
-  /** Количество шагов процесса */
-  const steps = 8 + ugProjectList.length * 4;
-
-  /** Начало процесса */
-  log.startProcess('Gedemin compilation', steps);
-
   log.log(`Compilation type: ${compilationType}`);
   log.log(`Gedemin root dir: ${rootGedeminDir}`);
   log.log(`Archive dir: ${archiveDir}`);
   log.log(`Database dir: ${baseDir}`);
 
-  await runProcess('Check prerequisites', checkPrerequisites);
-  await runProcess('Pull latest sources', pullSources);
-  await runProcess('Clear DCU folder', clearDCU);
+  runProcesses('Gedemin compilation', [
+    { name: 'Check prerequisites', fn: checkPrerequisites },
+    { name: 'Pull latest sources', fn: pullSources },
+    { name: 'Clear DCU folder', fn: clearDCU },
+    ...ugProjectList.flatMap( pr => {
+      const { loc } = projects[pr];
 
-  for (const pr of ugProjectList) {
-    const { loc } = projects[pr];
+      /** Основная папка проекта, где находятся .dpr, .cfg, .rc файлы */
+      const pathProject = path.join(rootGedeminDir, 'Gedemin', loc ?? 'Gedemin');
 
-    /** Основная папка проекта, где находятся .dpr, .cfg, .rc файлы */
-    const pathProject = path.join(rootGedeminDir, 'Gedemin', loc ?? 'Gedemin');
-
-    await runProcess(`Increment version for ${pr}`, incVer(pr, pathProject));
-    await runProcess(`Prepare config files for ${pr}`, prepareConfigFile(pr, pathProject));
-    await runProcess(`Build ${pr}`, buildProject(pr, pathProject));
-    await runProcess(`Clean up after building ${pr}`, cleanupConfigFile(pr, pathProject));
-  };
-
-  await runProcess('Set gedemin.exe size', setGedeminEXESize);
-  await runProcess('Create etalon database', createEtalonDB);
-  await runProcess('Create portable version archive', createArhive);
-  await runProcess('Upload archive', uploadArhive);
-  await runProcess('Inc build number', pushIncBuildNumber);
-
-  /** Окончание процесса */
-  log.finishProcess();
+      return [
+        { name: `Increment version for ${pr}`, fn: incVer(pr, pathProject) },
+        { name: `Prepare config files for ${pr}`, fn: prepareConfigFile(pr, pathProject) },
+        { name: `Build ${pr}`, fn: buildProject(pr, pathProject) },
+        { name: `Clean up after building ${pr}`, fn: cleanupConfigFile(pr, pathProject) }
+      ]
+    }),
+    { name: 'Set gedemin.exe size', fn: setGedeminEXESize },
+    { name: 'Create etalon database', fn: createEtalonDB },
+    { name: 'Create portable version archive', fn: createArhive },
+    { name: 'Upload archive', fn: uploadArhive },
+    { name: 'Inc build number', fn: pushIncBuildNumber }
+  ]);
 };

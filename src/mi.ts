@@ -22,7 +22,7 @@ import { basicCmdOptions, basicExecOptions, bindLog } from './utils';
  */
  export async function mi(params: IParams, log: Log) {
 
-  const { runProcess, packFiles, deleteFile, assureFileDir, assureDir } = bindLog(params, log);
+  const { runProcesses, packFiles, deleteFile, assureFileDir, assureDir } = bindLog(params, log);
 
   const { rootGedeminDir, baseDir, instDir, settingDir, distribDir, archiveDir,
     binFirebird, binInnoSetup, fbConnect, fbUser, fbPassword } = params;
@@ -131,26 +131,15 @@ import { basicCmdOptions, basicExecOptions, bindLog } from './utils';
     const arcFullFileName = path.join(archiveDir, instProjects[project].AFN);
     packFiles(arcFullFileName, setupFullFileName, distribDir);
     log.log(`Project ${project} has been packed into ${arcFullFileName}`);
-
-    };
+  };
 
   /** Список проектов для инстоляции */
   type ProjectID = 'business' | 'devel';
   const miProjectList: ProjectID[] = [/*'business',*/ 'devel'];
 
-  /** Количество шагов процесса */
-  const steps = 2 + miProjectList.length;
-
-  /** Начало процесса */
-  log.startProcess('Gedemin installation', steps);
-
-  await runProcess('Check prerequisites', checkPrerequisites);
-  await runProcess('Prepare installation', prepareInstallation);
-
-  for (const pr of miProjectList) {
-    await runProcess('Make installation', makeInstallation(pr));
-  };
-
-  /** Окончание процесса */
-  log.finishProcess();
+  runProcesses('Gedemin installation', [
+    { name: 'Check prerequisites', fn: checkPrerequisites },
+    { name: 'Prepare installation', fn: prepareInstallation },
+    ...miProjectList.flatMap( pr => ({ name: 'Make installation', fn: makeInstallation(pr) }) ),
+  ]);
 };

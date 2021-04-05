@@ -1,23 +1,18 @@
 import { ExecSyncOptions, ExecFileSyncOptions, execFileSync } from 'child_process';
 import { Log } from './log';
-import { IParams } from './types';
+import { IParams, Processes } from './types';
 import path from 'path';
 import { existsSync, mkdirSync, unlinkSync } from 'fs';
 
 export const bindLog = (params: IParams, log: Log) => ({
-  /** Обертка процесса
-    *  @param name имя процесса
-    *  @param fn функция
-    *  @param skip пропустить выполнение
-    */
-  runProcess: async (name: string, fn: () => void, skip = false) => {
-    if (skip) {
-      log.log(`skipped ${name}...`);
-    } else {
+  runProcesses: async (n: string, processes: Processes) => {
+    log.startProcess(n, processes.length);
+    for (const { name, fn: processFunc } of processes) {
       log.startProcess(name);
-      await fn();
+      await processFunc();
       log.finishProcess();
-    };
+    }
+    log.finishProcess();
   },
 
   packFiles: (arcName: string, fileName: string, cwd: string) => log.log(

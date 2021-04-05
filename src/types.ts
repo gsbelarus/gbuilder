@@ -54,3 +54,12 @@ export interface IParams {
 };
 
 export type BuildFunc = (params: IParams, log: Log) => Promise<void>;
+
+type ProcessFuncA = () => Promise<void>;
+type ProcessFuncB = () => void;
+type ProcessFunc = ProcessFuncA | ProcessFuncB;
+type ProcessDescriptor = {
+  name: string;
+  fn: ProcessFunc;
+};
+export type Processes = ProcessDescriptor[];
