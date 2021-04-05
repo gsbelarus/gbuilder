@@ -144,11 +144,6 @@ import { basicCmdOptions, basicExecOptions, bindLog } from './utils';
   /** Начало процесса */
   log.startProcess('Gedemin installation', steps);
 
-  log.log(`Read params: ${JSON.stringify(params, undefined, 2)}`);
-  log.log(`Gedemin root dir: ${rootGedeminDir}`);
-  log.log(`Database dir: ${baseDir}`);
-  log.log(`Installation dir: ${instDir}`);
-
   await runProcess('Check prerequisites', checkPrerequisites);
   await runProcess('Prepare installation', prepareInstallation);
 

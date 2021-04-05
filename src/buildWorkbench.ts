@@ -46,6 +46,8 @@ export const buildWorkbench = async (ug: BuildFunc) => {
 
     const log = new Log(loggers);
 
+    log.log(`Read params: ${JSON.stringify(params, undefined, 2)}`);
+
     try {
       await ug(params, log);
     } catch(e) {

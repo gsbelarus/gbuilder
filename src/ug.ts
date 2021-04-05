@@ -421,7 +421,6 @@ export async function ug(params: IParams, log: Log) {
   /** Начало процесса */
   log.startProcess('Gedemin compilation', steps);
 
-  log.log(`Read params: ${JSON.stringify(params, undefined, 2)}`);
   log.log(`Compilation type: ${compilationType}`);
   log.log(`Gedemin root dir: ${rootGedeminDir}`);
   log.log(`Archive dir: ${archiveDir}`);
