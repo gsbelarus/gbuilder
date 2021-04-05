@@ -9,7 +9,7 @@
  */
 
 import { execFileSync, execSync } from 'child_process';
-import { existsSync, unlinkSync, copyFileSync, statSync, mkdirSync } from 'fs';
+import { existsSync, unlinkSync, copyFileSync, statSync } from 'fs';
 import path from 'path';
 import { Log } from './log';
 import { portableFilesList, projects, instFilesList, instProjects } from './const';
@@ -70,7 +70,7 @@ import { basicCmdOptions, basicExecOptions, bindLog } from './utils';
   };
 
   /** Создание истоляции */
-  const makeInstallation = (project: ProjectID) => {
+  const makeInstallation = (project: ProjectID) => () => {
     const dbFileName = 'etalon.fdb';
     const dbFullFileName = path.join(baseDir, dbFileName);
     const dbProjectFullFileName = path.join(pathInstDB, `${project}.fdb`);
@@ -139,7 +139,7 @@ import { basicCmdOptions, basicExecOptions, bindLog } from './utils';
   const miProjectList: ProjectID[] = [/*'business',*/ 'devel'];
 
   /** Количество шагов процесса */
-  const steps = 1 + miProjectList.length * 1;
+  const steps = 2 + miProjectList.length;
 
   /** Начало процесса */
   log.startProcess('Gedemin installation', steps);
@@ -148,7 +148,7 @@ import { basicCmdOptions, basicExecOptions, bindLog } from './utils';
   await runProcess('Prepare installation', prepareInstallation);
 
   for (const pr of miProjectList) {
-    await runProcess('Make installation', () => makeInstallation(pr));
+    await runProcess('Make installation', makeInstallation(pr));
   };
 
   /** Окончание процесса */

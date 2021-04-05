@@ -110,7 +110,7 @@ export async function ug(params: IParams, log: Log) {
    * Текущий файл сохраним с именем .current.cfg и восстановим в конце процесса.
    * Файл создадим из шаблона, подставив нужные значения в зависимости от типа компиляции.
    */
-  const prepareConfigFile = (project: ProjectID, pathProject: string) => {
+  const prepareConfigFile = (project: ProjectID, pathProject: string) => () => {
     const { dest, loc } = projects[project];
 
     /** Файл конфигурации проекта для компиляции */
@@ -151,7 +151,7 @@ export async function ug(params: IParams, log: Log) {
   };
 
   /** Компиляция проекта по заданному типу */
-  const buildProject = (project: ProjectID, pathProject: string) => {
+  const buildProject = (project: ProjectID, pathProject: string) => () => {
     const { dest, ext } = projects[project];
 
     /** Целевая папка компиляции */
@@ -265,7 +265,7 @@ export async function ug(params: IParams, log: Log) {
   };
 
   /** Восстановление сохраненных файлов конфигурации */
-  const cleanupConfigFile = (project: ProjectID, pathProject: string) => {
+  const cleanupConfigFile = (project: ProjectID, pathProject: string) => () => {
     /** Файл конфигурации проекта для компиляции */
     const cfgFileName = path.join(pathProject, project + '.cfg');
 
@@ -283,7 +283,7 @@ export async function ug(params: IParams, log: Log) {
   //но для остальных утилит тоже надо сделать инкремент
 
   /** Инкремент версии */
-  const incVer = (project: ProjectID, pathProject: string) => {
+  const incVer = (project: ProjectID, pathProject: string) => () => {
     const { rc } = projects[project];
 
     if (!rc) {
@@ -436,10 +436,10 @@ export async function ug(params: IParams, log: Log) {
     /** Основная папка проекта, где находятся .dpr, .cfg, .rc файлы */
     const pathProject = path.join(rootGedeminDir, 'Gedemin', loc ?? 'Gedemin');
 
-    await runProcess(`Increment version for ${pr}`,  () => incVer(pr, pathProject));
-    await runProcess(`Prepare config files for ${pr}`, () => prepareConfigFile(pr, pathProject));
-    await runProcess(`Build ${pr}`, () => buildProject(pr, pathProject));
-    await runProcess(`Clean up after building ${pr}`, () => cleanupConfigFile(pr, pathProject));
+    await runProcess(`Increment version for ${pr}`, incVer(pr, pathProject));
+    await runProcess(`Prepare config files for ${pr}`, prepareConfigFile(pr, pathProject));
+    await runProcess(`Build ${pr}`, buildProject(pr, pathProject));
+    await runProcess(`Clean up after building ${pr}`, cleanupConfigFile(pr, pathProject));
   };
 
   await runProcess('Set gedemin.exe size', setGedeminEXESize);

@@ -15,7 +15,7 @@ export interface IParams {
   rootGedeminDir: string;
   /** Папка архива */
   archiveDir: string;
-  /** Папка БД */
+  /** В процессе формирования файла БД из скриптов он размещается в этой папке */
   baseDir: string;
   /** Папка файлов для инстоляции */
   instDir: string;
