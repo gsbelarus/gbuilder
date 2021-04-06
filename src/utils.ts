@@ -3,6 +3,7 @@ import { Log } from './log';
 import { IParams, Processes } from './types';
 import path from 'path';
 import { existsSync, mkdirSync, unlinkSync } from 'fs';
+import { copyFile, stat } from 'fs/promises';
 
 export const bindLog = (params: IParams, log: Log) => ({
   runProcesses: async (name: string, processes: Processes) => {
@@ -41,6 +42,12 @@ export const bindLog = (params: IParams, log: Log) => ({
       mkdirSync(dir, { recursive: true });
       log.log(`directory ${dir} has been created...`);
     };
+  },
+
+  copyFileWithLog: async (src: string, dest: string) => {
+    await copyFile(src, dest);
+    const { size } = await stat(dest);
+    log.log(`copied: ${src} --> ${dest}, ${size.toLocaleString(undefined, { maximumFractionDigits: 0 })} bytes...`);
   }
 });
 

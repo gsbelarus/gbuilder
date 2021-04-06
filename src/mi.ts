@@ -8,13 +8,13 @@
  *    -Создание архива установчного файла
  */
 
-import { execFileSync, execSync } from 'child_process';
-import { existsSync, unlinkSync, copyFileSync, statSync } from 'fs';
+import { execFileSync } from 'child_process';
+import { existsSync } from 'fs';
 import path from 'path';
 import { Log } from './log';
-import { portableFilesList, projects, instFilesList, instProjects } from './const';
+import { portableFilesList, instProjects } from './const';
 import { IParams } from './types';
-import { basicCmdOptions, basicExecOptions, bindLog } from './utils';
+import { basicExecOptions, bindLog } from './utils';
 
 /**
  * Главная функция.
@@ -22,10 +22,10 @@ import { basicCmdOptions, basicExecOptions, bindLog } from './utils';
  */
  export async function mi(params: IParams, log: Log) {
 
-  const { runProcesses, packFiles, deleteFile, assureFileDir, assureDir } = bindLog(params, log);
+  const { runProcesses, packFiles, deleteFile, assureDir, copyFileWithLog } = bindLog(params, log);
 
   const { rootGedeminDir, baseDir, instDir, settingDir, distribDir, archiveDir,
-    binFirebird, binInnoSetup, fbConnect, fbUser, fbPassword } = params;
+    binFirebird, binInnoSetup, fbConnect, fbUser, fbPassword, srcGedeminAppsBranch } = params;
 
   /** Папка ISS-файлов для создания истоляции */
   const pathISS = path.join(rootGedeminDir, 'Gedemin', 'Setup', 'InnoSetup');
@@ -42,43 +42,39 @@ import { basicCmdOptions, basicExecOptions, bindLog } from './utils';
       throw new Error(`Installation dir "${instDir}" not found!`);
     }
 
+    if (!settingDir || !existsSync(settingDir)) {
+      throw new Error(`Directory with name spaces files "${settingDir}" not found!`);
+    }
+
     assureDir(pathInstDB);
 
     log.log('everything is ok!');
   };
 
-  /** Подготовка к истоляции */
+  /** Снятие из гита последних исходников */
+  const pullSources = () => {
+    const opt = { ...basicExecOptions, cwd: settingDir };
+    log.log(`git checkout ${srcGedeminAppsBranch}...`);
+    log.log(execFileSync('git', ['checkout', srcGedeminAppsBranch], opt).toString());
+    log.log(`git pull...`);
+    log.log(execFileSync('git', ['pull'], opt).toString());
+  };
+
+  /** Копируем все файлы из EXE в папку, из которой будем создавать инстоляцию InnoSetup */
   const prepareInstallation = () => {
-    /** Целевая папка компиляции */
-    const pathEXE = path.join(rootGedeminDir, 'Gedemin', projects['gedemin'].dest ?? 'EXE');
-    /** Обновление файлов для создания истоляции */
-    portableFilesList.forEach( fn => {
-      const fSrc = path.join(pathEXE, fn);
-      const fDest = path.join(instDir, fn);
-      if (existsSync(fDest)) {
-        if (instFilesList.includes(fn) && (statSync(fSrc).ctimeMs > statSync(fDest).ctimeMs)) {
-          unlinkSync(fDest);
-          copyFileSync(fSrc, fDest);
-          log.log(`file ${fDest} has been updated...`);
-        };
-      } else {
-        assureFileDir(fDest);
-        copyFileSync(fSrc, fDest);
-        log.log(`file ${fDest} has been added...`);
-      };
-    });
+    const pathEXE = path.join(rootGedeminDir, 'Gedemin', 'EXE');
+    return Promise.all(portableFilesList.map( fn => copyFileWithLog(path.join(pathEXE, fn), path.join(instDir, fn)) ) );
   };
 
   /** Создание истоляции */
-  const makeInstallation = (project: ProjectID) => () => {
+  const makeInstallation = (project: ProjectID) => async () => {
     const dbFileName = 'etalon.fdb';
     const dbFullFileName = path.join(baseDir, dbFileName);
     const dbProjectFullFileName = path.join(pathInstDB, `${project}.fdb`);
 
     /** Копирование эталонной БД в БД проекта истоляции */
     deleteFile(dbProjectFullFileName, `previous ${project}.fdb has been deleted...`);
-    copyFileSync(dbFullFileName, dbProjectFullFileName);
-    log.log(`${dbProjectFullFileName} has been copied from ${dbFullFileName}`);
+    await copyFileWithLog(dbFullFileName, dbProjectFullFileName);
 
     /** Загрузка пакета настроек */
     const connectionString = `${fbConnect ?? 'localhost/3050'}${fbConnect ? ':' : ''}${dbProjectFullFileName}`;
@@ -88,7 +84,7 @@ import { basicCmdOptions, basicExecOptions, bindLog } from './utils';
       execFileSync(
         path.join(instDir, 'gedemin.exe'),
         [ '/sn', connectionString, '/user', 'Administrator', '/password', 'Administrator',
-          '/sp', settingDir, '/rd', '/q', '/sl',
+          '/sp', settingDir, '/rd', '/q',
           '/sfn', settingFullFileName, '/ns' ],
         opt).toString()
     );
@@ -97,8 +93,7 @@ import { basicCmdOptions, basicExecOptions, bindLog } from './utils';
     const imgSrcFullFileName = path.join(rootGedeminDir, 'Gedemin', 'Images', 'Splash', instProjects[project].SFN);
     const imgDestFullFileName = path.join(instDir, 'gedemin.jpg');
     deleteFile(imgDestFullFileName, `previous gedemin.jpg has been deleted...`);
-    copyFileSync(imgSrcFullFileName, imgDestFullFileName);
-    log.log(`${imgDestFullFileName} has been copied from ${imgSrcFullFileName}`);
+    await copyFileWithLog(imgSrcFullFileName, imgDestFullFileName);
 
     const bkProjectFullFileName = path.join(pathInstDB, `${project}.bk`);
     deleteFile(bkProjectFullFileName, `previous ${bkProjectFullFileName} has been deleted...`);
@@ -116,16 +111,10 @@ import { basicCmdOptions, basicExecOptions, bindLog } from './utils';
     const issFileName = instProjects[project].IFN + '.iss';
     const issFullFileName = path.join(pathISS, issFileName);
     opt = { ...basicExecOptions, cwd: pathISS };
-    // not works
-    // execFileSync(
-    //   path.join(binInnoSetup, 'iscc.exe'),
-    //   [`"${issFullFileName}" /O"${setupPath}" /Fsetup /Q`],
-    //   opt);
-
-    execSync(
-      `"${path.join(binInnoSetup, 'iscc.exe')}"` +
-      ` "${issFullFileName}" /O"${setupPath}" /Fsetup /Q`,
-      basicCmdOptions);
+    execFileSync(
+      path.join(binInnoSetup, 'iscc.exe'),
+      [issFullFileName, `/O"${setupPath}"`, '/Fsetup', '/Q'],
+      opt);
     log.log(`Project ${project} has been distributed into ${setupPath}`);
 
     const arcFullFileName = path.join(archiveDir, instProjects[project].AFN);
@@ -139,6 +128,7 @@ import { basicCmdOptions, basicExecOptions, bindLog } from './utils';
 
   await runProcesses('Gedemin installation', [
     { name: 'Check prerequisites', fn: checkPrerequisites },
+    { name: 'Pull sources', fn: pullSources },
     { name: 'Prepare installation', fn: prepareInstallation },
     ...miProjectList.flatMap( pr => ({ name: 'Make installation', fn: makeInstallation(pr) }) ),
   ]);

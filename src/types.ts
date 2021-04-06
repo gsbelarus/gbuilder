@@ -39,8 +39,10 @@ export interface IParams {
   logFile?: string;
   /** */
   maxLogSize?: number;
-  /** */
+  /** Ветка исходников Гедымина из которой будем компилировать */
   srcBranch: string;
+  /** Ветка ПИ из которых будем собирать бд для инстоляции */
+  srcGedeminAppsBranch: string;
   /** */
   commitIncBuildNumber?: boolean;
   /** Строка подключения к серверу файреберд. Имя сервера и порт. По-умолчанию localhost/3050 */
