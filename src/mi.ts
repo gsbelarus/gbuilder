@@ -8,7 +8,7 @@
  *    -Создание архива установчного файла
  */
 
-import { execFileSync } from 'child_process';
+import { execFileSync, execSync } from 'child_process';
 import { existsSync } from 'fs';
 import path from 'path';
 import { Log } from './log';
@@ -110,11 +110,14 @@ import { basicExecOptions, bindLog } from './utils';
 
     const issFileName = instProjects[project].IFN + '.iss';
     const issFullFileName = path.join(pathISS, issFileName);
-    opt = { ...basicExecOptions, cwd: pathISS };
-    execFileSync(
-      path.join(binInnoSetup, 'iscc.exe'),
-      [issFullFileName, `/O"${setupPath}"`, '/Fsetup', '/Q'],
-      opt);
+    log.log(
+      execSync(
+        `"${path.join(binInnoSetup, 'iscc.exe')}" /O"${setupPath}" /Fsetup /Q ${issFileName}`, {
+          maxBuffer: 1024 * 1024 * 64,
+          timeout: 1 * 60 * 60 * 1000,
+          cwd: pathISS
+        }).toString()
+    );
     log.log(`Project ${project} has been distributed into ${setupPath}`);
 
     const arcFullFileName = path.join(archiveDir, instProjects[project].AFN);
