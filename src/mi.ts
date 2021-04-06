@@ -137,7 +137,7 @@ import { basicCmdOptions, basicExecOptions, bindLog } from './utils';
   type ProjectID = 'business' | 'devel';
   const miProjectList: ProjectID[] = [/*'business',*/ 'devel'];
 
-  runProcesses('Gedemin installation', [
+  await runProcesses('Gedemin installation', [
     { name: 'Check prerequisites', fn: checkPrerequisites },
     { name: 'Prepare installation', fn: prepareInstallation },
     ...miProjectList.flatMap( pr => ({ name: 'Make installation', fn: makeInstallation(pr) }) ),

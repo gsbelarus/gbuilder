@@ -419,7 +419,7 @@ export async function ug(params: IParams, log: Log) {
   log.log(`Archive dir: ${archiveDir}`);
   log.log(`Database dir: ${baseDir}`);
 
-  runProcesses('Gedemin compilation', [
+  await runProcesses('Gedemin compilation', [
     { name: 'Check prerequisites', fn: checkPrerequisites },
     { name: 'Pull latest sources', fn: pullSources },
     { name: 'Clear DCU folder', fn: clearDCU },
