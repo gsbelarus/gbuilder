@@ -35,9 +35,9 @@ export async function ug(params: IParams, log: Log) {
   /** Папка SQL-файлов для создания эталонной БД */
   const pathSQL = path.join(rootGedeminDir, 'Gedemin', 'SQL');
   /** */
-  const baseDir = path.join(rootGedeminDir, 'Gedemin', 'EXE', 'Database');
+  const baseDir = path.join(ciDir, 'Database');
   /** */
-  const archiveDir = path.join(ciDir, 'archive');
+  const archiveDir = path.join(ciDir, 'Archive');
 
   /**
    * Снимаем исходники с гита.

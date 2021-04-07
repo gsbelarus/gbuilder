@@ -32,11 +32,11 @@ import { basicExecOptions, bindLog } from './utils';
   /** Папка файлов БД для создания истоляции */
   const pathInstDB = path.join(instDir, 'Database');
   /** */
-  const baseDir = path.join(rootGedeminDir, 'Gedemin', 'EXE', 'Database');
+  const baseDir = path.join(ciDir, 'Database');
   /** */
-  const distribDir = path.join(ciDir, 'distrib');
+  const distribDir = path.join(ciDir, 'Distrib');
   /** */
-  const archiveDir = path.join(ciDir, 'archive');
+  const archiveDir = path.join(ciDir, 'Archive');
 
   /** Проверяем наличие необходимых файлов, программ, папок */
   const checkPrerequisites = () => {
