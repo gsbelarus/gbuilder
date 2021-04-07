@@ -178,7 +178,9 @@ export const portableFilesList = [
   'swipl/gd_pl_state.dat',
   'swipl/libgmp-10.dll',
   'swipl/libswipl.dll',
-  'swipl/pthreadGC2.dll'
+  'swipl/pthreadGC2.dll',
+  'help/fr24rus.chm',
+  'help/vbs55.chm'
 ];
 
 /**
