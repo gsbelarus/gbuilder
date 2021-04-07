@@ -92,7 +92,7 @@ import { basicExecOptions, bindLog } from './utils';
     await copyFileWithLog(imgSrcFullFileName, imgDestFullFileName);
 
     const bkProjectFullFileName = path.join(pathInstDB, `${project}.bk`);
-    deleteFile(bkProjectFullFileName, `previous ${bkProjectFullFileName} has been deleted...`);
+    deleteFile(bkProjectFullFileName);
     log.log(
       execFileSync(
         path.join(binFirebird, 'gbak.exe'),

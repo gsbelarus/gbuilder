@@ -48,19 +48,13 @@ export async function ug(params: IParams, log: Log) {
 
   /** Проверяем наличие необходимых файлов, программ, папок */
   const checkPrerequisites = () => {
-    if (!archiveDir || !existsSync(archiveDir)) {
-      throw new Error(`Archive dir "${archiveDir}" not found!`);
-    }
-
-    if (!baseDir || !existsSync(baseDir)) {
-      throw new Error(`Database dir "${baseDir}" not found!`);
-    }
-
     if (!srcBranch) {
       throw new Error(`Git branch is not specified!`);
     }
 
     assureDir(pathDCU);
+    assureDir(baseDir);
+    assureDir(archiveDir);
 
     log.log('everything is ok!');
   };
@@ -159,7 +153,7 @@ export async function ug(params: IParams, log: Log) {
     const destFileName = project + (ext ?? '.exe');
     const destFullFileName = path.join(destDir, destFileName);
 
-    deleteFile(destFullFileName, `previous ${destFileName} has been deleted...`);
+    deleteFile(destFullFileName);
 
     log.log(`building ${destFileName}...`);
     log.log(
@@ -297,7 +291,7 @@ export async function ug(params: IParams, log: Log) {
     log.log(`build number for ${project} has been incremented to ${buildNumber}...`);
     log.log(`${project}_ver.rc saved...`);
 
-    deleteFile(verResFileName, `previous ${project}_ver.res has been deleted...`);
+    deleteFile(verResFileName);
 
     log.log(
       execFileSync(
@@ -324,7 +318,7 @@ export async function ug(params: IParams, log: Log) {
     const dbFileName = 'etalon.fdb';
     const dbFullFileName = path.join(baseDir, dbFileName);
 
-    deleteFile(dbFullFileName, `previous ${dbFileName} has been deleted...`);
+    deleteFile(dbFullFileName);
 
     const connectionString = getFBConnString(fbConnect, dbFullFileName);
     const sqlScriptHeader = Buffer.from(gedeminSQL.header
@@ -354,7 +348,7 @@ export async function ug(params: IParams, log: Log) {
     writeFileSync(sqlScriptFN, Buffer.concat([sqlScriptHeader, sqlScriptBody, sqlScriptBody2]));
     log.log(`${sqlScriptFN} has been saved...`);
 
-    deleteFile(dbFullFileName, `previous ${dbFileName} has been deleted...`);
+    deleteFile(dbFullFileName);
 
     log.log(`second pass...`);
     execFileSync(path.join(binFirebird, 'isql.exe'), [ '-q', '-i', sqlScriptFN], opt);
