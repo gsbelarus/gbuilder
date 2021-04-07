@@ -24,7 +24,7 @@ import { basicExecOptions, bindLog } from './utils';
 
   const { runProcesses, packFiles, deleteFile, assureDir, copyFileWithLog, uploadFile } = bindLog(params, log);
 
-  const { rootGedeminDir, instDir, settingDir, distribDir, archiveDir, upload,
+  const { rootGedeminDir, instDir, settingDir, ciDir, upload,
     binFirebird, binInnoSetup, fbConnect, fbUser, fbPassword, srcGedeminAppsBranch } = params;
 
   /** Папка ISS-файлов для создания истоляции */
@@ -33,6 +33,10 @@ import { basicExecOptions, bindLog } from './utils';
   const pathInstDB = path.join(instDir, 'Database');
   /** */
   const baseDir = path.join(rootGedeminDir, 'Gedemin', 'EXE', 'Database');
+  /** */
+  const distribDir = path.join(ciDir, 'distrib');
+  /** */
+  const archiveDir = path.join(ciDir, 'archive');
 
   /** Проверяем наличие необходимых файлов, программ, папок */
   const checkPrerequisites = () => {

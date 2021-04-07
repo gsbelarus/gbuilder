@@ -8,17 +8,15 @@ export interface IParams {
   compilationType: 'PRODUCT' | 'DEBUG' | 'LOCK';
   /** Установить заданный размер исполнимого файла */
   setExeSize?: number;
+  /** */
+  ciDir: string;
   /**
    * Корневая папка с полными исходниками Гедымина.
    * В ней находятся папки Comp5 и Gedemin.
    */
   rootGedeminDir: string;
-  /** Папка архива */
-  archiveDir: string;
   /** В процессе формирования файла БД из скриптов он размещается в этой папке */
   instDir: string;
-  /** Папка дистрибутивов */
-  distribDir: string;
   /** Папка настроек */
   settingDir: string;
   /** Папка Delphi */
@@ -33,8 +31,6 @@ export interface IParams {
   binFirebird: string;
   /** Upload files to web site */
   upload?: boolean;
-  /** */
-  logFile?: string;
   /** */
   maxLogSize?: number;
   /** Ветка исходников Гедымина из которой будем компилировать */

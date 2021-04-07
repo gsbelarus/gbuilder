@@ -27,7 +27,7 @@ import { basicExecOptions, bindLog } from './utils';
 export async function ug(params: IParams, log: Log) {
 
   const { runProcesses, packFiles, deleteFile, assureDir, uploadFile } = bindLog(params, log);
-  const { compilationType, setExeSize, rootGedeminDir, archiveDir, pathDelphi, binEditbin, binFirebird,
+  const { compilationType, setExeSize, ciDir, rootGedeminDir, pathDelphi, binEditbin, binFirebird,
     upload, srcBranch, commitIncBuildNumber, fbConnect, fbUser, fbPassword } = params;
 
   /** В процессе компиляции DCU файлы помещаются в эту папку */
@@ -36,6 +36,8 @@ export async function ug(params: IParams, log: Log) {
   const pathSQL = path.join(rootGedeminDir, 'Gedemin', 'SQL');
   /** */
   const baseDir = path.join(rootGedeminDir, 'Gedemin', 'EXE', 'Database');
+  /** */
+  const archiveDir = path.join(ciDir, 'archive');
 
   /**
    * Снимаем исходники с гита.

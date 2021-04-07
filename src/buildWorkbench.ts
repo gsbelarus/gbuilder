@@ -2,6 +2,7 @@ import { ILog, Log } from './log';
 import { existsSync, readFileSync, statSync, unlinkSync } from 'fs';
 import { open } from 'fs/promises';
 import { BuildFunc, IParams } from './types';
+import path from 'path';
 
 const defMaxLogSize = 10 * 1024 * 1024;
 
@@ -54,7 +55,8 @@ export const buildWorkbench = async (ug: BuildFunc) => {
       log.error(e.message);
     }
 
-    const { logFile, maxLogSize } = params;
+    const { ciDir, maxLogSize } = params;
+    const logFile = path.join(ciDir, 'log.txt');
 
     if (logFile) {
       if (existsSync(logFile)) {
