@@ -27,14 +27,15 @@ import { basicExecOptions, bindLog } from './utils';
 export async function ug(params: IParams, log: Log) {
 
   const { runProcesses, packFiles, deleteFile, assureDir, uploadFile } = bindLog(params, log);
-  const { compilationType, setExeSize, rootGedeminDir, archiveDir, baseDir,
-    pathDelphi, binEditbin, binFirebird, upload, srcBranch, commitIncBuildNumber,
-    fbConnect, fbUser, fbPassword } = params;
+  const { compilationType, setExeSize, rootGedeminDir, archiveDir, pathDelphi, binEditbin, binFirebird,
+    upload, srcBranch, commitIncBuildNumber, fbConnect, fbUser, fbPassword } = params;
 
   /** В процессе компиляции DCU файлы помещаются в эту папку */
   const pathDCU = path.join(rootGedeminDir, 'Gedemin', 'DCU');
   /** Папка SQL-файлов для создания эталонной БД */
   const pathSQL = path.join(rootGedeminDir, 'Gedemin', 'SQL');
+  /** */
+  const baseDir = path.join(rootGedeminDir, 'Gedemin', 'EXE', 'Database');
 
   /**
    * Снимаем исходники с гита.

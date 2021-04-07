@@ -16,8 +16,6 @@ export interface IParams {
   /** Папка архива */
   archiveDir: string;
   /** В процессе формирования файла БД из скриптов он размещается в этой папке */
-  baseDir: string;
-  /** Папка файлов для инстоляции */
   instDir: string;
   /** Папка дистрибутивов */
   distribDir: string;
