@@ -169,6 +169,7 @@ export const portableFilesList = [
   'gdcc.exe',
   'libeay32.dll',
   'ssleay32.dll',
+  'gsdbquery.dll',
   'udf/gudf.dll',
   'intl/fbintl.conf',
   'intl/fbintl.dll',
@@ -184,18 +185,6 @@ export const portableFilesList = [
 ];
 
 /**
- * Список файлов инстоляции для обновления
- */
- /*
- export const instFilesList = [
-  'gedemin.exe',
-  'gedemin_upd.exe',
-  'gdcc.exe',
-  'udf/gudf.dll'
-];
-*/
-
-/**
  * FSFN -- полное имя файла с пакетом настроек
  * DBN  -- только имя (без расширения) файла БД
  * SFN  -- имя файла заставки в каталоге images\splash
@@ -208,17 +197,20 @@ export const instProjects = {
     FSFN: 'Общие\\Комплексная автоматизация.yml',
     SFN: 'complex.jpg',
     IFN: 'businesslocal',
-    AFN: 'compl_setup.rar',
+    AFN: 'compl_setup',
     TFN: 'Комплексная автоматизация'
   },
   devel: {
     FSFN: 'Общие\\Общие данные.yml',
     SFN: 'complex.jpg',
     IFN: 'devellocal',
-    AFN: 'devel_setup.rar',
+    AFN: 'devel_setup',
     TFN: 'Разработчик'
   }
 };
+
+export type InstProject = keyof typeof instProjects;
+
 interface IProject {
   rc?: string;
   loc?: 'GUDF' | 'Utility/MakeLBRBTree';

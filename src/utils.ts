@@ -54,6 +54,10 @@ export const bindLog = (params: IParams, log: Log) => ({
   },
 
   copyFileWithLog: async (src: string, dest: string) => {
+    const { dir } = path.parse(dest);
+    if (!existsSync(dir)) {
+      mkdirSync(dir, { recursive: true });
+    };
     await copyFile(src, dest);
     const { size } = await stat(dest);
     log.log(`copied: ${src} --> ${dest}, ${size.toLocaleString(undefined, { maximumFractionDigits: 0 })} bytes...`);

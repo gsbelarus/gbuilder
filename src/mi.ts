@@ -9,10 +9,10 @@
  */
 
 import { execFileSync, execSync } from 'child_process';
-import { existsSync } from 'fs';
+import { existsSync, rmdirSync, unlinkSync } from 'fs';
 import path from 'path';
 import { Log } from './log';
-import { portableFilesList, instProjects, etalonDBFileName, getFBConnString } from './const';
+import { portableFilesList, instProjects, etalonDBFileName, getFBConnString, InstProject } from './const';
 import { IParams } from './types';
 import { basicExecOptions, bindLog } from './utils';
 
@@ -24,11 +24,13 @@ import { basicExecOptions, bindLog } from './utils';
 
   const { runProcesses, packFiles, deleteFile, assureDir, copyFileWithLog, uploadFile } = bindLog(params, log);
 
-  const { rootGedeminDir, instDir, settingDir, ciDir, upload,
+  const { rootGedeminDir, settingDir, ciDir, upload,
     binFirebird, binInnoSetup, fbConnect, fbUser, fbPassword, srcGedeminAppsBranch } = params;
 
   /** Папка ISS-файлов для создания истоляции */
   const pathISS = path.join(rootGedeminDir, 'Gedemin', 'Setup', 'InnoSetup');
+  /** Папка файлов БД для создания истоляции */
+  const instDir = path.join(ciDir, 'Gedemin');
   /** Папка файлов БД для создания истоляции */
   const pathInstDB = path.join(instDir, 'Database');
   /** */
@@ -44,15 +46,13 @@ import { basicExecOptions, bindLog } from './utils';
       throw new Error(`Database dir "${baseDir}" not found!`);
     }
 
-    if (!instDir || !existsSync(instDir)) {
-      throw new Error(`Installation dir "${instDir}" not found!`);
-    }
-
     if (!settingDir || !existsSync(settingDir)) {
       throw new Error(`Directory with name spaces files "${settingDir}" not found!`);
     }
 
     assureDir(pathInstDB);
+    assureDir(archiveDir);
+    assureDir(instDir);
 
     log.log('everything is ok!');
   };
@@ -68,12 +68,16 @@ import { basicExecOptions, bindLog } from './utils';
 
   /** Копируем все файлы из EXE в папку, из которой будем создавать инстоляцию InnoSetup */
   const prepareInstallation = () => {
+    if (existsSync(instDir)) {
+      rmdirSync(instDir, { recursive: true });
+      log.log(`Directory ${instDir} has been removed...`);
+    }
     const pathEXE = path.join(rootGedeminDir, 'Gedemin', 'EXE');
     return Promise.all(portableFilesList.map( fn => copyFileWithLog(path.join(pathEXE, fn), path.join(instDir, fn)) ) );
   };
 
   /** Создание истоляции */
-  const makeInstallation = (project: ProjectID) => async () => {
+  const makeInstallation = (project: InstProject) => async () => {
     const dbFullFileName = path.join(baseDir, etalonDBFileName);
     const dbProjectFullFileName = path.join(pathInstDB, `${project}.fdb`);
 
@@ -114,7 +118,7 @@ import { basicExecOptions, bindLog } from './utils';
     const issFileName = instProjects[project].IFN + '.iss';
     log.log(
       execSync(
-        `"${path.join(binInnoSetup, 'iscc.exe')}" /O"${setupPath}" /Fsetup /Q ${issFileName}`, {
+        `"${path.join(binInnoSetup, 'iscc.exe')}" /O"${setupPath}" /Fsetup /Q /DGedInstDir="${instDir}" ${issFileName}`, {
           maxBuffer: 1024 * 1024 * 64,
           timeout: 1 * 60 * 60 * 1000,
           cwd: pathISS
@@ -122,19 +126,39 @@ import { basicExecOptions, bindLog } from './utils';
     );
     log.log(`setup file ${setupFullFileName} has been created...`);
 
-    const arcFullFileName = path.join(archiveDir, instProjects[project].AFN);
+    const arcFullFileName = path.join(archiveDir, instProjects[project].AFN + '.rar');
     packFiles(arcFullFileName, setupFullFileName, distribDir);
 
+    // portable archive
+    [`Database/${project}.bk`, 'gedemin.ini', 'databases.ini', 'USBPD.DLL', 'PDPosiFlexCommand.DLL', 'PDComWriter.DLL'].forEach(
+      f => {
+        const fn = path.join(instDir, f);
+        if (existsSync(fn)) {
+          unlinkSync(fn);
+        }
+      }
+    );
+
+    //TODO: эти файлы оставить только если инстоляция CASH
+    // del Gedemin\USBPD.DLL > nul
+    // del Gedemin\PDPosiFlexCommand.DLL > nul
+    // del Gedemin\PDComWriter.DLL > nul
+
+    const portableArcFullFileName = path.join(archiveDir, project + '_portable.rar');
+    packFiles(portableArcFullFileName, 'Gedemin', ciDir);
+
     if (upload) {
-      await uploadFile(arcFullFileName, 'http://gsbelarus.com/gs/content/upload.php');
+      await Promise.all([
+        uploadFile(arcFullFileName, 'http://gsbelarus.com/gs/content/upload.php'),
+        uploadFile(portableArcFullFileName, 'http://gsbelarus.com/gs/content/upload.php')
+      ]);
     } else {
       log.log('skip uploading...');
     }
   };
 
   /** Список проектов для инстоляции */
-  type ProjectID = 'business' | 'devel';
-  const miProjectList: ProjectID[] = [/*'business',*/ 'devel'];
+  const miProjectList: InstProject[] = [/*'business',*/ 'devel'];
 
   await runProcesses('Gedemin installation', [
     { name: 'Check prerequisites', fn: checkPrerequisites },
