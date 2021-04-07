@@ -12,7 +12,7 @@ import { execFileSync, execSync } from 'child_process';
 import { existsSync } from 'fs';
 import path from 'path';
 import { Log } from './log';
-import { portableFilesList, instProjects } from './const';
+import { portableFilesList, instProjects, etalonDBFileName, getFBConnString } from './const';
 import { IParams } from './types';
 import { basicExecOptions, bindLog } from './utils';
 
@@ -22,9 +22,9 @@ import { basicExecOptions, bindLog } from './utils';
  */
  export async function mi(params: IParams, log: Log) {
 
-  const { runProcesses, packFiles, deleteFile, assureDir, copyFileWithLog } = bindLog(params, log);
+  const { runProcesses, packFiles, deleteFile, assureDir, copyFileWithLog, uploadFile } = bindLog(params, log);
 
-  const { rootGedeminDir, baseDir, instDir, settingDir, distribDir, archiveDir,
+  const { rootGedeminDir, baseDir, instDir, settingDir, distribDir, archiveDir, upload,
     binFirebird, binInnoSetup, fbConnect, fbUser, fbPassword, srcGedeminAppsBranch } = params;
 
   /** Папка ISS-файлов для создания истоляции */
@@ -68,48 +68,44 @@ import { basicExecOptions, bindLog } from './utils';
 
   /** Создание истоляции */
   const makeInstallation = (project: ProjectID) => async () => {
-    const dbFileName = 'etalon.fdb';
-    const dbFullFileName = path.join(baseDir, dbFileName);
+    const dbFullFileName = path.join(baseDir, etalonDBFileName);
     const dbProjectFullFileName = path.join(pathInstDB, `${project}.fdb`);
 
     /** Копирование эталонной БД в БД проекта истоляции */
-    deleteFile(dbProjectFullFileName, `previous ${project}.fdb has been deleted...`);
     await copyFileWithLog(dbFullFileName, dbProjectFullFileName);
 
     /** Загрузка пакета настроек */
-    const connectionString = `${fbConnect ?? 'localhost/3050'}${fbConnect ? ':' : ''}${dbProjectFullFileName}`;
+    const connectionString = getFBConnString(fbConnect, dbProjectFullFileName);
     const settingFullFileName = path.join(settingDir, instProjects[project].FSFN);
-    let opt = { ...basicExecOptions, cwd: instDir };
     log.log(
       execFileSync(
         path.join(instDir, 'gedemin.exe'),
         [ '/sn', connectionString, '/user', 'Administrator', '/password', 'Administrator',
           '/sp', settingDir, '/rd', '/q',
           '/sfn', settingFullFileName, '/ns' ],
-        opt).toString()
+        { ...basicExecOptions, cwd: instDir }).toString()
     );
     log.log(`${settingFullFileName} has been loaded...`);
 
     const imgSrcFullFileName = path.join(rootGedeminDir, 'Gedemin', 'Images', 'Splash', instProjects[project].SFN);
     const imgDestFullFileName = path.join(instDir, 'gedemin.jpg');
-    deleteFile(imgDestFullFileName, `previous gedemin.jpg has been deleted...`);
     await copyFileWithLog(imgSrcFullFileName, imgDestFullFileName);
 
     const bkProjectFullFileName = path.join(pathInstDB, `${project}.bk`);
     deleteFile(bkProjectFullFileName, `previous ${bkProjectFullFileName} has been deleted...`);
-    execFileSync(
-      path.join(binFirebird, 'gbak.exe'),
-      [ '-b', connectionString, bkProjectFullFileName,
-        '-user', fbUser ?? 'SYSDBA', '-pas', fbPassword ?? 'masterkey' ],
-      opt);
+    log.log(
+      execFileSync(
+        path.join(binFirebird, 'gbak.exe'),
+        [ '-b', connectionString, bkProjectFullFileName,
+          '-user', fbUser ?? 'SYSDBA', '-pas', fbPassword ?? 'masterkey', '-g', '-z' ],
+        { ...basicExecOptions, cwd: instDir }).toString()
+    );
     log.log(`${bkProjectFullFileName} has been created...`);
 
     const setupPath = path.join(distribDir, instProjects[project].TFN);
     const setupFullFileName = path.join(setupPath, 'setup.exe');
-    deleteFile(setupFullFileName, `previous ${setupFullFileName} has been deleted...`);
 
     const issFileName = instProjects[project].IFN + '.iss';
-    const issFullFileName = path.join(pathISS, issFileName);
     log.log(
       execSync(
         `"${path.join(binInnoSetup, 'iscc.exe')}" /O"${setupPath}" /Fsetup /Q ${issFileName}`, {
@@ -118,11 +114,16 @@ import { basicExecOptions, bindLog } from './utils';
           cwd: pathISS
         }).toString()
     );
-    log.log(`Project ${project} has been distributed into ${setupPath}`);
+    log.log(`setup file ${setupFullFileName} has been created...`);
 
     const arcFullFileName = path.join(archiveDir, instProjects[project].AFN);
     packFiles(arcFullFileName, setupFullFileName, distribDir);
-    log.log(`Project ${project} has been packed into ${arcFullFileName}`);
+
+    if (upload) {
+      await uploadFile(arcFullFileName, 'http://gsbelarus.com/gs/content/upload.php');
+    } else {
+      log.log('skip uploading...');
+    }
   };
 
   /** Список проектов для инстоляции */

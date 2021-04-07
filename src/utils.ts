@@ -2,8 +2,9 @@ import { ExecSyncOptions, ExecFileSyncOptions, execFileSync } from 'child_proces
 import { Log } from './log';
 import { IParams, Processes } from './types';
 import path from 'path';
-import { existsSync, mkdirSync, unlinkSync } from 'fs';
+import { existsSync, mkdirSync, unlinkSync, createReadStream } from 'fs';
 import { copyFile, stat } from 'fs/promises';
+import FormData from 'form-data';
 
 export const bindLog = (params: IParams, log: Log) => ({
   runProcesses: async (name: string, processes: Processes) => {
@@ -16,16 +17,24 @@ export const bindLog = (params: IParams, log: Log) => ({
     log.finishProcess();
   },
 
-  packFiles: (arcName: string, fileName: string, cwd: string) => log.log(
-    execFileSync(path.join(params.binWinRAR, 'WinRAR.exe'),
-      [ 'a', '-u', '-as', '-ibck', arcName, fileName ],
-      { ...basicExecOptions, cwd }).toString()
-  ),
+  packFiles: (arcName: string, fileName: string, cwd: string, msg?: string) => {
+    log.log(
+      execFileSync(path.join(params.binWinRAR, 'WinRAR.exe'),
+        [ 'a', '-u', '-as', '-ibck', arcName, fileName ],
+        { ...basicExecOptions, cwd }).toString()
+    );
+
+    if (existsSync(arcName)) {
+      log.log(msg || `archive ${arcName} has been created...`);
+    } else {
+      throw new Error(`Can not create archive ${arcName}!`);
+    };
+  },
 
   deleteFile: (fn: string, msg?: string) => {
     if (existsSync(fn)) {
       unlinkSync(fn);
-      msg && log.log(msg);
+      log.log(msg || `${fn} has been deleted...`);
     }
   },
 
@@ -48,6 +57,25 @@ export const bindLog = (params: IParams, log: Log) => ({
     await copyFile(src, dest);
     const { size } = await stat(dest);
     log.log(`copied: ${src} --> ${dest}, ${size.toLocaleString(undefined, { maximumFractionDigits: 0 })} bytes...`);
+  },
+
+  uploadFile: async (fn: string, url: string) => {
+    const form = new FormData();
+    const size = (await stat(fn)).size;
+
+    form.append('data', createReadStream(fn), {
+      filename: path.basename(fn),
+      filepath: fn,
+      contentType: 'application/zip',
+      knownLength: size
+    });
+
+    log.log(`uploading ${fn}...`)
+
+    // исходники PHP скриптов приведены в папке PHP
+    await new Promise( res => form.submit(url, res) );
+
+    log.log(`${fn} has been uploaded via ${url}, ${size.toLocaleString(undefined, { maximumFractionDigits: 0 })} bytes...`)
   }
 });
 

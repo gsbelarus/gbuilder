@@ -10,14 +10,13 @@
 import { execFileSync } from 'child_process';
 import {
   existsSync, readFileSync, readdirSync, unlinkSync, copyFileSync, writeFileSync,
-  statSync, appendFileSync, createReadStream } from 'fs';
+  statSync, appendFileSync } from 'fs';
 import path from 'path';
 import { Log } from './log';
 import {
   gedeminCfgTemplate, gedeminCfgVariables, gedeminSrcPath, gedeminCompilerSwitch,
-  gedeminArchiveName, portableFilesList, projects, gedeminSQL
+  gedeminArchiveName, portableFilesList, projects, gedeminSQL, etalonDBFileName, getFBConnString
 } from './const';
-import FormData from 'form-data';
 import { IParams } from './types';
 import { basicExecOptions, bindLog } from './utils';
 
@@ -27,7 +26,7 @@ import { basicExecOptions, bindLog } from './utils';
  */
 export async function ug(params: IParams, log: Log) {
 
-  const { runProcesses, packFiles, deleteFile, assureDir } = bindLog(params, log);
+  const { runProcesses, packFiles, deleteFile, assureDir, uploadFile } = bindLog(params, log);
   const { compilationType, setExeSize, rootGedeminDir, archiveDir, baseDir,
     pathDelphi, binEditbin, binFirebird, upload, srcBranch, commitIncBuildNumber,
     fbConnect, fbUser, fbPassword } = params;
@@ -232,35 +231,16 @@ export async function ug(params: IParams, log: Log) {
   const createArhive = () => {
     /** Целевая папка компиляции */
     const pathEXE = path.join(rootGedeminDir, 'Gedemin', projects['gedemin'].dest ?? 'EXE');
-
-    deleteFile(gedeminArchiveFileName);
-
     const lstFileName = path.join(archiveDir, 'gedemin.lst');
+    deleteFile(gedeminArchiveFileName);
     writeFileSync(lstFileName, portableFilesList.join('\n'), { encoding: 'utf-8' });
-    packFiles(gedeminArchiveFileName, '@' + lstFileName, pathEXE);
-    unlinkSync(lstFileName);
-
-    if (existsSync(gedeminArchiveFileName)) {
-      log.log(`portable archive has been created ${gedeminArchiveFileName}...`);
-    } else {
-      throw new Error('Can not create portable archive!');
-    };
-
-    packFiles(etalonArchiveFileName, 'ETALON.FDB', baseDir);
-
-    if (existsSync(etalonArchiveFileName)) {
-      log.log(`etalon db archive has been created ${etalonArchiveFileName}...`);
-    } else {
-      throw new Error('Can not create etalon db archive!');
-    };
-
-    const pathGUDF = path.join(rootGedeminDir, 'Gedemin', projects['gudf'].dest ?? 'EXE')
-    packFiles(gudfArchiveFileName, 'gudf.dll', pathGUDF);
-    if (existsSync(gudfArchiveFileName)) {
-      log.log(`gudf.dll archive has been created ${gudfArchiveFileName}...`);
-    } else {
-      throw new Error('Can not create gudf.dll archive!');
-    };
+    try {
+      packFiles(gedeminArchiveFileName, '@' + lstFileName, pathEXE, `portable archive has been created ${gedeminArchiveFileName}...`);
+      packFiles(etalonArchiveFileName, etalonDBFileName, baseDir, `etalon db archive has been created ${etalonArchiveFileName}...`);
+      packFiles(gudfArchiveFileName, 'gudf.dll', path.join(rootGedeminDir, 'Gedemin', projects['gudf'].dest ?? 'EXE'), `gudf.dll archive has been created ${gudfArchiveFileName}...`);
+    } finally {
+      unlinkSync(lstFileName);
+    }
   };
 
   /** Восстановление сохраненных файлов конфигурации */
@@ -331,23 +311,9 @@ export async function ug(params: IParams, log: Log) {
 
   const uploadArhive = async () => {
     if (upload) {
-      for (const arc of [gedeminArchiveFileName, gudfArchiveFileName, etalonArchiveFileName]) {
-        const form = new FormData();
-
-        form.append('data', createReadStream(arc), {
-          filename: path.basename(arc),
-          filepath: arc,
-          contentType: 'application/zip',
-          knownLength: statSync(arc).size
-        });
-
-        log.log(`uploading ${path.basename(arc)}...`)
-
-        // исходники PHP скриптов приведены в папке PHP
-        await form.submit('http://gsbelarus.com/gs/content/upload2.php');
-
-        log.log(`archive ${path.basename(arc)} has been uploaded...`)
-      }
+      await Promise.all(
+        [gedeminArchiveFileName, gudfArchiveFileName, etalonArchiveFileName].map( arc => uploadFile(arc, 'http://gsbelarus.com/gs/content/upload2.php') )
+      );
     } else {
       log.log('skip uploading...');
     }
@@ -360,7 +326,7 @@ export async function ug(params: IParams, log: Log) {
 
     deleteFile(dbFullFileName, `previous ${dbFileName} has been deleted...`);
 
-    const connectionString = `${fbConnect ?? 'localhost/3050'}${fbConnect ? ':' : ''}${dbFullFileName}`;
+    const connectionString = getFBConnString(fbConnect, dbFullFileName);
     const sqlScriptHeader = Buffer.from(gedeminSQL.header
       .replace('<<FB_CONNECT>>', connectionString)
       .replace('<<USER_NAME>>', fbUser ?? 'SYSDBA')
@@ -407,7 +373,7 @@ export async function ug(params: IParams, log: Log) {
     writeFileSync(sqlScriptEtalon, Buffer.concat([sqlScriptHeaderEtalon, sqlScriptBody, sqlScriptBody2]));
     log.log(`${sqlScriptEtalon} has been saved...`);
 
-    [sqlScriptFN, sqlScriptFN2].forEach( fn => deleteFile(fn, `${fn} has been deleted...`) );
+    [sqlScriptFN, sqlScriptFN2].forEach( fn => deleteFile(fn) );
   };
 
   /** Список проектов для компиляции */
