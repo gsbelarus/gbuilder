@@ -12,6 +12,7 @@ const defMaxLogSize = 10 * 1024 * 1024;
  */
 export const buildWorkbench = async (ug: BuildFunc, augParams?: Partial<IParams>) => {
   const paramsFile = process.argv[2];
+  let res = false;
 
   if (!paramsFile || !existsSync(paramsFile)) {
     console.error('Full name of the file with build process parameters must be specified as a first command line argument.');
@@ -70,6 +71,7 @@ export const buildWorkbench = async (ug: BuildFunc, augParams?: Partial<IParams>
 
     try {
       await ug(params, log);
+      res = true;
     } catch(e) {
       log.error(e.message);
     }
@@ -97,4 +99,6 @@ export const buildWorkbench = async (ug: BuildFunc, augParams?: Partial<IParams>
       }
     }
   }
+
+  return res;
 };

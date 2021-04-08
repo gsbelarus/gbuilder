@@ -542,10 +542,17 @@ router.post('/webhook/gedemin', async (ctx) => {
     queue.push( async () => {
       await updateState('pending');
       try {
-        await buildWorkbench(ug, { compilationType: 'DEBUG', commitIncBuildNumber: false });
-        await buildWorkbench(ug, { compilationType: 'LOCK', commitIncBuildNumber: false });
-        await buildWorkbench(ug, { compilationType: 'PRODUCT', commitIncBuildNumber: true });
-        await updateState('success');
+        if (
+          await buildWorkbench(ug, { compilationType: 'DEBUG', commitIncBuildNumber: false })
+          &&
+          await buildWorkbench(ug, { compilationType: 'LOCK', commitIncBuildNumber: false })
+          &&
+          await buildWorkbench(ug, { compilationType: 'PRODUCT', commitIncBuildNumber: true })
+        ) {
+          await updateState('success');
+        } else {
+          await updateState('error');
+        }
       } catch(e) {
         await updateState('error');
         console.error(e.message);
