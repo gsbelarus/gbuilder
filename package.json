@@ -1,11 +1,9 @@
 {
   "name": "builder",
   "scripts": {
-    "start": "node -r ts-node/register src/test_run.ts c:/golden/india/params.json",
-    "start_mi": "node -r ts-node/register src/test_mi.ts c:/golden/india/params.json",
-    "start2": "node -r ts-node/register src/test_run.ts c:/golden/gedemin/params.json",
-    "start_mi2": "node -r ts-node/register src/test_mi.ts c:/golden/gedemin/params.json",
-    "server": "node -r ts-node/register src/server.ts c:/golden/gedemin/params.json",
+    "start": "node -r ts-node/register src/test_run.ts params/params.json",
+    "start_mi": "node -r ts-node/register src/test_mi.ts params/params.json",
+    "server": "node -r ts-node/register src/server.ts params/params.json",
     "ts": "tsc"
   },
   "dependencies": {

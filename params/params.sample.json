@@ -3,7 +3,6 @@
   "setExeSize": 0,
   "ciDir": "c:\\CI",
   "rootGedeminDir": "c:\\golden\\gedemin",
-  "instDir": "c:\\golden\\gedemin_local_fb",
   "settingDir": "c:\\golden\\gedemin-apps",
   "pathDelphi": "C:\\Program Files (x86)\\Borland\\Delphi5",
   "binEditbin": "",

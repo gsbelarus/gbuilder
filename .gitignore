@@ -114,3 +114,4 @@ dist
 /src/temp.ts
 /src/*.bak
 log/log.txt
+params/params.json

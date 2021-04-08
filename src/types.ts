@@ -15,8 +15,6 @@ export interface IParams {
    * В ней находятся папки Comp5 и Gedemin.
    */
   rootGedeminDir: string;
-  /** В процессе формирования файла БД из скриптов он размещается в этой папке */
-  instDir: string;
   /** Папка настроек */
   settingDir: string;
   /** Папка Delphi */

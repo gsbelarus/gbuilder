@@ -10,18 +10,37 @@ const defMaxLogSize = 10 * 1024 * 1024;
  * Функция организует загрузку параметров, инициализацию лога ивызов функции компиляции.
  * @param ug Функция компиляции проекта.
  */
-export const buildWorkbench = async (ug: BuildFunc) => {
+export const buildWorkbench = async (ug: BuildFunc, augParams?: Partial<IParams>) => {
   const paramsFile = process.argv[2];
 
   if (!paramsFile || !existsSync(paramsFile)) {
     console.error('Full name of the file with build process parameters must be specified as a first command line argument.');
   } else {
-    let params;
+    let params: IParams;
 
     try {
       params = JSON.parse(readFileSync(paramsFile, {encoding:'utf8', flag:'r'})) as IParams;
     } catch(e) {
       throw new Error(`Error parsing JSON file ${paramsFile}. ${e}`);
+    }
+
+    if (augParams) {
+      params = { ...params, ...augParams };
+    }
+
+    if (!params.compilationType) {
+      params.compilationType = 'PRODUCT';
+    }
+
+    for (let i = 3; i < process.argv.length; i++) {
+      const p = process.argv[i].toUpperCase();
+      console.info('Compilation parameter overriden through command line: ',
+        p === 'DEBUG'
+          ? params.compilationType = 'DEBUG'
+          : p === 'LOCK'
+          ? params.compilationType = 'LOCK'
+          : p
+      );
     }
 
     const logBuffer: string[] = [];
