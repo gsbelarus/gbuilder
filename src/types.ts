@@ -45,6 +45,8 @@ export interface IParams {
   fbPassword?: string;
   /** personal access token for github */
   pat?: string;
+  /** port number for a build server */
+  buildServerPort?: number;
 };
 
 export type BuildFunc = (params: IParams, log: Log) => Promise<void>;

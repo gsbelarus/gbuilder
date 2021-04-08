@@ -492,23 +492,22 @@ interface ILog {
 
 const log: ILog[] = [];
 
-const getPAT = () => {
-  const paramsFile = process.argv[2];
+const paramsFile = process.argv[2];
+let params: IParams;
 
-  if (!paramsFile || !existsSync(paramsFile)) {
-    throw new Error('Full name of the file with build process parameters must be specified as a first command line argument.');
-  } else {
-    try {
-      return (JSON.parse(readFileSync(paramsFile, {encoding:'utf8', flag:'r'})) as IParams).pat;
-    } catch(e) {
-      throw new Error(`Error parsing JSON file ${paramsFile}. ${e}`);
-    }
+if (!paramsFile || !existsSync(paramsFile)) {
+  throw new Error('Full name of the file with build process parameters must be specified as a first command line argument.');
+} else {
+  try {
+    params = JSON.parse(readFileSync(paramsFile, {encoding:'utf8', flag:'r'})) as IParams;
+  } catch(e) {
+    throw new Error(`Error parsing JSON file ${paramsFile}. ${e}`);
   }
-};
+}
 
 const app = new Koa();
 const router = new Router();
-const octokit = new Octokit({ auth: getPAT() });
+const octokit = new Octokit({ auth: params.pat });
 
 router.get('/', ctx => {
   const l = log.map( ({ logged, state, commitMessage, url }) => `${dateFormat(logged, 'dd.mm.yy HH:MM:ss')} -- ${state} -- <a href="${url}">${commitMessage}</a>` )
@@ -569,4 +568,4 @@ app
 
 const httpServer = http.createServer(app.callback());
 
-httpServer.listen(8087, () => console.info(`>>> HTTP server is running at http://localhost:8087`) );
+httpServer.listen(params.buildServerPort, () => console.info(`>>> HTTP server is running at http://localhost:${params.buildServerPort}`) );

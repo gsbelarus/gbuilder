@@ -16,5 +16,6 @@
   "fbUser": "SYSDBA",
   "fbPassword": "password",
   "commitIncBuildNumber": true,
-  "pat": "look at https://github.com/settings/tokens"
+  "pat": "look at https://github.com/settings/tokens",
+  "buildServerPort": 8087
 }
