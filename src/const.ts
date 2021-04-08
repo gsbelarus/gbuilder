@@ -206,6 +206,13 @@ export const instProjects = {
     IFN: 'devellocal',
     AFN: 'devel_setup',
     TFN: 'Разработчик'
+  },
+  plat: {
+    FSFN: 'Банк\\Банк и касса.yml',
+    SFN: 'doc.jpg',
+    IFN: 'platlocal',
+    AFN: 'plat_setup',
+    TFN: 'Платежные документы'
   }
 };
 

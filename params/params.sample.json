@@ -15,5 +15,6 @@
   "fbConnect": "localhost/3050",
   "fbUser": "SYSDBA",
   "fbPassword": "password",
+  "commitIncBuildNumber": true,
   "pat": "look at https://github.com/settings/tokens"
 }

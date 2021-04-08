@@ -158,7 +158,7 @@ import { basicExecOptions, bindLog } from './utils';
   };
 
   /** Список проектов для инстоляции */
-  const miProjectList: InstProject[] = [/*'business',*/ 'devel'];
+  const miProjectList: InstProject[] = [/*'business',*/ 'devel', 'plat'];
 
   await runProcesses('Gedemin installation', [
     { name: 'Check prerequisites', fn: checkPrerequisites },
