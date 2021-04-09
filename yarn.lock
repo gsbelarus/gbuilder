@@ -63,9 +63,9 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@octokit/core@npm:^3.3.2":
-  version: 3.3.2
-  resolution: "@octokit/core@npm:3.3.2"
+"@octokit/core@npm:^3.4.0":
+  version: 3.4.0
+  resolution: "@octokit/core@npm:3.4.0"
   dependencies:
     "@octokit/auth-token": ^2.4.4
     "@octokit/graphql": ^4.5.8
@@ -74,7 +74,7 @@ __metadata:
     "@octokit/types": ^6.0.3
     before-after-hook: ^2.2.0
     universal-user-agent: ^6.0.0
-  checksum: ade53f6d1364b89879ec6db200a0daded914353ccdf4c728912dce81ddd5a426cf2cc09e0c668b0221f4ba0af0489e93bf3caa1c82f635bf5d5f3c2494b12d77
+  checksum: bb8ba9be2c3d944361afff7c674c2bac22e831d37bfcf9b5e676fa19fd1d72d335e4d97e33103e6e91f87b4511c4353116945ade326587ef7a6d5e1f95c0c786
   languageName: node
   linkType: hard
 
@@ -670,7 +670,7 @@ __metadata:
   resolution: "builder@workspace:."
   dependencies:
     "@koa/router": ^10.0.0
-    "@octokit/core": ^3.3.2
+    "@octokit/core": ^3.4.0
     "@octokit/types": ^6.13.0
     "@types/koa": ^2.13.1
     "@types/koa__router": ^8.0.4
