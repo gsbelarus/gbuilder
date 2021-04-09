@@ -533,7 +533,7 @@ router.post('/webhook/gedemin', async (ctx) => {
       sha,
       state
     })
-    .then( () => console.log(`state set to ${state}...`) )
+    .then( () => console.log(`state for gedemin-private set to ${state}...`) )
     .then( () => { log.push({ logged: new Date(), state, commitMessage, url }) } )
 
   if (commitMessage === 'Inc build number') {

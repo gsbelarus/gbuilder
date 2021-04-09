@@ -1,3 +1,4 @@
+import { InstProject } from "./const";
 import { Log } from "./log";
 
 export interface IParams {
@@ -47,6 +48,8 @@ export interface IParams {
   pat?: string;
   /** port number for a build server */
   buildServerPort?: number;
+  /** Список проектов для инстоляции */
+  projectList: InstProject[];
 };
 
 export type BuildFunc = (params: IParams, log: Log) => Promise<void>;

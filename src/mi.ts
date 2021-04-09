@@ -24,8 +24,8 @@ import { basicExecOptions, bindLog } from './utils';
 
   const { runProcesses, packFiles, deleteFile, assureDir, copyFileWithLog, uploadFile } = bindLog(params, log);
 
-  const { rootGedeminDir, settingDir, ciDir, upload,
-    binFirebird, binInnoSetup, fbConnect, fbUser, fbPassword, srcGedeminAppsBranch } = params;
+  const { rootGedeminDir, settingDir, ciDir, upload, binFirebird, binInnoSetup,
+    fbConnect, fbUser, fbPassword, srcGedeminAppsBranch, projectList } = params;
 
   /** Папка ISS-файлов для создания истоляции */
   const pathISS = path.join(rootGedeminDir, 'Gedemin', 'Setup', 'InnoSetup');
@@ -155,13 +155,10 @@ import { basicExecOptions, bindLog } from './utils';
     }
   };
 
-  /** Список проектов для инстоляции */
-  const miProjectList: InstProject[] = [/*'business',*/ 'devel', 'plat'];
-
   await runProcesses('Gedemin installation', [
     { name: 'Check prerequisites', fn: checkPrerequisites },
     { name: 'Pull sources', fn: pullSources },
     { name: 'Prepare installation', fn: prepareInstallation },
-    ...miProjectList.flatMap( pr => ({ name: 'Make installation', fn: makeInstallation(pr) }) ),
+    ...projectList.flatMap( pr => ({ name: 'Make installation', fn: makeInstallation(pr) }) ),
   ]);
 };

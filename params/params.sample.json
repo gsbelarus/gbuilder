@@ -17,5 +17,6 @@
   "fbPassword": "masterkey",
   "commitIncBuildNumber": true,
   "pat": "...",
-  "buildServerPort": 8087
+  "buildServerPort": 8087,
+  "projectList": ["devel", "plat"]
 }
