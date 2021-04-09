@@ -563,6 +563,8 @@ router.post('/webhook/gedemin', async (ctx) => {
   while (queue.length) {
     await queue.shift()!();
   }
+
+  ctx.response.status = 200;
 });
 
 app

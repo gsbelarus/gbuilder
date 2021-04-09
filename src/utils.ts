@@ -18,11 +18,10 @@ export const bindLog = (params: IParams, log: Log) => ({
   },
 
   packFiles: (arcName: string, fileName: string, cwd: string, msg?: string) => {
-    log.log(
-      execFileSync(path.join(params.binWinRAR, 'WinRAR.exe'),
-        [ 'a', '-u', '-as', '-ibck', arcName, fileName ],
-        { ...basicExecOptions, cwd }).toString()
-    );
+    const s = execFileSync(path.join(params.binWinRAR, 'WinRAR.exe'),
+      [ 'a', '-u', '-as', '-ibck', arcName, fileName ],
+      { ...basicExecOptions, cwd }).toString().trim();
+    s && log.log(s);
 
     if (existsSync(arcName)) {
       log.log(msg || `archive ${arcName} has been created...`);

@@ -170,18 +170,18 @@ export const portableFilesList = [
   'libeay32.dll',
   'ssleay32.dll',
   'gsdbquery.dll',
-  'udf/gudf.dll',
-  'intl/fbintl.conf',
-  'intl/fbintl.dll',
-  'swipl/lib/memfile.dll',
-  'swipl/lib/process.dll',
-  'swipl/lib/readutil.dll',
-  'swipl/gd_pl_state.dat',
-  'swipl/libgmp-10.dll',
-  'swipl/libswipl.dll',
-  'swipl/pthreadGC2.dll',
-  'help/fr24rus.chm',
-  'help/vbs55.chm'
+  'UDF/gudf.dll',
+  'Intl/fbintl.conf',
+  'Intl/fbintl.dll',
+  'Swipl/lib/memfile.dll',
+  'Swipl/lib/process.dll',
+  'Swipl/lib/readutil.dll',
+  'Swipl/gd_pl_state.dat',
+  'Swipl/libgmp-10.dll',
+  'Swipl/libswipl.dll',
+  'Swipl/pthreadGC2.dll',
+  'Help/fr24rus.chm',
+  'Help/vbs55.chm'
 ];
 
 /**

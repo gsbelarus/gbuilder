@@ -87,14 +87,13 @@ import { basicExecOptions, bindLog } from './utils';
     /** Загрузка пакета настроек */
     const connectionString = getFBConnString(fbConnect, dbProjectFullFileName);
     const settingFullFileName = path.join(settingDir, instProjects[project].FSFN);
-    log.log(
-      execFileSync(
-        path.join(instDir, 'gedemin.exe'),
-        [ '/sn', connectionString, '/user', 'Administrator', '/password', 'Administrator',
-          '/sp', settingDir, '/rd', '/q',
-          '/sfn', settingFullFileName, '/ns' ],
-        { ...basicExecOptions, cwd: instDir }).toString()
-    );
+    const s = execFileSync(
+      path.join(instDir, 'gedemin.exe'),
+      [ '/sn', connectionString, '/user', 'Administrator', '/password', 'Administrator',
+        '/sp', settingDir, '/rd', '/q',
+        '/sfn', settingFullFileName, '/ns' ],
+      { ...basicExecOptions, cwd: instDir }).toString().trim();
+    s && log.log(s);
     log.log(`${settingFullFileName} has been loaded...`);
 
     const imgSrcFullFileName = path.join(rootGedeminDir, 'Gedemin', 'Images', 'Splash', instProjects[project].SFN);
@@ -116,14 +115,13 @@ import { basicExecOptions, bindLog } from './utils';
     const setupFullFileName = path.join(setupPath, 'setup.exe');
 
     const issFileName = instProjects[project].IFN + '.iss';
-    log.log(
-      execSync(
-        `"${path.join(binInnoSetup, 'iscc.exe')}" /O"${setupPath}" /Fsetup /Q /DGedInstDir="${instDir}" ${issFileName}`, {
-          maxBuffer: 1024 * 1024 * 64,
-          timeout: 1 * 60 * 60 * 1000,
-          cwd: pathISS
-        }).toString()
-    );
+    const output = execSync(
+      `"${path.join(binInnoSetup, 'iscc.exe')}" /O"${setupPath}" /Fsetup /Q /DGedInstDir="${instDir}" ${issFileName}`, {
+      maxBuffer: 1024 * 1024 * 64,
+      timeout: 1 * 60 * 60 * 1000,
+      cwd: pathISS
+    }).toString().trim();
+    output && log.log(output);
     log.log(`setup file ${setupFullFileName} has been created...`);
 
     const arcFullFileName = path.join(archiveDir, instProjects[project].AFN + '.rar');

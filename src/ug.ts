@@ -78,7 +78,8 @@ export async function ug(params: IParams, log: Log) {
       log.log(`git commit -a -m "Inc build number"...`);
       log.log(execFileSync('git', ['commit', '-a', '-m', 'Inc build number'], opt).toString());
       log.log(`git push...`);
-      log.log(execFileSync('git', ['push'], opt).toString());
+      const s = execFileSync('git', ['push'], opt).toString().trim();
+      s && log.log(s);
     } else {
       log.log('local changes are not committed...')
     }
@@ -159,13 +160,15 @@ export async function ug(params: IParams, log: Log) {
     deleteFile(destFullFileName);
 
     log.log(`building ${destFileName}...`);
-    log.log(
-      execFileSync(
-        path.join(pathDelphi, 'Bin', 'dcc32.exe'),
-        [gedeminCompilerSwitch[compilationType], `${project}.dpr`],
-        { ...basicExecOptions, cwd: pathProject }
-      ).toString()
-    );
+    const output = execFileSync(
+      path.join(pathDelphi, 'Bin', 'dcc32.exe'),
+      [gedeminCompilerSwitch[compilationType], `${project}.dpr`],
+      { ...basicExecOptions, cwd: pathProject }
+    ).toString().trimEnd().split('\n');
+    if (output.length) {
+      log.log(output[0]);
+      log.log(output[output.length - 1]);
+    }
     log.log(`${destFileName} has been built...`);
 
     const exeOpt = { ...basicExecOptions, cwd: destDir };
@@ -173,7 +176,7 @@ export async function ug(params: IParams, log: Log) {
     // утилиты, которые мы применяем ниже находятся в папке EXE (папка по-умолчанию)
     // не будем применять их для проектов, которые компилируются в другие папки
     if (!dest) {
-      if (path.extname(destFileName) === '.exe') {
+      if (path.extname(destFileName) === '.exe' && statSync(path.join(destDir, destFileName)).size > 1024 * 1024) {
         log.log(execFileSync('StripReloc.exe', ['/b', destFileName], exeOpt).toString());
         log.log('relocation section has been stripped from EXE file...');
       };

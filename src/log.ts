@@ -28,11 +28,13 @@ export class Log {
   }
 
   private _fmtTime(date: Date) {
-    return dateFormat(date, 'HH:MM:ss');
+    return dateFormat(date, 'dd.mm.yyyy HH:MM:ss');
   }
 
   private _step() {
-    return this._process && this._process.subProcesses.length ? `${this._process.subProcesses.length}/${this._process.steps} ` : '';
+    return this._process && this._process.subProcesses.length
+      ? `${this._process.subProcesses.length.toString().padStart(this._process.steps.toString().length, ' ')}/${this._process.steps} `
+      : '';
   }
 
   startProcess(name: string, steps = 0) {
@@ -50,7 +52,7 @@ export class Log {
       this._process = process;
     }
 
-    this._log.forEach( ({ log }) => log(33, `${this._step()}${this._fmtTime(process.started)} STARTED: ${name}`) );
+    this._log.forEach( ({ log }) => log(33, `${this._fmtTime(process.started)} ${this._step()}STARTED: ${name}`) );
   }
 
   finishProcess() {
@@ -70,21 +72,21 @@ export class Log {
       process.finished = new Date();
     }
 
-    this._log.forEach( ({ log }) => log(undefined, `${step}${this._fmtTime(process.finished)} FINISHED: ${process.name}`) );
+    this._log.forEach( ({ log }) => log(undefined, `${this._fmtTime(process.finished)} ${step}FINISHED: ${process.name}`) );
   }
 
   log(...messages: string[]) {
     for (const s of messages) {
-      for (const m of s.split('\n')) {
-        this._log.forEach( ({ log }) => log(undefined, `${this._step()}${this._fmtTime(new Date())} ${m}`) );
+      for (const m of s.trim().split('\n')) {
+        this._log.forEach( ({ log }) => log(undefined, `${this._fmtTime(new Date())} ${this._step()}${m}`) );
       }
     }
   }
 
   error(...messages: string[]) {
     for (const s of messages) {
-      for (const m of s.split('\n')) {
-        this._log.forEach( ({ log }) => log(31, `${this._step()}${this._fmtTime(new Date())} ${m}`) );
+      for (const m of s.trim().split('\n')) {
+        this._log.forEach( ({ log }) => log(31, `${this._fmtTime(new Date())} ${this._step()}${m}`) );
       }
     }
   }

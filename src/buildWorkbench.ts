@@ -67,7 +67,7 @@ export const buildWorkbench = async (ug: BuildFunc, augParams?: Partial<IParams>
 
     const log = new Log(loggers);
 
-    log.log(`Read params: ${JSON.stringify(params, undefined, 2)}`);
+    log.log(`Resulting params: ${JSON.stringify(params, undefined, 2)}`);
 
     try {
       await ug(params, log);
@@ -83,7 +83,16 @@ export const buildWorkbench = async (ug: BuildFunc, augParams?: Partial<IParams>
       if (existsSync(logFile)) {
         if (statSync(logFile).size > (maxLogSize ?? defMaxLogSize)) {
           try {
-            unlinkSync(logFile);
+            let fh = await open(logFile, 'r');
+            const buffer = await fh.readFile();
+            const data = buffer.toString().split('\n');
+            await fh.close();
+
+            const remainder = data.slice(Math.floor( data.length / 2 ));
+
+            fh = await open(logFile, 'w');
+            await fh.appendFile(remainder.join('\n'));
+            await fh.close();
           } catch {
             //...
           }
@@ -92,6 +101,7 @@ export const buildWorkbench = async (ug: BuildFunc, augParams?: Partial<IParams>
 
       try {
         const fh = await open(logFile, 'a');
+        await fh.appendFile('\n' + '=*'.repeat(40) + '\n');
         await fh.appendFile(logBuffer.join('\n'));
         await fh.close();
       } catch (e) {
