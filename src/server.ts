@@ -8,6 +8,7 @@ import { IParams } from './types';
 import { buildWorkbench } from './buildWorkbench';
 import dateFormat from 'dateformat';
 import { ug } from './ug';
+import { mi } from './mi';
 
 // {
 //   "method": "POST",
@@ -516,6 +517,7 @@ router.get('/', ctx => {
 
 type Fn = () => Promise<void>;
 const queue: Fn[] = [];
+let exeReady = false;
 
 router.post('/webhook/gedemin', async (ctx) => {
   const body = (ctx.request as any).body;
@@ -524,7 +526,6 @@ router.post('/webhook/gedemin', async (ctx) => {
   const url = body.head_commit.url;
 
   console.log(JSON.stringify(ctx.request, undefined, 2));
-  //console.log(JSON.stringify(body, undefined, 2));
 
   const updateState = state => octokit
     .request('POST /repos/{owner}/{repo}/statuses/{sha}', {
@@ -540,6 +541,7 @@ router.post('/webhook/gedemin', async (ctx) => {
     queue.push( () => updateState('success') );
   } else {
     queue.push( async () => {
+      exeReady = false;
       await updateState('pending');
       try {
         if (
@@ -550,6 +552,7 @@ router.post('/webhook/gedemin', async (ctx) => {
           await buildWorkbench(ug, { compilationType: 'PRODUCT', commitIncBuildNumber: true })
         ) {
           await updateState('success');
+          exeReady = true;
         } else {
           await updateState('error');
         }
@@ -559,6 +562,49 @@ router.post('/webhook/gedemin', async (ctx) => {
       }
     });
   }
+
+  while (queue.length) {
+    await queue.shift()!();
+  }
+
+  ctx.response.status = 200;
+});
+
+router.post('/webhook/gedemin-apps', async (ctx) => {
+  const body = (ctx.request as any).body;
+  const sha = body.head_commit.id;
+  const commitMessage = body.head_commit.message;
+  const url = body.head_commit.url;
+
+  console.log(JSON.stringify(ctx.request, undefined, 2));
+
+  const updateState = state => octokit
+    .request('POST /repos/{owner}/{repo}/statuses/{sha}', {
+      owner: 'GoldenSoftwareLtd',
+      repo: 'gedemin-apps',
+      sha,
+      state
+    })
+    .then( () => console.log(`state for gedemin-apps set to ${state}...`) )
+    .then( () => { log.push({ logged: new Date(), state, commitMessage, url }) } )
+
+  queue.push( async () => {
+    await updateState('pending');
+    try {
+      if (
+        (exeReady || await buildWorkbench(ug, { compilationType: 'PRODUCT', commitIncBuildNumber: false }))
+        &&
+        await buildWorkbench(mi)
+      ) {
+        await updateState('success');
+      } else {
+        await updateState('error');
+      }
+    } catch(e) {
+      await updateState('error');
+      console.error(e.message);
+    }
+  });
 
   while (queue.length) {
     await queue.shift()!();
