@@ -50,6 +50,10 @@ import { basicExecOptions, bindLog } from './utils';
       throw new Error(`Directory with name spaces files "${settingDir}" not found!`);
     }
 
+    if (!projectList || !projectList.length) {
+      throw new Error(`Project list is not set!`);
+    }
+
     assureDir(pathInstDB);
     assureDir(archiveDir);
     assureDir(instDir);
