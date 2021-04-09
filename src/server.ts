@@ -521,6 +521,13 @@ let exeReady = false;
 
 router.post('/webhook/gedemin', async (ctx) => {
   const body = (ctx.request as any).body;
+
+  if (!body.head_commit) {
+    // это скорее всего ПИНГ событие
+    ctx.response.status = 200;
+    return;
+  }
+
   const sha = body.head_commit.id;
   const commitMessage = body.head_commit.message;
   const url = body.head_commit.url;
@@ -572,6 +579,13 @@ router.post('/webhook/gedemin', async (ctx) => {
 
 router.post('/webhook/gedemin-apps', async (ctx) => {
   const body = (ctx.request as any).body;
+
+  if (!body.head_commit) {
+    // это скорее всего ПИНГ событие
+    ctx.response.status = 200;
+    return;
+  }
+
   const sha = body.head_commit.id;
   const commitMessage = body.head_commit.message;
   const url = body.head_commit.url;
