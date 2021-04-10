@@ -519,10 +519,14 @@ router.get('/', async (ctx) => {
       `${dateFormat(logged, 'dd.mm.yy HH:MM:ss')} -- ${repo} -- ${state} -- <a href="${url}">${commitMessage}</a>` 
   );
 
-  let fh = await open(getLogFileName(params.ciDir), 'r');
-  const buffer = await fh.readFile();
-  const data = buffer.toString().split('\n');
-  await fh.close();
+  let data; 
+  const logFile = getLogFileName(params.ciDir);
+  if (existsSync(logFile)) {
+    let fh = await open(logFile, 'r');
+    const buffer = await fh.readFile();
+    data = buffer.toString().split('\n');
+    await fh.close();
+  }
 
   ctx.response.body = 
     `<html>
@@ -532,7 +536,7 @@ router.get('/', async (ctx) => {
         <pre>${l.join('\n')}</pre>
         <p/>
         <pre>Only last 1000 log entries are shown.</pre>
-        <pre>${data.slice(-1000).join('\n')}</pre>
+        <pre>${data && data.slice(-1000).join('\n')}</pre>
       </body>
     </html>`;
 });
