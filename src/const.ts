@@ -184,15 +184,26 @@ export const portableFilesList = [
   'Help/vbs55.chm'
 ];
 
-/**
- * FSFN -- полное имя файла с пакетом настроек
- * DBN  -- только имя (без расширения) файла БД
- * SFN  -- имя файла заставки в каталоге images\splash
- * IFN  -- имя файла проекта установки, без расширения
- * AFN  -- имя файла с архивом установки
- * TFN  -- имя файла в каталоге дистрибутива установки
- */
-export const instProjects = {
+interface IInstProject {
+  /** FSFN -- полное имя файла с пакетом настроек */
+  FSFN: string;
+  /** SFN  -- имя файла заставки в каталоге images\splash */
+  SFN: string;
+  /** IFN  -- имя файла проекта установки, без расширения */
+  IFN: string;
+  /** AFN  -- имя файла с архивом установки */
+  AFN: string;
+  /** TFN  -- имя файла в каталоге дистрибутива установки */
+  TFN: string;
+};
+
+interface IInstProjects {
+  business: IInstProject;
+  devel: IInstProject;
+  plat: IInstProject;
+};
+
+export const instProjects: IInstProjects = {
   business: {
     FSFN: 'Общие\\Комплексная автоматизация.yml',
     SFN: 'complex.jpg',
@@ -214,7 +225,7 @@ export const instProjects = {
     AFN: 'plat_setup',
     TFN: 'Платежные документы'
   }
-};
+} as const;
 
 export type InstProject = keyof typeof instProjects;
 
@@ -441,4 +452,3 @@ DEFAULT CHARACTER SET WIN1251;
 export const etalonDBFileName = 'etalon.fdb';
 
 export const getFBConnString = (fbConnect: string | undefined, fullDBFileName: string) => `${fbConnect ?? 'localhost/3050'}${fbConnect ? ':' : ''}${fullDBFileName}`;
-
