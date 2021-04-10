@@ -513,7 +513,7 @@ const app = new Koa();
 const router = new Router();
 const octokit = new Octokit({ auth: params.pat });
 
-router.get('/', async (ctx) => {
+router.get('/log', async (ctx) => {
   const l = log.map( 
     ({ logged, repo, state, commitMessage, url }) => 
       `${dateFormat(logged, 'dd.mm.yy HH:MM:ss')} -- ${repo} -- ${state} -- <a href="${url}">${commitMessage}</a>` 
