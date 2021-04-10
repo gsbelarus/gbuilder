@@ -536,7 +536,7 @@ router.get('/', async (ctx) => {
         <pre>${l.join('\n')}</pre>
         <p/>
         <pre>Only last 1000 log entries are shown.</pre>
-        <pre>${data && data.slice(-1000).join('\n')}</pre>
+        <pre>${data ? data.slice(-1000).join('\n') : 'no log file...'}</pre>
       </body>
     </html>`;
 });
