@@ -602,6 +602,13 @@ router.post('/webhook/gedemin-apps', async (ctx) => {
     .then( () => console.log(`state for gedemin-apps set to ${state}...`) )
     .then( () => { log.push({ logged: new Date(), state, commitMessage, url }) } )
 
+  // возможно, экзешник как раз сейчас компилируется  
+  if (!exeReady) {
+    while (queue.length) {
+      await queue.shift()!();
+    }  
+  }  
+
   queue.push( async () => {
     await updateState('pending');
     try {
