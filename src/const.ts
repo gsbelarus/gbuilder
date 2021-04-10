@@ -441,3 +441,4 @@ DEFAULT CHARACTER SET WIN1251;
 export const etalonDBFileName = 'etalon.fdb';
 
 export const getFBConnString = (fbConnect: string | undefined, fullDBFileName: string) => `${fbConnect ?? 'localhost/3050'}${fbConnect ? ':' : ''}${fullDBFileName}`;
+

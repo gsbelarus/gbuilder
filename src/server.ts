@@ -4,11 +4,13 @@ import http from 'http';
 import bodyParser from 'koa-bodyparser';
 import { Octokit } from '@octokit/core';
 import { existsSync, readFileSync } from 'fs';
+import { open } from 'fs/promises';
 import { IParams } from './types';
 import { buildWorkbench } from './buildWorkbench';
 import dateFormat from 'dateformat';
 import { ug } from './ug';
 import { mi } from './mi';
+import { getLogFileName } from './utils';
 
 // {
 //   "method": "POST",
@@ -511,12 +513,28 @@ const app = new Koa();
 const router = new Router();
 const octokit = new Octokit({ auth: params.pat });
 
-router.get('/', ctx => {
+router.get('/', async (ctx) => {
   const l = log.map( 
     ({ logged, repo, state, commitMessage, url }) => 
       `${dateFormat(logged, 'dd.mm.yy HH:MM:ss')} -- ${repo} -- ${state} -- <a href="${url}">${commitMessage}</a>` 
   );
-  ctx.response.body = `<html><body><pre>Webhook server is working...</pre><p/><pre>${l.join('\n')}</pre></body></html>`;
+
+  let fh = await open(getLogFileName(params.ciDir), 'r');
+  const buffer = await fh.readFile();
+  const data = buffer.toString().split('\n');
+  await fh.close();
+
+  ctx.response.body = 
+    `<html>
+      <body>
+        <pre>Webhook server is working...</pre>
+        <p/>
+        <pre>${l.join('\n')}</pre>
+        <p/>
+        <pre>Only last 1000 log entries are shown.</pre>
+        <pre>${data.slice(-1000).join('\n')}</pre>
+      </body>
+    </html>`;
 });
 
 type Fn = () => Promise<void>;

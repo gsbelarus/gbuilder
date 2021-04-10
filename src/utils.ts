@@ -93,3 +93,5 @@ export const basicCmdOptions: ExecSyncOptions = {
   maxBuffer: 1024 * 1024 * 64,
   timeout: 1 * 60 * 60 * 1000
 };
+
+export const getLogFileName = (dir: string) => path.join(dir, 'log.txt');

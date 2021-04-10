@@ -1,8 +1,8 @@
 import { ILog, Log } from './log';
-import { existsSync, readFileSync, statSync, unlinkSync } from 'fs';
+import { existsSync, readFileSync, statSync } from 'fs';
 import { open } from 'fs/promises';
 import { BuildFunc, IParams } from './types';
-import path from 'path';
+import { getLogFileName } from './utils';
 
 const defMaxLogSize = 10 * 1024 * 1024;
 
@@ -77,7 +77,7 @@ export const buildWorkbench = async (ug: BuildFunc, augParams?: Partial<IParams>
     }
 
     const { ciDir, maxLogSize } = params;
-    const logFile = path.join(ciDir, 'log.txt');
+    const logFile = getLogFileName(ciDir);
 
     if (logFile) {
       if (existsSync(logFile)) {
