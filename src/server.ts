@@ -486,6 +486,7 @@ import { mi } from './mi';
 
 interface ILog {
   logged: Date;
+  repo: string;
   state: string;
   commitMessage: string;
   url: string;
@@ -511,7 +512,10 @@ const router = new Router();
 const octokit = new Octokit({ auth: params.pat });
 
 router.get('/', ctx => {
-  const l = log.map( ({ logged, state, commitMessage, url }) => `${dateFormat(logged, 'dd.mm.yy HH:MM:ss')} -- ${state} -- <a href="${url}">${commitMessage}</a>` )
+  const l = log.map( 
+    ({ logged, repo, state, commitMessage, url }) => 
+      `${dateFormat(logged, 'dd.mm.yy HH:MM:ss')} -- ${repo} -- ${state} -- <a href="${url}">${commitMessage}</a>` 
+  );
   ctx.response.body = `<html><body><pre>Webhook server is working...</pre><p/><pre>${l.join('\n')}</pre></body></html>`;
 });
 
@@ -542,7 +546,7 @@ router.post('/webhook/gedemin', async (ctx) => {
       state
     })
     .then( () => console.log(`state for gedemin-private set to ${state}...`) )
-    .then( () => { log.push({ logged: new Date(), state, commitMessage, url }) } )
+    .then( () => { log.push({ logged: new Date(), repo: 'gedemin-private', state, commitMessage, url }) } )
 
   if (commitMessage === 'Inc build number') {
     queue.push( () => updateState('success') );
@@ -600,7 +604,7 @@ router.post('/webhook/gedemin-apps', async (ctx) => {
       state
     })
     .then( () => console.log(`state for gedemin-apps set to ${state}...`) )
-    .then( () => { log.push({ logged: new Date(), state, commitMessage, url }) } )
+    .then( () => { log.push({ logged: new Date(), repo: 'gedemin-apps', state, commitMessage, url }) } )
 
   // возможно, экзешник как раз сейчас компилируется  
   if (!exeReady) {
