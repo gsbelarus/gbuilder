@@ -1,12 +1,14 @@
 import { InstProject } from "./const";
 import { Log } from "./log";
 
+export type CompilationType = 'PRODUCT' | 'DEBUG' | 'LOCK';
+
 export interface IParams {
   /**
    * Тип компиляции:
    *    выбор файла конфигурации, ключей компиляции, файла архива
    */
-  compilationType: 'PRODUCT' | 'DEBUG' | 'LOCK';
+  compilationType: CompilationType;
   /** Установить заданный размер исполнимого файла */
   setExeSize?: number;
   /** */
