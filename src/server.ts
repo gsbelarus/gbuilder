@@ -543,7 +543,6 @@ router.get('/log', async (ctx) => {
 
 type Fn = () => Promise<void>;
 const queue: Fn[] = [];
-let exeReady = false;
 
 router.post('/webhook/gedemin', async (ctx) => {
   const body = (ctx.request as any).body;
@@ -574,7 +573,6 @@ router.post('/webhook/gedemin', async (ctx) => {
     queue.push( () => updateState('success') );
   } else {
     queue.push( async () => {
-      exeReady = false;
       await updateState('pending');
       try {
         if (
@@ -585,7 +583,6 @@ router.post('/webhook/gedemin', async (ctx) => {
           await buildWorkbench(ug, { compilationType: 'PRODUCT', commitIncBuildNumber: true })
         ) {
           await updateState('success');
-          exeReady = true;
         } else {
           await updateState('error');
         }
@@ -628,18 +625,11 @@ router.post('/webhook/gedemin-apps', async (ctx) => {
     .then( () => console.log(`state for gedemin-apps set to ${state}...`) )
     .then( () => { log.push({ logged: new Date(), repo: 'gedemin-apps', state, commitMessage, url }) } )
 
-  // возможно, экзешник как раз сейчас компилируется  
-  if (!exeReady) {
-    while (queue.length) {
-      await queue.shift()!();
-    }  
-  }  
-
   queue.push( async () => {
     await updateState('pending');
     try {
       if (
-        (exeReady || await buildWorkbench(ug, { compilationType: 'PRODUCT', commitIncBuildNumber: false }))
+        await buildWorkbench(ug, { compilationType: 'PRODUCT', commitIncBuildNumber: false })
         &&
         await buildWorkbench(mi)
       ) {
