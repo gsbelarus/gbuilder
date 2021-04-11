@@ -166,10 +166,19 @@ import { basicExecOptions, bindLog } from './utils';
     }
   };
 
+  const l = projectList.filter( pr => {
+    if (instProjects[pr]) {
+      return true;
+    } else {
+      log.error(`Unknown project ${pr}!`);
+      return false;
+    }
+  });
+
   await runProcesses('Gedemin installation', [
     { name: 'Check prerequisites', fn: checkPrerequisites },
     { name: 'Pull sources', fn: pullSources },
     { name: 'Prepare installation', fn: prepareInstallation },
-    ...projectList.flatMap( pr => ({ name: 'Make installation', fn: makeInstallation(pr) }) ),
+    ...l.flatMap( pr => ({ name: 'Make installation', fn: makeInstallation(pr) }) ),
   ]);
 };
