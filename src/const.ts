@@ -191,19 +191,65 @@ interface IInstProject {
   SFN: string;
   /** IFN  -- имя файла проекта установки, без расширения */
   IFN: string;
-  /** AFN  -- имя файла с архивом установки */
+  /** AFN  -- имя файла с архивом установки, без расширения. */
   AFN: string;
   /** TFN  -- имя файла в каталоге дистрибутива установки */
   TFN: string;
+  /** Нужен экзешник с защитой */
+  lockEXE?: boolean;
+  /** Нужен экзешник установленного размера */
+  exeSize?: number;
+  /** Специфический файл ресурсов при компиляции экзешника */
+  rcFileName?: string;
+  /** имя файла установки, если отличается от setup.exe, без расширения */
+  setupFileName?: string;
 };
 
 interface IInstProjects {
+  cash: IInstProject;
+  cash_server: IInstProject;
+  menufront: IInstProject;
   business: IInstProject;
   devel: IInstProject;
   plat: IInstProject;
+  menuback: IInstProject;
+  hotel: IInstProject;
+  san: IInstProject;
 };
 
 export const instProjects: IInstProjects = {
+  cash: {
+    FSFN: 'Розничная торговля\\PositiveCash\\GS.PositiveCash.yml',
+    SFN: 'complex.jpg',
+    IFN: 'kkc_positive_cash',
+    AFN: 'cash_setup',
+    TFN: 'Касса',
+    lockEXE: true,
+    exeSize: 20774976,
+    rcFileName: 'gedemin_positive_cash_ver.rc'
+  },
+  cash_server: {
+    FSFN: 'Розничная торговля\\Сервер\\GS.PositiveCash.CashServer.yml',
+    SFN: 'complex.jpg',
+    IFN: 'kkc_cash_server',
+    AFN: 'cash_server_setup',
+    TFN: 'Касса',
+    lockEXE: true,
+    exeSize: 20774976,
+    rcFileName: 'gedemin_positive_cash_ver.rc',
+    setupFileName: 'setup_server'
+  },
+  menufront: {
+    FSFN: 'Меню\\Фронт-офис\\GS.PositiveCheck.yml',
+    SFN: 'complex.jpg',
+    IFN: 'kkc_positive_check',
+    AFN: 'menufront_setup',
+    TFN: 'Меню',
+    lockEXE: true,
+    exeSize: 20774976,
+    rcFileName: 'gedemin_positive_check_ver.rc',
+    setupFileName: 'setup_front'
+  },
   business: {
     FSFN: 'Общие\\Комплексная автоматизация.yml',
     SFN: 'complex.jpg',
@@ -224,6 +270,28 @@ export const instProjects: IInstProjects = {
     IFN: 'platlocal',
     AFN: 'plat_setup',
     TFN: 'Платежные документы'
+  },
+  menuback: {
+    FSFN: 'Меню\\2014 Бэк-офис\\GS.Общепит.back.yml',
+    SFN: 'doc.jpg',
+    IFN: 'menubacklocal',
+    AFN: 'menuback_setup',
+    TFN: 'Меню',
+    setupFileName: 'setup_back'
+  },
+  hotel: {
+    FSFN: 'Гостиница\\GS.Гостиница.yml',
+    SFN: 'doc.jpg',
+    IFN: 'hotellocal',
+    AFN: 'hotel_setup',
+    TFN: 'Гостиница'
+  },
+  san: {
+    FSFN: 'Санаторий\\GS.Санаторий.yml',
+    SFN: 'doc.jpg',
+    IFN: 'sanlocal',
+    AFN: 'san_setup',
+    TFN: 'Санаторий'
   }
 } as const;
 

@@ -82,6 +82,7 @@ import { basicExecOptions, bindLog } from './utils';
 
   /** Создание истоляции */
   const makeInstallation = (project: InstProject) => async () => {
+    const { FSFN, SFN, TFN, IFN, AFN, setupFileName } = instProjects[project];
     const dbFullFileName = path.join(baseDir, etalonDBFileName);
     const dbProjectFullFileName = path.join(pathInstDB, `${project}.fdb`);
 
@@ -90,7 +91,7 @@ import { basicExecOptions, bindLog } from './utils';
 
     /** Загрузка пакета настроек */
     const connectionString = getFBConnString(fbConnect, dbProjectFullFileName);
-    const settingFullFileName = path.join(settingDir, instProjects[project].FSFN);
+    const settingFullFileName = path.join(settingDir, FSFN);
     const s = execFileSync(
       path.join(instDir, 'gedemin.exe'),
       [ '/sn', connectionString, '/user', 'Administrator', '/password', 'Administrator',
@@ -100,7 +101,7 @@ import { basicExecOptions, bindLog } from './utils';
     s && log.log(s);
     log.log(`${settingFullFileName} has been loaded...`);
 
-    const imgSrcFullFileName = path.join(rootGedeminDir, 'Gedemin', 'Images', 'Splash', instProjects[project].SFN);
+    const imgSrcFullFileName = path.join(rootGedeminDir, 'Gedemin', 'Images', 'Splash', SFN);
     const imgDestFullFileName = path.join(instDir, 'gedemin.jpg');
     await copyFileWithLog(imgSrcFullFileName, imgDestFullFileName);
 
@@ -115,12 +116,13 @@ import { basicExecOptions, bindLog } from './utils';
     );
     log.log(`${bkProjectFullFileName} has been created...`);
 
-    const setupPath = path.join(distribDir, instProjects[project].TFN);
-    const setupFullFileName = path.join(setupPath, 'setup.exe');
+    const outputName = setupFileName || 'setup';
+    const setupPath = path.join(distribDir, TFN);
+    const setupFullFileName = path.join(setupPath, outputName + '.exe');
 
-    const issFileName = instProjects[project].IFN + '.iss';
+    const issFileName = IFN + '.iss';
     const output = execSync(
-      `"${path.join(binInnoSetup, 'iscc.exe')}" /O"${setupPath}" /Fsetup /Q /DGedInstDir="${instDir}" ${issFileName}`, {
+      `"${path.join(binInnoSetup, 'iscc.exe')}" /O"${setupPath}" /F${outputName} /Q /DGedInstDir="${instDir}" ${issFileName}`, {
       maxBuffer: 1024 * 1024 * 64,
       timeout: 1 * 60 * 60 * 1000,
       cwd: pathISS
@@ -128,7 +130,7 @@ import { basicExecOptions, bindLog } from './utils';
     output && log.log(output);
     log.log(`setup file ${setupFullFileName} has been created...`);
 
-    const arcFullFileName = path.join(archiveDir, instProjects[project].AFN + '.rar');
+    const arcFullFileName = path.join(archiveDir, AFN + '.rar');
     packFiles(arcFullFileName, setupFullFileName, distribDir);
 
     // portable archive
