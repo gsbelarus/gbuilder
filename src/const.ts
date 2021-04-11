@@ -203,6 +203,8 @@ interface IInstProject {
   rcFileName?: string;
   /** имя файла установки, если отличается от setup.exe, без расширения */
   setupFileName?: string;
+  /** */
+  demoBk?: string;
 };
 
 interface IInstProjects {
@@ -255,7 +257,8 @@ export const instProjects: IInstProjects = {
     SFN: 'complex.jpg',
     IFN: 'businesslocal',
     AFN: 'compl_setup',
-    TFN: 'Комплексная автоматизация'
+    TFN: 'Комплексная автоматизация',
+    demoBk: 'demo.bk'
   },
   devel: {
     FSFN: 'Общие\\Общие данные.yml',

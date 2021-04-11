@@ -82,9 +82,14 @@ import { basicExecOptions, bindLog } from './utils';
 
   /** Создание истоляции */
   const makeInstallation = (project: InstProject) => async () => {
-    const { FSFN, SFN, TFN, IFN, AFN, setupFileName } = instProjects[project];
+    const { FSFN, SFN, TFN, IFN, AFN, setupFileName, demoBk } = instProjects[project];
     const dbFullFileName = path.join(baseDir, etalonDBFileName);
     const dbProjectFullFileName = path.join(pathInstDB, `${project}.fdb`);
+
+    /** Копирование демо БД в папку проекта истоляции */
+    if (demoBk) {
+      await copyFileWithLog(path.join(baseDir, demoBk), path.join(pathInstDB, demoBk));
+    }
 
     /** Копирование эталонной БД в БД проекта истоляции */
     await copyFileWithLog(dbFullFileName, dbProjectFullFileName);
