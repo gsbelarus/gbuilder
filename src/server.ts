@@ -11,6 +11,8 @@ import dateFormat from 'dateformat';
 import { ug } from './ug';
 import { mi } from './mi';
 import { getLogFileName } from './utils';
+import { IInstProject, InstProject, instProjects } from './const';
+import { Semaphore } from './Semaphore';
 
 // {
 //   "method": "POST",
@@ -514,12 +516,12 @@ const router = new Router();
 const octokit = new Octokit({ auth: params.pat });
 
 router.get('/log', async (ctx) => {
-  const l = log.map( 
-    ({ logged, repo, state, commitMessage, url }) => 
-      `${dateFormat(logged, 'dd.mm.yy HH:MM:ss')} -- ${repo} -- ${state} -- <a href="${url}">${commitMessage}</a>` 
+  const l = log.map(
+    ({ logged, repo, state, commitMessage, url }) =>
+      `${dateFormat(logged, 'dd.mm.yy HH:MM:ss')} -- ${repo} -- ${state} -- <a href="${url}">${commitMessage}</a>`
   );
 
-  let data; 
+  let data;
   const logFile = getLogFileName(params.ciDir);
   if (existsSync(logFile)) {
     let fh = await open(logFile, 'r');
@@ -528,7 +530,7 @@ router.get('/log', async (ctx) => {
     await fh.close();
   }
 
-  ctx.response.body = 
+  ctx.response.body =
     `<html>
       <body>
         <pre>Webhook server is working...</pre>
@@ -542,7 +544,17 @@ router.get('/log', async (ctx) => {
 });
 
 type Fn = () => Promise<void>;
-const queue: Fn[] = [];
+
+const semaphore = new Semaphore();
+
+const run = async (fn: Fn) => {
+  await semaphore.acquire();
+  try {
+    await fn();
+  } finally {
+    await semaphore.release();
+  }
+};
 
 router.post('/webhook/gedemin', async (ctx) => {
   const body = (ctx.request as any).body;
@@ -570,9 +582,9 @@ router.post('/webhook/gedemin', async (ctx) => {
     .then( () => { log.push({ logged: new Date(), repo: 'gedemin-private', state, commitMessage, url }) } )
 
   if (commitMessage === 'Inc build number') {
-    queue.push( () => updateState('success') );
+    updateState('success');
   } else {
-    queue.push( async () => {
+    run( async () => {
       await updateState('pending');
       try {
         if (
@@ -591,10 +603,6 @@ router.post('/webhook/gedemin', async (ctx) => {
         console.error(e.message);
       }
     });
-  }
-
-  while (queue.length) {
-    await queue.shift()!();
   }
 
   ctx.response.status = 200;
@@ -625,14 +633,49 @@ router.post('/webhook/gedemin-apps', async (ctx) => {
     .then( () => console.log(`state for gedemin-apps set to ${state}...`) )
     .then( () => { log.push({ logged: new Date(), repo: 'gedemin-apps', state, commitMessage, url }) } )
 
-  queue.push( async () => {
+  run( async () => {
     await updateState('pending');
     try {
-      if (
-        await buildWorkbench(ug, { compilationType: 'PRODUCT', commitIncBuildNumber: false })
-        &&
-        await buildWorkbench(mi)
-      ) {
+      const getSign = ({ compilationType, setExeSize, customRcFile }: IInstProject) => `${compilationType}${setExeSize}${customRcFile}`;
+
+      const sorted = params.projectList
+        .filter( pr => {
+          if (instProjects[pr]) {
+            return true;
+          } else {
+            console.error(`Unknown project ${pr}!`);
+            return false;
+          }
+        })
+        .sort( (a, b) => getSign(instProjects[a]).localeCompare(getSign(instProjects[b])) );
+
+      let res = !!sorted.length;
+      const projectList: InstProject[] = [];
+
+      for (let i = 0; res && i < sorted.length; i++) {
+        const instProject = instProjects[i];
+        const nextProject = instProjects[i + 1];
+
+        projectList.push(instProject);
+
+        if (!nextProject || getSign(instProject) !== getSign(nextProject)) {
+          const { compilationType, setExeSize, customRcFile } = instProject;
+
+          res = await buildWorkbench(ug, {
+            compilationType,
+            setExeSize,
+            customRcFile,
+            commitIncBuildNumber: false
+          });
+
+          if (res) {
+            res = await buildWorkbench(mi, { projectList });
+            projectList.length = 0;
+          }
+        }
+      }
+
+      if (res) {
         await updateState('success');
       } else {
         await updateState('error');
@@ -642,10 +685,6 @@ router.post('/webhook/gedemin-apps', async (ctx) => {
       console.error(e.message);
     }
   });
-
-  while (queue.length) {
-    await queue.shift()!();
-  }
 
   ctx.response.status = 200;
 });

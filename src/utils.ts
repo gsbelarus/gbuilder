@@ -5,6 +5,7 @@ import path from 'path';
 import { existsSync, mkdirSync, unlinkSync, createReadStream } from 'fs';
 import { copyFile, stat } from 'fs/promises';
 import FormData from 'form-data';
+import { InstProject, instProjects } from './const';
 
 export const bindLog = (params: IParams, log: Log) => ({
   runProcesses: async (name: string, processes: Processes) => {
@@ -18,6 +19,10 @@ export const bindLog = (params: IParams, log: Log) => ({
   },
 
   packFiles: (arcName: string, fileName: string, cwd: string, msg?: string) => {
+    if (existsSync(arcName)) {
+      unlinkSync(arcName);
+    }
+
     const s = execFileSync(path.join(params.binWinRAR, 'WinRAR.exe'),
       [ 'a', '-u', '-as', '-ibck', arcName, fileName ],
       { ...basicExecOptions, cwd }).toString().trim();
@@ -79,7 +84,16 @@ export const bindLog = (params: IParams, log: Log) => ({
     await new Promise( res => form.submit(url, res) );
 
     log.log(`${fn} has been uploaded via ${url}, ${size.toLocaleString(undefined, { maximumFractionDigits: 0 })} bytes...`)
-  }
+  },
+
+  filterProjectList: (projectList: InstProject[]) => projectList.filter( pr => {
+    if (instProjects[pr]) {
+      return true;
+    } else {
+      log.error(`Unknown project ${pr}!`);
+      return false;
+    }
+  })
 });
 
 export const basicExecOptions: ExecFileSyncOptions = {

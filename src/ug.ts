@@ -27,7 +27,7 @@ import { basicExecOptions, bindLog } from './utils';
 export async function ug(params: IParams, log: Log) {
 
   const { runProcesses, packFiles, deleteFile, assureDir, uploadFile } = bindLog(params, log);
-  const { compilationType, setExeSize, ciDir, rootGedeminDir, pathDelphi, binEditbin, binFirebird,
+  const { compilationType, setExeSize, customRcFile, ciDir, rootGedeminDir, pathDelphi, binEditbin, binFirebird,
     upload, srcBranch, commitIncBuildNumber, fbConnect, fbUser, fbPassword } = params;
 
   /** В процессе компиляции DCU файлы помещаются в эту папку */
@@ -263,14 +263,6 @@ export async function ug(params: IParams, log: Log) {
 
   /** Инкремент версии */
   const incVer = (project: ProjectID, pathProject: string) => () => {
-    const { rc } = projects[project];
-
-    if (!rc) {
-      log.log(`project ${project} doesn't have a version resource...`);
-      log.log(`skip incrementation...`);
-      return;
-    };
-
     /** RC-файл версии  */
     const verRCFileName = path.join(pathProject, `${project}_ver.rc`);
     /** RES-файл версии  */
@@ -278,35 +270,55 @@ export async function ug(params: IParams, log: Log) {
     /** Путь рисунков */
     const pathImages = path.resolve(pathProject, '..\\images');
 
-    const rcText = readFileSync(verRCFileName).toString().trim().split('\n');
-    const fvIndex = rcText.findIndex( s => s.startsWith('FILEVERSION') );
+    if (project === 'gedemin' && customRcFile) {
+      log.log(
+        execFileSync(
+          path.join(pathDelphi, 'Bin', 'brcc32.exe'),
+          [`-fo${project}_ver.res`, `-i${pathImages}`, `${customRcFile}`],
+          { ...basicExecOptions, cwd: pathProject }
+        ).toString()
+      );
+      log.log(`custom res file ${customRcFile} has been successfully built...`);
+    } else {
 
-    if (fvIndex === -1) {
-      throw new Error(`Invalid ${verRCFileName} file format.`);
+      const { rc } = projects[project];
+
+      if (!rc) {
+        log.log(`project ${project} doesn't have a version resource...`);
+        log.log(`skip incrementation...`);
+        return;
+      };
+
+      const rcText = readFileSync(verRCFileName).toString().trim().split('\n');
+      const fvIndex = rcText.findIndex( s => s.startsWith('FILEVERSION') );
+
+      if (fvIndex === -1) {
+        throw new Error(`Invalid ${verRCFileName} file format.`);
+      }
+
+      // extract current build number from second string of .rc file: FILEVERSION 2, 9, 5, 11591
+      const buildNumber = parseInt(rcText[fvIndex].split(',')[3].trim()) + 1;
+
+      let newRC = rc;
+      newRC = newRC.replace(/<<BUILD_NUMBER>>/gi, buildNumber.toString());
+      newRC = newRC.replace('<<YEAR>>', new Date().getFullYear().toString());
+
+      writeFileSync(verRCFileName, newRC);
+
+      log.log(`build number for ${project} has been incremented to ${buildNumber}...`);
+      log.log(`${project}_ver.rc saved...`);
+
+      deleteFile(verResFileName);
+
+      log.log(
+        execFileSync(
+          path.join(pathDelphi, 'Bin', 'brcc32.exe'),
+          [`-fo${project}_ver.res`, `-i${pathImages}`, `${project}_ver.rc`],
+          { ...basicExecOptions, cwd: pathProject }
+        ).toString()
+      );
+      log.log(`${project}_ver.res has been successfully built...`);
     }
-
-    // extract current build number from second string of .rc file: FILEVERSION 2, 9, 5, 11591
-    const buildNumber = parseInt(rcText[fvIndex].split(',')[3].trim()) + 1;
-
-    let newRC = rc;
-    newRC = newRC.replace(/<<BUILD_NUMBER>>/gi, buildNumber.toString());
-    newRC = newRC.replace('<<YEAR>>', new Date().getFullYear().toString());
-
-    writeFileSync(verRCFileName, newRC);
-
-    log.log(`build number for ${project} has been incremented to ${buildNumber}...`);
-    log.log(`${project}_ver.rc saved...`);
-
-    deleteFile(verResFileName);
-
-    log.log(
-      execFileSync(
-        path.join(pathDelphi, 'Bin', 'brcc32.exe'),
-        [`-fo${project}_ver.res`, `-i${pathImages}`, `${project}_ver.rc`],
-        { ...basicExecOptions, cwd: pathProject }
-      ).toString()
-    );
-    log.log(`${project}_ver.res has been successfully built...`);
   };
 
   const uploadArhive = async () => {

@@ -12,6 +12,8 @@ export interface IParams {
   /** Установить заданный размер исполнимого файла */
   setExeSize?: number;
   /** */
+  customRcFile?: string;
+  /** */
   ciDir: string;
   /**
    * Корневая папка с полными исходниками Гедымина.

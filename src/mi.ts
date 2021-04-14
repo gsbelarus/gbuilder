@@ -12,7 +12,7 @@ import { execFileSync, execSync } from 'child_process';
 import { existsSync, rmdirSync, unlinkSync } from 'fs';
 import path from 'path';
 import { Log } from './log';
-import { portableFilesList, instProjects, etalonDBFileName, getFBConnString, InstProject } from './const';
+import { portableFilesList, instProjects, etalonDBFileName, getFBConnString, InstProject, cashPortableFilesList } from './const';
 import { IParams } from './types';
 import { basicExecOptions, bindLog } from './utils';
 
@@ -22,7 +22,8 @@ import { basicExecOptions, bindLog } from './utils';
  */
  export async function mi(params: IParams, log: Log) {
 
-  const { runProcesses, packFiles, deleteFile, assureDir, copyFileWithLog, uploadFile } = bindLog(params, log);
+  const { runProcesses, packFiles, deleteFile, assureDir, copyFileWithLog,
+    uploadFile, filterProjectList } = bindLog(params, log);
 
   const { rootGedeminDir, settingDir, ciDir, upload, binFirebird, binInnoSetup,
     fbConnect, fbUser, fbPassword, srcGedeminAppsBranch, projectList } = params;
@@ -71,13 +72,16 @@ import { basicExecOptions, bindLog } from './utils';
   };
 
   /** Копируем все файлы из EXE в папку, из которой будем создавать инстоляцию InnoSetup */
-  const prepareInstallation = () => {
+  const prepareInstallation = (project: InstProject) => () => {
+    const { copyCashFiles } = instProjects[project];
     if (existsSync(instDir)) {
       rmdirSync(instDir, { recursive: true });
       log.log(`Directory ${instDir} has been removed...`);
     }
     const pathEXE = path.join(rootGedeminDir, 'Gedemin', 'EXE');
-    return Promise.all(portableFilesList.map( fn => copyFileWithLog(path.join(pathEXE, fn), path.join(instDir, fn)) ) );
+    return Promise.all([...portableFilesList, ...(copyCashFiles ? cashPortableFilesList : [])].map(
+      fn => copyFileWithLog(path.join(pathEXE, fn), path.join(instDir, fn))
+    ) );
   };
 
   /** Создание истоляции */
@@ -139,7 +143,7 @@ import { basicExecOptions, bindLog } from './utils';
     packFiles(arcFullFileName, setupFullFileName, distribDir);
 
     // portable archive
-    [`Database/${project}.bk`, 'gedemin.ini', 'databases.ini', 'USBPD.DLL', 'PDPosiFlexCommand.DLL', 'PDComWriter.DLL'].forEach(
+    [`Database/${project}.bk`, 'gedemin.ini', 'databases.ini'].forEach(
       f => {
         const fn = path.join(instDir, f);
         if (existsSync(fn)) {
@@ -147,11 +151,6 @@ import { basicExecOptions, bindLog } from './utils';
         }
       }
     );
-
-    //TODO: эти файлы оставить только если инстоляция CASH
-    // del Gedemin\USBPD.DLL > nul
-    // del Gedemin\PDPosiFlexCommand.DLL > nul
-    // del Gedemin\PDComWriter.DLL > nul
 
     const portableArcFullFileName = path.join(archiveDir, project + '_portable.rar');
     packFiles(portableArcFullFileName, 'Gedemin', ciDir);
@@ -166,19 +165,12 @@ import { basicExecOptions, bindLog } from './utils';
     }
   };
 
-  const l = projectList.filter( pr => {
-    if (instProjects[pr]) {
-      return true;
-    } else {
-      log.error(`Unknown project ${pr}!`);
-      return false;
-    }
-  });
-
   await runProcesses('Gedemin installation', [
     { name: 'Check prerequisites', fn: checkPrerequisites },
     { name: 'Pull sources', fn: pullSources },
-    { name: 'Prepare installation', fn: prepareInstallation },
-    ...l.flatMap( pr => ({ name: 'Make installation', fn: makeInstallation(pr) }) ),
+    ...filterProjectList(projectList).flatMap( pr => ([
+      { name: 'Prepare installation', fn: prepareInstallation(pr) },
+      { name: `Make ${pr} installation`, fn: makeInstallation(pr) }
+    ]) ),
   ]);
 };

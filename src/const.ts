@@ -1,3 +1,5 @@
+import { CompilationType } from "./types";
+
 export const gedeminSrcPath = [
   '../queryfilter',
   '../classtree',
@@ -184,7 +186,16 @@ export const portableFilesList = [
   'Help/vbs55.chm'
 ];
 
-interface IInstProject {
+export const cashPortableFilesList = [
+  'USBPD.DLL',
+  'PDPosiFlexCommand.DLL',
+  'PDComWriter.DLL',
+  'trhems.ini',
+  'settings.xml',
+  'ppServer.exe'
+];
+
+export interface IInstProject {
   /** FSFN -- полное имя файла с пакетом настроек */
   FSFN: string;
   /** SFN  -- имя файла заставки в каталоге images\splash */
@@ -195,16 +206,18 @@ interface IInstProject {
   AFN: string;
   /** TFN  -- имя файла в каталоге дистрибутива установки */
   TFN: string;
-  /** Нужен экзешник с защитой */
-  lockEXE?: boolean;
+  /** Нужен экзешник с защитой? */
+  compilationType?: CompilationType;
   /** Нужен экзешник установленного размера */
-  exeSize?: number;
+  setExeSize?: number;
   /** Специфический файл ресурсов при компиляции экзешника */
-  rcFileName?: string;
+  customRcFile?: string;
   /** имя файла установки, если отличается от setup.exe, без расширения */
   setupFileName?: string;
   /** */
   demoBk?: string;
+  /** */
+  copyCashFiles?: boolean;
 };
 
 interface IInstProjects {
@@ -226,9 +239,10 @@ export const instProjects: IInstProjects = {
     IFN: 'kkc_positive_cash',
     AFN: 'cash_setup',
     TFN: 'Касса',
-    lockEXE: true,
-    exeSize: 20774976,
-    rcFileName: 'gedemin_positive_cash_ver.rc'
+    compilationType: 'LOCK',
+    setExeSize: 20774976,
+    customRcFile: 'gedemin_positive_cash_ver.rc',
+    copyCashFiles: true
   },
   cash_server: {
     FSFN: 'Розничная торговля\\Сервер\\GS.PositiveCash.CashServer.yml',
@@ -236,9 +250,9 @@ export const instProjects: IInstProjects = {
     IFN: 'kkc_cash_server',
     AFN: 'cash_server_setup',
     TFN: 'Касса',
-    lockEXE: true,
-    exeSize: 20774976,
-    rcFileName: 'gedemin_positive_cash_ver.rc',
+    compilationType: 'LOCK',
+    setExeSize: 20774976,
+    customRcFile: 'gedemin_positive_cash_ver.rc',
     setupFileName: 'setup_server'
   },
   menufront: {
@@ -247,10 +261,11 @@ export const instProjects: IInstProjects = {
     IFN: 'kkc_positive_check',
     AFN: 'menufront_setup',
     TFN: 'Меню',
-    lockEXE: true,
-    exeSize: 20774976,
-    rcFileName: 'gedemin_positive_check_ver.rc',
-    setupFileName: 'setup_front'
+    compilationType: 'LOCK',
+    setExeSize: 20774976,
+    customRcFile: 'gedemin_positive_check_ver.rc',
+    setupFileName: 'setup_front',
+    copyCashFiles: true
   },
   business: {
     FSFN: 'Общие\\Комплексная автоматизация.yml',
