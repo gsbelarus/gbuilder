@@ -65,6 +65,10 @@ export async function ug(params: IParams, log: Log) {
   /** Снятие из гита последних исходников */
   const pullSources = () => {
     const opt = { ...basicExecOptions, cwd: rootGedeminDir };
+    // если предыдущий заход завершился с ошибкой на середине процесса,
+    // то будет конфликт изменений при выполнении git pull
+    log.log(`git stash...`);
+    log.log(execFileSync('git', ['stash'], opt).toString());
     log.log(`git checkout ${srcBranch}...`);
     log.log(execFileSync('git', ['checkout', srcBranch], opt).toString());
     log.log(`git pull...`);

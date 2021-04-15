@@ -65,6 +65,8 @@ import { basicExecOptions, bindLog } from './utils';
   /** Снятие из гита последних исходников */
   const pullSources = () => {
     const opt = { ...basicExecOptions, cwd: settingDir };
+    log.log(`git stash...`);
+    log.log(execFileSync('git', ['stash'], opt).toString());
     log.log(`git checkout ${srcGedeminAppsBranch}...`);
     log.log(execFileSync('git', ['checkout', srcGedeminAppsBranch], opt).toString());
     log.log(`git pull...`);
