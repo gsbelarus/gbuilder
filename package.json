@@ -20,7 +20,7 @@
     "@octokit/types": "^6.13.0",
     "@types/koa": "^2.13.1",
     "@types/koa__router": "^8.0.4",
-    "@types/node": "^14.14.37",
+    "@types/node": "^14.14.39",
     "@yarnpkg/pnpify": "^3.0.0-rc.3"
   }
 }
