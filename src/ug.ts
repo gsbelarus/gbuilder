@@ -275,7 +275,7 @@ export async function ug(params: IParams, log: Log) {
     const pathImages = path.resolve(pathProject, '..\\images');
 
     if (project === 'gedemin' && customRcFile) {
-      if (!existsSync(customRcFile)) {
+      if (!existsSync(path.join(pathProject, customRcFile))) {
         throw new Error(`rc file ${customRcFile} not found!`);
       }
 
@@ -304,20 +304,20 @@ export async function ug(params: IParams, log: Log) {
       if (commitIncBuildNumber) {
         const rcText = readFileSync(verRCFileName).toString().trim().split('\n');
         const fvIndex = rcText.findIndex( s => s.startsWith('FILEVERSION') );
-  
+
         if (fvIndex === -1) {
           throw new Error(`Invalid ${verRCFileName} file format.`);
         }
-  
+
         // extract current build number from second string of .rc file: FILEVERSION 2, 9, 5, 11591
         const buildNumber = parseInt(rcText[fvIndex].split(',')[3].trim()) + 1;
-  
+
         let newRC = rc;
         newRC = newRC.replace(/<<BUILD_NUMBER>>/gi, buildNumber.toString());
         newRC = newRC.replace('<<YEAR>>', new Date().getFullYear().toString());
-  
+
         writeFileSync(verRCFileName, newRC);
-  
+
         log.log(`build number for ${project} has been incremented to ${buildNumber}...`);
         log.log(`${project}_ver.rc saved...`);
       } else {
