@@ -119,7 +119,7 @@ async function _mi(params: IParams, log: Log) {
       execFileSync(
         path.join(binFirebird, 'gbak.exe'),
         [ '-b', connectionString, bkProjectFullFileName,
-          '-user', fbUser ?? 'SYSDBA', '-pas', fbPassword ?? 'masterkey', '-g', '-z' ],
+          '-user', fbUser ?? 'SYSDBA', '-pas', fbPassword ?? 'masterkey', '-g' ],
         { ...basicExecOptions, cwd: instDir }).toString()
     );
     log.log(`${bkProjectFullFileName} has been created...`);
