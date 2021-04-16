@@ -15,7 +15,7 @@ export const bindLog = (params: IParams, log: Log) => ({
       await fn();
       log.finishProcess();
     }
-    log.finishProcess();
+    log.finishProcess(true);
   },
 
   packFiles: (arcName: string, fileName: string, cwd: string, msg?: string) => {

@@ -164,12 +164,14 @@ async function _mi(params: IParams, log: Log) {
     }
   };
 
-  await runProcesses('Gedemin installation', [
+  const filtered = filterProjectList(projectList);
+
+  await runProcesses(`Gedemin installation for projects: ${filtered.join(', ')}`, [
     { name: 'Check prerequisites', fn: checkPrerequisites },
     { name: 'Pull sources', fn: pullSources },
-    ...filterProjectList(projectList).flatMap( pr => ([
-      { name: 'Prepare installation', fn: prepareInstallation(pr) },
-      { name: `Make ${pr} installation`, fn: makeInstallation(pr) }
+    ...filtered.flatMap( pr => ([
+      { name: `Prepare installation: ${pr}`, fn: prepareInstallation(pr) },
+      { name: `Make installation: ${pr}`, fn: makeInstallation(pr) }
     ]) ),
   ]);
 };

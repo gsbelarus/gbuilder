@@ -55,7 +55,7 @@ export class Log {
     this._log.forEach( ({ log }) => log(33, `${this._fmtTime(process.started)} ${this._step()}STARTED: ${name}`) );
   }
 
-  finishProcess() {
+  finishProcess(reset = false) {
     if (!this._process) {
       throw Error('Process is not set');
     }
@@ -73,6 +73,10 @@ export class Log {
     }
 
     this._log.forEach( ({ log }) => log(undefined, `${this._fmtTime(process.finished)} ${step}FINISHED: ${process.name}`) );
+
+    if (reset) {
+      this._process = undefined;
+    }
   }
 
   log(...messages: string[]) {

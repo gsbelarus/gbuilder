@@ -275,6 +275,10 @@ export async function ug(params: IParams, log: Log) {
     const pathImages = path.resolve(pathProject, '..\\images');
 
     if (project === 'gedemin' && customRcFile) {
+      if (!existsSync(customRcFile)) {
+        throw new Error(`rc file ${customRcFile} not found!`);
+      }
+
       log.log(
         execFileSync(
           path.join(pathDelphi, 'Bin', 'brcc32.exe'),
@@ -293,24 +297,32 @@ export async function ug(params: IParams, log: Log) {
         return;
       };
 
-      const rcText = readFileSync(verRCFileName).toString().trim().split('\n');
-      const fvIndex = rcText.findIndex( s => s.startsWith('FILEVERSION') );
-
-      if (fvIndex === -1) {
-        throw new Error(`Invalid ${verRCFileName} file format.`);
+      if (!existsSync(verRCFileName)) {
+        throw new Error(`rc file ${verRCFileName} not found!`);
       }
 
-      // extract current build number from second string of .rc file: FILEVERSION 2, 9, 5, 11591
-      const buildNumber = parseInt(rcText[fvIndex].split(',')[3].trim()) + 1;
-
-      let newRC = rc;
-      newRC = newRC.replace(/<<BUILD_NUMBER>>/gi, buildNumber.toString());
-      newRC = newRC.replace('<<YEAR>>', new Date().getFullYear().toString());
-
-      writeFileSync(verRCFileName, newRC);
-
-      log.log(`build number for ${project} has been incremented to ${buildNumber}...`);
-      log.log(`${project}_ver.rc saved...`);
+      if (commitIncBuildNumber) {
+        const rcText = readFileSync(verRCFileName).toString().trim().split('\n');
+        const fvIndex = rcText.findIndex( s => s.startsWith('FILEVERSION') );
+  
+        if (fvIndex === -1) {
+          throw new Error(`Invalid ${verRCFileName} file format.`);
+        }
+  
+        // extract current build number from second string of .rc file: FILEVERSION 2, 9, 5, 11591
+        const buildNumber = parseInt(rcText[fvIndex].split(',')[3].trim()) + 1;
+  
+        let newRC = rc;
+        newRC = newRC.replace(/<<BUILD_NUMBER>>/gi, buildNumber.toString());
+        newRC = newRC.replace('<<YEAR>>', new Date().getFullYear().toString());
+  
+        writeFileSync(verRCFileName, newRC);
+  
+        log.log(`build number for ${project} has been incremented to ${buildNumber}...`);
+        log.log(`${project}_ver.rc saved...`);
+      } else {
+        log.log(`version incrementation for ${verRCFileName} is skipped...`);
+      }
 
       deleteFile(verResFileName);
 
@@ -396,12 +408,7 @@ export async function ug(params: IParams, log: Log) {
   type ProjectID = 'gedemin' | 'gdcc' | 'gedemin_upd' | 'gudf' | 'makelbrbtree';
   const ugProjectList: ProjectID[] = ['gedemin', 'gdcc', 'gedemin_upd', 'gudf', 'makelbrbtree'];
 
-  log.log(`Compilation type: ${compilationType}`);
-  log.log(`Gedemin root dir: ${rootGedeminDir}`);
-  log.log(`Archive dir: ${archiveDir}`);
-  log.log(`Database dir: ${baseDir}`);
-
-  await runProcesses('Gedemin compilation', [
+  await runProcesses(`Gedemin compilation: ${compilationType}`, [
     { name: 'Check prerequisites', fn: checkPrerequisites },
     { name: 'Pull latest sources', fn: pullSources },
     { name: 'Clear DCU folder', fn: clearDCU },
