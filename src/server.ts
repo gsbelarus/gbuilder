@@ -11,7 +11,6 @@ import dateFormat from 'dateformat';
 import { ug } from './ug';
 import { mi } from './mi';
 import { getLogFileName } from './utils';
-import { IInstProject, InstProject, instProjects } from './const';
 import { Semaphore } from './Semaphore';
 
 // {
@@ -636,46 +635,7 @@ router.post('/webhook/gedemin-apps', async (ctx) => {
   run( async () => {
     await updateState('pending');
     try {
-      const getSign = ({ compilationType, setExeSize, customRcFile }: IInstProject) => `${compilationType}${setExeSize}${customRcFile}`;
-
-      const sorted = params.projectList
-        .filter( pr => {
-          if (instProjects[pr]) {
-            return true;
-          } else {
-            console.error(`Unknown project ${pr}!`);
-            return false;
-          }
-        })
-        .sort( (a, b) => getSign(instProjects[a]).localeCompare(getSign(instProjects[b])) );
-
-      let res = !!sorted.length;
-      const projectList: InstProject[] = [];
-
-      for (let i = 0; res && i < sorted.length; i++) {
-        const instProject = instProjects[i];
-        const nextProject = instProjects[i + 1];
-
-        projectList.push(instProject);
-
-        if (!nextProject || getSign(instProject) !== getSign(nextProject)) {
-          const { compilationType, setExeSize, customRcFile } = instProject;
-
-          res = await buildWorkbench(ug, {
-            compilationType,
-            setExeSize,
-            customRcFile,
-            commitIncBuildNumber: false
-          });
-
-          if (res) {
-            res = await buildWorkbench(mi, { projectList });
-            projectList.length = 0;
-          }
-        }
-      }
-
-      if (res) {
+      if (await buildWorkbench(mi)) {
         await updateState('success');
       } else {
         await updateState('error');

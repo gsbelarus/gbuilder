@@ -12,15 +12,12 @@ import { execFileSync, execSync } from 'child_process';
 import { existsSync, rmdirSync, unlinkSync } from 'fs';
 import path from 'path';
 import { Log } from './log';
-import { portableFilesList, instProjects, etalonDBFileName, getFBConnString, InstProject, cashPortableFilesList } from './const';
+import { portableFilesList, instProjects, etalonDBFileName, getFBConnString, InstProject, cashPortableFilesList, IInstProject } from './const';
 import { IParams } from './types';
 import { basicExecOptions, bindLog } from './utils';
+import { ug } from './ug';
 
-/**
- * Главная функция.
- * @param log Логгер.
- */
- export async function mi(params: IParams, log: Log) {
+async function _mi(params: IParams, log: Log) {
 
   const { runProcesses, packFiles, deleteFile, assureDir, copyFileWithLog,
     uploadFile, filterProjectList } = bindLog(params, log);
@@ -175,4 +172,43 @@ import { basicExecOptions, bindLog } from './utils';
       { name: `Make ${pr} installation`, fn: makeInstallation(pr) }
     ]) ),
   ]);
+};
+
+export async function mi(params: IParams, log: Log) {
+  const getSign = ({ compilationType, setExeSize, customRcFile }: IInstProject) => `${compilationType}${setExeSize}${customRcFile}`;
+
+  const sorted = params.projectList
+    .filter( pr => {
+      if (instProjects[pr]) {
+        return true;
+      } else {
+        console.error(`Unknown project ${pr}!`);
+        return false;
+      }
+    })
+    .sort( (a, b) => getSign(instProjects[a]).localeCompare(getSign(instProjects[b])) );
+
+  const projectList: InstProject[] = [];
+
+  for (let i = 0; i < sorted.length; i++) {
+    const instProject = instProjects[i];
+    const nextProject = instProjects[i + 1];
+
+    projectList.push(instProject);
+
+    if (!nextProject || getSign(instProject) !== getSign(nextProject)) {
+      const { compilationType, setExeSize, customRcFile } = instProject;
+
+      await ug({
+        ...params,
+        compilationType,
+        setExeSize,
+        customRcFile,
+        commitIncBuildNumber: false
+      }, log);
+
+      await _mi({ ...params, projectList }, log);
+      projectList.length = 0;
+    }
+  }
 };
