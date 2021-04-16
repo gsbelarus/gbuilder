@@ -555,10 +555,10 @@ const run = async (fn: Fn) => {
   }
 };
 
-router.post('/webhook/gedemin', async (ctx) => {
+const prepareHook = (repo: string, fn: () => Promise<Boolean>) => async (ctx) => {
   const body = (ctx.request as any).body;
 
-  if (!body.head_commit) {
+  if (!body.head_commit?.id || !body.head_commit?.message || !body.head_commit?.url) {
     // это скорее всего ПИНГ событие
     ctx.response.status = 200;
     return;
@@ -573,12 +573,12 @@ router.post('/webhook/gedemin', async (ctx) => {
   const updateState = state => octokit
     .request('POST /repos/{owner}/{repo}/statuses/{sha}', {
       owner: 'GoldenSoftwareLtd',
-      repo: 'gedemin-private',
+      repo,
       sha,
       state
     })
-    .then( () => console.log(`state for gedemin-private set to ${state}...`) )
-    .then( () => { log.push({ logged: new Date(), repo: 'gedemin-private', state, commitMessage, url }) } )
+    .then( () => console.log(`state for ${repo} set to ${state}...`) )
+    .then( () => { log.push({ logged: new Date(), repo, state, commitMessage, url }) } )
 
   if (commitMessage === 'Inc build number') {
     updateState('success');
@@ -586,13 +586,7 @@ router.post('/webhook/gedemin', async (ctx) => {
     run( async () => {
       await updateState('pending');
       try {
-        if (
-          await buildWorkbench(ug, { compilationType: 'DEBUG', commitIncBuildNumber: false })
-          &&
-          await buildWorkbench(ug, { compilationType: 'LOCK', commitIncBuildNumber: false })
-          &&
-          await buildWorkbench(ug, { compilationType: 'PRODUCT', commitIncBuildNumber: true })
-        ) {
+        if (await fn()) {
           await updateState('success');
         } else {
           await updateState('error');
@@ -605,49 +599,18 @@ router.post('/webhook/gedemin', async (ctx) => {
   }
 
   ctx.response.status = 200;
-});
+};
 
-router.post('/webhook/gedemin-apps', async (ctx) => {
-  const body = (ctx.request as any).body;
+router.post('/webhook/gedemin', prepareHook('gedemin-private',
+  async () =>
+    await buildWorkbench(ug, { compilationType: 'DEBUG', commitIncBuildNumber: false })
+    &&
+    await buildWorkbench(ug, { compilationType: 'LOCK', commitIncBuildNumber: false })
+    &&
+    await buildWorkbench(ug, { compilationType: 'PRODUCT', commitIncBuildNumber: true })
+));
 
-  if (!body.head_commit) {
-    // это скорее всего ПИНГ событие
-    ctx.response.status = 200;
-    return;
-  }
-
-  const sha = body.head_commit.id;
-  const commitMessage = body.head_commit.message;
-  const url = body.head_commit.url;
-
-  console.log(JSON.stringify(ctx.request, undefined, 2));
-
-  const updateState = state => octokit
-    .request('POST /repos/{owner}/{repo}/statuses/{sha}', {
-      owner: 'GoldenSoftwareLtd',
-      repo: 'gedemin-apps',
-      sha,
-      state
-    })
-    .then( () => console.log(`state for gedemin-apps set to ${state}...`) )
-    .then( () => { log.push({ logged: new Date(), repo: 'gedemin-apps', state, commitMessage, url }) } )
-
-  run( async () => {
-    await updateState('pending');
-    try {
-      if (await buildWorkbench(mi)) {
-        await updateState('success');
-      } else {
-        await updateState('error');
-      }
-    } catch(e) {
-      await updateState('error');
-      console.error(e.message);
-    }
-  });
-
-  ctx.response.status = 200;
-});
+router.post('/webhook/gedemin-apps', prepareHook('gedemin-apps', async () => await buildWorkbench(mi) ));
 
 app
   .use(bodyParser({
