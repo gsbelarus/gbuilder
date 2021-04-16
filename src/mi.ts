@@ -191,17 +191,19 @@ export async function mi(params: IParams, log: Log) {
   const projectList: InstProject[] = [];
 
   for (let i = 0; i < sorted.length; i++) {
-    const instProject = instProjects[i];
-    const nextProject = instProjects[i + 1];
+    const pr = sorted[i];
+    const nextPr = sorted[i + 1];
+    const instProject = instProjects[pr];
+    const nextProject = nextPr && instProjects[nextPr];
 
-    projectList.push(instProject);
+    projectList.push(pr);
 
-    if (!nextProject || getSign(instProject) !== getSign(nextProject)) {
+    if (!nextPr || getSign(instProject) !== getSign(nextProject)) {
       const { compilationType, setExeSize, customRcFile } = instProject;
 
       await ug({
         ...params,
-        compilationType,
+        compilationType: compilationType ?? 'PRODUCT',
         setExeSize,
         customRcFile,
         commitIncBuildNumber: false
