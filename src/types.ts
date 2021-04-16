@@ -54,6 +54,8 @@ export interface IParams {
   buildServerPort?: number;
   /** Список проектов для инстоляции */
   projectList: InstProject[];
+  /** Токен телеграм бота */
+  tgBotToken?: string;
 };
 
 export type BuildFunc = (params: IParams, log: Log) => Promise<void>;

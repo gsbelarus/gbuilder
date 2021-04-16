@@ -18,5 +18,6 @@
   "commitIncBuildNumber": true,
   "pat": "...",
   "buildServerPort": 8087,
-  "projectList": ["cash", "cash_server", "menufront", "business", "devel", "plat", "menuback", "hotel", "san"]
+  "projectList": ["cash", "cash_server", "menufront", "business", "devel", "plat", "menuback", "hotel", "san"],
+  "tgBotToken": "some_token"
 }
