@@ -12,7 +12,7 @@ import { ug } from './ug';
 import { mi } from './mi';
 import { getLogFileName } from './utils';
 import { Semaphore } from './Semaphore';
-import { isPush, Push } from './githubTypes';
+import { PushEvent } from '@octokit/webhooks-types';
 
 // {
 //   "method": "POST",
@@ -492,7 +492,7 @@ interface ILog {
   logged: Date;
   repo: string;
   state: string;
-  commitMessage: string;
+  message: string;
   url: string;
 };
 
@@ -517,8 +517,8 @@ const octokit = new Octokit({ auth: params.pat });
 
 router.get('/log', async (ctx) => {
   const l = log.map(
-    ({ logged, repo, state, commitMessage, url }) =>
-      `${dateFormat(logged, 'dd.mm.yy HH:MM:ss')} -- ${repo} -- ${state} -- <a href="${url}">${commitMessage}</a>`
+    ({ logged, repo, state, message, url }) =>
+      `${dateFormat(logged, 'dd.mm.yy HH:MM:ss')} -- ${repo} -- ${state} -- <a href="${url}">${message}</a>`
   );
 
   let data;
@@ -561,7 +561,19 @@ const prepareHook = (repo: string, fn: () => Promise<Boolean>) => async (ctx) =>
 
   const body = (ctx.request as any).body;
 
+  function isPush(body: any): body is PushEvent {
+    return typeof body === "object" && typeof body.ref === 'string' && body.head_commit?.id && body.head_commit?.message && body.head_commit?.url;
+  };
+
   if (!isPush(body)) {
+    // это не наш запрос
+    ctx.response.status = 200;
+    return;
+  }
+
+  const head_commit = body.head_commit;
+
+  if (!head_commit) {
     // это не наш запрос
     ctx.response.status = 200;
     return;
@@ -576,9 +588,7 @@ const prepareHook = (repo: string, fn: () => Promise<Boolean>) => async (ctx) =>
     return;
   }
 
-  const sha = body.head_commit.id;
-  const commitMessage = body.head_commit.message;
-  const url = body.head_commit.url;
+  const { id: sha, message, url } = head_commit;
 
   const updateState = state => octokit
     .request('POST /repos/{owner}/{repo}/statuses/{sha}', {
@@ -588,9 +598,9 @@ const prepareHook = (repo: string, fn: () => Promise<Boolean>) => async (ctx) =>
       state
     })
     .then( () => console.log(`state for ${repo} set to ${state}...`) )
-    .then( () => { log.push({ logged: new Date(), repo, state, commitMessage, url }) } )
+    .then( () => { log.push({ logged: new Date(), repo, state, message, url }) } )
 
-  if (commitMessage === 'Inc build number') {
+  if (message === 'Inc build number') {
     updateState('success');
   } else {
     run( async () => {

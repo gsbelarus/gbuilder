@@ -9,6 +9,8 @@
   "dependencies": {
     "@koa/router": "^10.0.0",
     "@octokit/core": "^3.4.0",
+    "@octokit/webhooks": "^9.0.1",
+    "@octokit/webhooks-types": "^3.68.0-beta.8",
     "dateformat": "^4.5.1",
     "form-data": "^4.0.0",
     "koa": "^2.13.1",

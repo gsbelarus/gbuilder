@@ -114,7 +114,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@octokit/request-error@npm:^2.0.0, @octokit/request-error@npm:^2.0.5":
+"@octokit/request-error@npm:^2.0.0, @octokit/request-error@npm:^2.0.2, @octokit/request-error@npm:^2.0.5":
   version: 2.0.5
   resolution: "@octokit/request-error@npm:2.0.5"
   dependencies:
@@ -156,6 +156,39 @@ __metadata:
   dependencies:
     "@octokit/openapi-types": ^6.0.0
   checksum: 20e7f159be0ebd386291b8e37521f191ca1adc922e2096b6f1434e980336f3a5ee4073bc0e99a8bb91e1657c4a8a1671ce458fbe299d918d773bd4bcf7cb8f5c
+  languageName: node
+  linkType: hard
+
+"@octokit/webhooks-definitions@npm:3.67.3":
+  version: 3.67.3
+  resolution: "@octokit/webhooks-definitions@npm:3.67.3"
+  checksum: 945d2b20613d0466e3cfc6864ac5d813d241264867140438db7d78d08c7f0ca9807a4993e69d1ecad1cf6e2e3cdc15ab039aa321d42a8ea47e5af505cc0954e8
+  languageName: node
+  linkType: hard
+
+"@octokit/webhooks-methods@npm:^1.0.0":
+  version: 1.0.0
+  resolution: "@octokit/webhooks-methods@npm:1.0.0"
+  checksum: e393f57c5e2b00172b1fdabdbf9049073624a1873dec780ac7abb421d4e82e6412b12f7d58f8c7a21a62f2dfe4ae37a5d4ee4da8c486fc9f6df7902078027bf4
+  languageName: node
+  linkType: hard
+
+"@octokit/webhooks-types@npm:^3.68.0-beta.8":
+  version: 3.68.2
+  resolution: "@octokit/webhooks-types@npm:3.68.2"
+  checksum: 972af18f301d9862aa744c5023b60886021b3088b1256c9c6410a4d3ff16f66d2d08f653ddc75690462919153428951bf251c4e3ee8df6bcb4ca8f53fe880a79
+  languageName: node
+  linkType: hard
+
+"@octokit/webhooks@npm:^9.0.1":
+  version: 9.0.1
+  resolution: "@octokit/webhooks@npm:9.0.1"
+  dependencies:
+    "@octokit/request-error": ^2.0.2
+    "@octokit/webhooks-definitions": 3.67.3
+    "@octokit/webhooks-methods": ^1.0.0
+    aggregate-error: ^3.1.0
+  checksum: 942a1e77518c81bcd5629657e625f689e33ff79cddca640af9c13e6dbc59fa35c1771f1442e502cd3453e2a99e44d6893f2f7ebbe31e064d71b23a6e03b54ca9
   languageName: node
   linkType: hard
 
@@ -574,6 +607,16 @@ __metadata:
   languageName: node
   linkType: hard
 
+"aggregate-error@npm:^3.1.0":
+  version: 3.1.0
+  resolution: "aggregate-error@npm:3.1.0"
+  dependencies:
+    clean-stack: ^2.0.0
+    indent-string: ^4.0.0
+  checksum: 704d2001a303c185e9b836d211f7eef2f4557195a11c3271143b4dcda5f6f263abe746d9b8a06b5871d07870686c7db9c0b2c38e2d3cbc593784eaaee8a29043
+  languageName: node
+  linkType: hard
+
 "ansi-regex@npm:^5.0.0":
   version: 5.0.0
   resolution: "ansi-regex@npm:5.0.0"
@@ -688,6 +731,8 @@ __metadata:
     "@koa/router": ^10.0.0
     "@octokit/core": ^3.4.0
     "@octokit/types": ^6.13.0
+    "@octokit/webhooks": ^9.0.1
+    "@octokit/webhooks-types": ^3.68.0-beta.8
     "@types/koa": ^2.13.1
     "@types/koa__router": ^8.0.4
     "@types/node": ^14.14.39
@@ -779,6 +824,13 @@ __metadata:
   version: 2.0.0
   resolution: "ci-info@npm:2.0.0"
   checksum: 553fe83c085fce5e19e20f85b993f24a463e6f805803837a8868607bb68b1300567868694a5dff1beca6c54926a4c0be1cc9ef0c35f810653d590bf64183f6a0
+  languageName: node
+  linkType: hard
+
+"clean-stack@npm:^2.0.0":
+  version: 2.2.0
+  resolution: "clean-stack@npm:2.2.0"
+  checksum: e291ce2b8c8c59e6449ac9a7a726090264bea6696e5343b21385e16d279c808ca09d73a1abea8fd23a9b7699e6ef5ce582df203511f71c8c27666bf3b2e300c5
   languageName: node
   linkType: hard
 
@@ -1321,6 +1373,13 @@ __metadata:
   version: 5.1.8
   resolution: "ignore@npm:5.1.8"
   checksum: b08e3d5b5d94eca13475f29a5d47d221060e9cdd7e38d7647088e29d90130669a970fecbc4cdb41b8fa295c6673740c729d3dc05dadc381f593efb42282cbf9f
+  languageName: node
+  linkType: hard
+
+"indent-string@npm:^4.0.0":
+  version: 4.0.0
+  resolution: "indent-string@npm:4.0.0"
+  checksum: 3e54996c6e15ca00a7a4403be705bce4fb3bb4ac637da2e1473006e42a651863f53bfb8c3438c1b3aac77817768ac0cde0e7b7a81a6cf24a1286227a06510dbf
   languageName: node
   linkType: hard
 
