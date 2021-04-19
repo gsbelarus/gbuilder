@@ -35,16 +35,6 @@ export class Log {
     this._log = log;
   }
 
-  private _fmtTime(date: Date) {
-    return dateFormat(date, 'dd.mm.yyyy HH:MM:ss');
-  }
-
-  private _step() {
-    return this._process && this._process.subProcesses.length
-      ? `${this._process.subProcesses.length.toString().padStart(this._process.steps.toString().length, ' ')}/${this._process.steps} `
-      : '';
-  }
-
   startProcess(name: string, steps = 0) {
     const process = {
       started: new Date(),
@@ -60,7 +50,7 @@ export class Log {
       this._process = process;
     }
 
-    this._log.forEach( ({ log }) => log(`${this._fmtTime(process.started)} ${this._step()}STARTED: ${name}`, { header: true }) );
+    this._iter(`STARTED: ${name}`, process.started, { header: true });
   }
 
   finishProcess(reset = false) {
@@ -69,33 +59,36 @@ export class Log {
     }
 
     let process;
-    let step = '';
 
     if (this._process.subProcesses.length && !this._process.subProcesses[this._process.subProcesses.length - 1].finished) {
       process = this._process.subProcesses[this._process.subProcesses.length - 1];
       process.finished = new Date();
-      step = this._step();
     } else {
       process = this._process;
       process.finished = new Date();
     }
 
-    this._log.forEach( ({ log }) => log(`${this._fmtTime(process.finished)} ${step}FINISHED: ${process.name}`) );
+    this._iter(`FINISHED: ${process.name}`, process.finished);
 
     if (reset) {
       this._process = undefined;
     }
   }
 
+  private _iter(message: string, date = new Date(), meta?: ILogMeta) {
+    const step = this._process?.subProcesses.length
+      ? `${this._process.subProcesses.length.toString().padStart(this._process.steps.toString().length, ' ')}/${this._process.steps} `
+      : '';
+    const prefix = `${dateFormat(date, 'dd.mm.yyyy HH:MM:ss')} ${step}`;
+    const m = message.trim().split('\n').map( (s, idx) => (idx ? ' '.repeat(prefix.length) : '') + s ).join('\n');
+    this._log.forEach( ({ log }) => log(`${prefix}${m}`, meta) );
+  }
+
   log(message: string) {
-    for (const m of message.trim().split('\n')) {
-      this._log.forEach( ({ log }) => log(`${this._fmtTime(new Date())} ${this._step()}${m}`) );
-    }
+    this._iter(message);
   }
 
   error(message: string) {
-    for (const m of message.trim().split('\n')) {
-      this._log.forEach( ({ log }) => log(`${this._fmtTime(new Date())} ${this._step()}${m}`, { type: 'ERROR' }) );
-    }
+    this._iter(message, new Date(), { type: 'ERROR' });
   }
 };
