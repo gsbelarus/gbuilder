@@ -62,7 +62,7 @@ export const tg = async (params: IParams): Promise<IBot> => {
   const bot = new Telegraf(tgBotToken);
 
   bot.start( (ctx) => {
-    ctx.reply(`Welcome!\nI'm gBuilder bot!\nEvery time you commit something new to the gedemin-private or gedemin-apps repositories I will wake up and build projects from the fresh sources.`);
+    ctx.reply(`Welcome!\n\nI'm gBuilder bot!\n\nEvery time you commit something new to the gedemin-private or gedemin-apps repositories I will wake up and build projects from the fresh sources.`);
 
     const { id } = ctx.message.chat;
     if (!botUsers.data.find( u => u.id === id )) {
@@ -87,8 +87,10 @@ export const tg = async (params: IParams): Promise<IBot> => {
           i++;
         } catch (e) {
           // похоже этот пользователь удалился из нашего бота
-          botUsers.data.splice(i, 1);
-          changed = true;
+          if (e.code === 403) {
+            botUsers.data.splice(i, 1);
+            changed = true;
+          }
         }
       }
 
