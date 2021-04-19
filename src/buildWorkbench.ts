@@ -48,20 +48,24 @@ export const buildWorkbench = async (ug: BuildFunc, augParams?: Partial<IParams>
 
     const loggers: ILog[] = [
       {
-        log: (color: number | undefined, ...messages: string[]) => {
-          const s = messages.join('\n').trimRight();
+        log: (message, meta) => {
+          const s = message.trimRight();
 
           if (s) {
-            if (color === undefined) {
+            if (meta?.type === 'ERROR') {
+              console.log(`\x1b[31m${s}\x1b[0m`);
+            }
+            else if (meta?.header) {
+              console.log(`\x1b[33m${s}\x1b[0m`);
+            }
+            else {
               console.log(s)
-            } else {
-              console.log(`\x1b[${color}m${s}\x1b[0m`);
             }
           }
         }
       },
       {
-        log: (_, ...messages: string[]) => messages.forEach( m => logBuffer.push(m) )
+        log: (message) => logBuffer.push(message)
       }
     ];
 

@@ -1,7 +1,9 @@
 import dateFormat from 'dateformat';
 
+type LogMessageType = 'INFO' | 'WARNING' | 'ERROR';
+
 interface ILogMessage {
-  type: 'INFO' | 'WARNING' | 'ERROR';
+  type: LogMessageType;
   logged: Date;
   text: '';
 };
@@ -15,8 +17,14 @@ interface IProcess {
   messages: ILogMessage[];
 };
 
+interface ILogMeta {
+  type?: LogMessageType;
+  header?: true;
+  bot?: true;
+};
+
 export interface ILog {
-  log: (color: number | undefined, ...messages: string[]) => void;
+  log: (message: string, meta?: ILogMeta) => void;
 };
 
 export class Log {
@@ -52,7 +60,7 @@ export class Log {
       this._process = process;
     }
 
-    this._log.forEach( ({ log }) => log(33, `${this._fmtTime(process.started)} ${this._step()}STARTED: ${name}`) );
+    this._log.forEach( ({ log }) => log(`${this._fmtTime(process.started)} ${this._step()}STARTED: ${name}`, { header: true }) );
   }
 
   finishProcess(reset = false) {
@@ -72,26 +80,22 @@ export class Log {
       process.finished = new Date();
     }
 
-    this._log.forEach( ({ log }) => log(undefined, `${this._fmtTime(process.finished)} ${step}FINISHED: ${process.name}`) );
+    this._log.forEach( ({ log }) => log(`${this._fmtTime(process.finished)} ${step}FINISHED: ${process.name}`) );
 
     if (reset) {
       this._process = undefined;
     }
   }
 
-  log(...messages: string[]) {
-    for (const s of messages) {
-      for (const m of s.trim().split('\n')) {
-        this._log.forEach( ({ log }) => log(undefined, `${this._fmtTime(new Date())} ${this._step()}${m}`) );
-      }
+  log(message: string) {
+    for (const m of message.trim().split('\n')) {
+      this._log.forEach( ({ log }) => log(`${this._fmtTime(new Date())} ${this._step()}${m}`) );
     }
   }
 
-  error(...messages: string[]) {
-    for (const s of messages) {
-      for (const m of s.trim().split('\n')) {
-        this._log.forEach( ({ log }) => log(31, `${this._fmtTime(new Date())} ${this._step()}${m}`) );
-      }
+  error(message: string) {
+    for (const m of message.trim().split('\n')) {
+      this._log.forEach( ({ log }) => log(`${this._fmtTime(new Date())} ${this._step()}${m}`, { type: 'ERROR' }) );
     }
   }
 };
