@@ -3,6 +3,10 @@ import { Telegraf } from 'telegraf';
 import { existsSync, readFileSync, writeFileSync } from 'fs';
 import path from 'path';
 
+export interface IBot {
+  broadcast: (msg: string) => void;
+};
+
 interface IBotUser {
   id: number;
 };
@@ -39,7 +43,7 @@ const readBotUsers = (fn: string) => {
 const writeBotUsers = (fn: string, botUsers: IBotUsers) => 
   writeFileSync(fn, JSON.stringify(botUsers, undefined, 2), { encoding: 'utf-8' });
 
-export const tg = async (params: IParams) => {
+export const tg = async (params: IParams): Promise<IBot> => {
   const { tgBotToken, ciDir } = params;
   const botUsersFN = path.join(ciDir, 'bot', 'botusers.json');
 
@@ -67,9 +71,18 @@ export const tg = async (params: IParams) => {
   process.once('SIGTERM', () => bot.stop('SIGTERM'));
 
   return {
-    broadcast: (msg: string) => botUsers.data.forEach(
-      u => bot.telegram.sendMessage(u.id, msg)
-    )    
+    broadcast: async (msg: string) => {
+      let i = 0;
+      while (i < botUsers.data.length) {
+        try {
+          await bot.telegram.sendMessage(botUsers.data[i].id, msg);
+          i++;
+        } catch (e) {
+          // похоже этот пользователь удалился из нашего бота
+          botUsers.data.splice(i, 1);
+        }
+      }
+    }
   }
 };
 

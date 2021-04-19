@@ -13,6 +13,7 @@ import { mi } from './mi';
 import { getLogFileName } from './utils';
 import { Semaphore } from './Semaphore';
 import { PushEvent } from '@octokit/webhooks-types';
+import { IBot, tg } from './bot';
 
 // {
 //   "method": "POST",
@@ -511,6 +512,13 @@ if (!paramsFile || !existsSync(paramsFile)) {
   }
 }
 
+let bot: IBot | undefined = undefined;
+
+tg(params).then( res => {
+  bot = res;
+  bot.broadcast(`Сервер был перезагружен. Я снова с вами!`);
+ } );
+
 const app = new Koa();
 const router = new Router();
 const octokit = new Octokit({ auth: params.pat });
@@ -581,6 +589,8 @@ const prepareHook = (repo: string, fn: () => Promise<Boolean>) => async (ctx) =>
   }
 
   const { id: sha, message, url } = body.head_commit;
+
+  bot?.broadcast(`Пользователь такой-то запушил комит в ветку такую-то такого-то репозитория. Текст сообщения. Урл комита.`);
 
   const updateState = state => octokit
     .request('POST /repos/{owner}/{repo}/statuses/{sha}', {
