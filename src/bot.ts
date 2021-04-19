@@ -1,6 +1,6 @@
 import { IParams } from './types';
 import { Telegraf } from 'telegraf';
-import { existsSync, readFileSync, writeFileSync } from 'fs';
+import { existsSync, readFileSync, writeFileSync, mkdirSync } from 'fs';
 import path from 'path';
 
 export interface IBot {
@@ -40,8 +40,15 @@ const readBotUsers = (fn: string) => {
   }
 };
 
-const writeBotUsers = (fn: string, botUsers: IBotUsers) => 
+const writeBotUsers = (fn: string, botUsers: IBotUsers) => {
+  const { dir } = path.parse(fn);
+
+  if (!existsSync(dir)) {
+    mkdirSync(dir, { recursive: true });
+  }
+
   writeFileSync(fn, JSON.stringify(botUsers, undefined, 2), { encoding: 'utf-8' });
+}
 
 export const tg = async (params: IParams): Promise<IBot> => {
   const { tgBotToken, ciDir } = params;
@@ -73,6 +80,7 @@ export const tg = async (params: IParams): Promise<IBot> => {
   return {
     broadcast: async (msg: string) => {
       let i = 0;
+      let changed = false;
       while (i < botUsers.data.length) {
         try {
           await bot.telegram.sendMessage(botUsers.data[i].id, msg);
@@ -80,7 +88,12 @@ export const tg = async (params: IParams): Promise<IBot> => {
         } catch (e) {
           // похоже этот пользователь удалился из нашего бота
           botUsers.data.splice(i, 1);
+          changed = true;
         }
+      }
+
+      if (changed) {
+        writeBotUsers(botUsersFN, botUsers);
       }
     }
   }
