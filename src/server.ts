@@ -565,15 +565,7 @@ const prepareHook = (repo: string, fn: () => Promise<Boolean>) => async (ctx) =>
     return typeof body === "object" && typeof body.ref === 'string' && body.head_commit?.id && body.head_commit?.message && body.head_commit?.url;
   };
 
-  if (!isPush(body)) {
-    // это не наш запрос
-    ctx.response.status = 200;
-    return;
-  }
-
-  const head_commit = body.head_commit;
-
-  if (!head_commit) {
+  if (!isPush(body) || !body.head_commit) {
     // это не наш запрос
     ctx.response.status = 200;
     return;
@@ -588,7 +580,7 @@ const prepareHook = (repo: string, fn: () => Promise<Boolean>) => async (ctx) =>
     return;
   }
 
-  const { id: sha, message, url } = head_commit;
+  const { id: sha, message, url } = body.head_commit;
 
   const updateState = state => octokit
     .request('POST /repos/{owner}/{repo}/statuses/{sha}', {
