@@ -13,13 +13,17 @@ export class Semaphore {
     return this._permits;
   }
 
+  get queueLength(): number {
+    return this._queue.length;
+  }
+
   public async acquire(): Promise<void> {
     if (this._permits > 0) {
       this._permits -= 1;
       return;
     }
 
-    return new Promise((resolve) => this._queue.push(resolve));
+    return new Promise( resolve => this._queue.push(resolve) );
   }
 
   public release(): void {
@@ -29,11 +33,7 @@ export class Semaphore {
       console.warn("Should never be");
     } else if (this._permits === 1 && this._queue.length > 0) {
       this._permits -= 1;
-
-      const nextResolve = this._queue.shift();
-      if (nextResolve) {
-        nextResolve();
-      }
+      this._queue.shift()?.();
     }
   }
 }

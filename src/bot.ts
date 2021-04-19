@@ -4,7 +4,7 @@ import { existsSync, readFileSync, writeFileSync, mkdirSync } from 'fs';
 import path from 'path';
 
 export interface IBot {
-  broadcast: (msg: string, parse_mode?: 'MarkdownV2' | 'HTML') => void;
+  broadcast: (msg: string, parse_mode?: 'MarkdownV2' | 'HTML') => Promise<void>;
 };
 
 interface IBotUser {
@@ -56,14 +56,14 @@ export const tg = async (params: IParams): Promise<IBot> => {
 
   if (!tgBotToken) {
     throw new Error('Bot token isnt specified!');
-  } 
+  }
 
   const botUsers = readBotUsers(botUsersFN);
   const bot = new Telegraf(tgBotToken);
 
   bot.start( (ctx) => {
-    ctx.reply(`Welcome!`);
-    
+    ctx.reply(`Welcome!\nI'm gBuilder bot!\nEvery time you commit something new to the gedemin-private or gedemin-apps repositories I will wake up and build projects from the fresh sources.`);
+
     const { id } = ctx.message.chat;
     if (!botUsers.data.find( u => u.id === id )) {
       botUsers.data.push({ id });
@@ -98,5 +98,3 @@ export const tg = async (params: IParams): Promise<IBot> => {
     }
   }
 };
-
-
