@@ -1,6 +1,6 @@
 import { existsSync, readFileSync, statSync } from 'fs';
 import { IParams } from './types';
-import { tg } from './bot';
+import { IBot, tg } from './bot';
 
 const paramsFile = process.argv[2];
 let res = false;
@@ -16,5 +16,11 @@ if (!paramsFile || !existsSync(paramsFile)) {
     throw new Error(`Error parsing JSON file ${paramsFile}. ${e}`);
   };
 
-  tg(params);
+  let bot: IBot | undefined = undefined;
+
+  tg(params).then( res => {
+    console.log('Telegram bot has been successfully started!');
+    bot = res;
+    bot.broadcast(`Сервер был перезагружен. Я снова с вами!`);
+   } );
 };
