@@ -4,6 +4,7 @@
     "gedemin": "node -r ts-node/register src/test_run.ts params/params.json",
     "setup": "node -r ts-node/register src/test_mi.ts params/params.json",
     "server": "node -r ts-node/register src/server.ts params/params.json",
+    "bot": "node -r ts-node/register src/test_bot.ts params/params.json",
     "ts": "tsc"
   },
   "dependencies": {
