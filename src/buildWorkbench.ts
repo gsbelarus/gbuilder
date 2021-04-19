@@ -3,6 +3,7 @@ import { existsSync, readFileSync, statSync } from 'fs';
 import { open } from 'fs/promises';
 import { BuildFunc, IParams } from './types';
 import { getLogFileName } from './utils';
+import { IBot } from './bot';
 
 const defMaxLogSize = 10 * 1024 * 1024;
 
@@ -10,7 +11,7 @@ const defMaxLogSize = 10 * 1024 * 1024;
  * Функция организует загрузку параметров, инициализацию лога ивызов функции компиляции.
  * @param ug Функция компиляции проекта.
  */
-export const buildWorkbench = async (ug: BuildFunc, augParams?: Partial<IParams>) => {
+export const buildWorkbench = async (ug: BuildFunc, bot?: IBot, augParams?: Partial<IParams>) => {
   const paramsFile = process.argv[2];
   let res = false;
 
@@ -49,6 +50,10 @@ export const buildWorkbench = async (ug: BuildFunc, augParams?: Partial<IParams>
     const loggers: ILog[] = [
       {
         log: (message, meta) => {
+          if (meta?.bot) {
+            return;
+          }
+
           const s = message.trimRight();
 
           if (s) {
@@ -65,7 +70,17 @@ export const buildWorkbench = async (ug: BuildFunc, augParams?: Partial<IParams>
         }
       },
       {
-        log: (message) => logBuffer.push(message)
+        log: (message, meta) => meta?.bot || logBuffer.push(message)
+      },
+      {
+        log: (message, meta) => {
+          if (meta?.type === 'ERROR') {
+            bot?.broadcast(`😡 An error has occured!\n${message}`);
+          }
+          else if (meta?.bot) {
+            bot?.broadcast(message);
+          }
+        }
       }
     ];
 

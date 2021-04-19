@@ -517,7 +517,7 @@ let bot: IBot | undefined = undefined;
 tg(params).then( res => {
   console.log('Telegram bot has been successfully started!');
   bot = res;
-  bot.broadcast(`Сервер был перезагружен. Я снова с вами!`);
+  bot.broadcast(`Hi there again!\nSeems that server was restarted.\nI'm eager to start building projects!\nJust give me new sources.`);
  } );
 
 const app = new Koa();
@@ -591,8 +591,15 @@ const prepareHook = (repo: string, fn: () => Promise<Boolean>) => async (ctx) =>
 
   const { id: sha, message, url } = body.head_commit;
 
-  bot?.broadcast(`User **${body.pusher.name}** has committed code into **${match.groups.branch}** branch of **${body.repository.name}** repository.`, 'MarkdownV2');
-  bot?.broadcast(`<a href="${url}">${message}</a>`, 'HTML');
+  const broadcastCommitMessage = async () => {
+    await bot?.broadcast(`User **${body.pusher.name}** has committed code into **${match.groups?.branch}** branch of **${body.repository.name}** repository.`, 'MarkdownV2');
+    await bot?.broadcast(`<a href="${url}">${message}</a>`, 'HTML');
+    if (!semaphore.permits) {
+      await bot?.broadcast(`Building of the project will be added to the queue...`);
+    }
+  }
+
+  broadcastCommitMessage();
 
   const updateState = state => octokit
     .request('POST /repos/{owner}/{repo}/statuses/{sha}', {
@@ -626,12 +633,20 @@ const prepareHook = (repo: string, fn: () => Promise<Boolean>) => async (ctx) =>
 };
 
 router.post('/webhook/gedemin', prepareHook('gedemin-private',
-  async () =>
-    await buildWorkbench(ug, { compilationType: 'DEBUG', commitIncBuildNumber: false })
-    &&
-    await buildWorkbench(ug, { compilationType: 'LOCK', commitIncBuildNumber: false })
-    &&
-    await buildWorkbench(ug, { compilationType: 'PRODUCT', commitIncBuildNumber: true })
+  async () => {
+    const res =
+      await buildWorkbench(ug, bot, { compilationType: 'DEBUG', commitIncBuildNumber: false })
+      &&
+      await buildWorkbench(ug, bot, { compilationType: 'LOCK', commitIncBuildNumber: false })
+      &&
+      await buildWorkbench(ug, bot, { compilationType: 'PRODUCT', commitIncBuildNumber: true });
+
+    if (res) {
+      bot?.broadcast(`🏁 gedemin.exe has been successfully built,`);
+    }
+
+    return res;
+  }
 ));
 
 router.post('/webhook/gedemin-apps', prepareHook('gedemin-apps', async () => await buildWorkbench(mi) ));

@@ -84,8 +84,8 @@ export class Log {
     this._log.forEach( ({ log }) => log(`${prefix}${m}`, meta) );
   }
 
-  log(message: string) {
-    this._iter(message);
+  log(message: string, meta?: ILogMeta) {
+    this._iter(message, new Date(), meta);
   }
 
   error(message: string) {
