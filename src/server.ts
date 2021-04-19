@@ -515,6 +515,7 @@ if (!paramsFile || !existsSync(paramsFile)) {
 let bot: IBot | undefined = undefined;
 
 tg(params).then( res => {
+  console.log('Telegram bot has been successfully started!');
   bot = res;
   bot.broadcast(`Сервер был перезагружен. Я снова с вами!`);
  } );
