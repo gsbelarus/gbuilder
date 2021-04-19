@@ -591,7 +591,8 @@ const prepareHook = (repo: string, fn: () => Promise<Boolean>) => async (ctx) =>
 
   const { id: sha, message, url } = body.head_commit;
     
-  bot?.broadcast(`Пользователь ${body.pusher.name} запушил комит в ветку ${match?.groups?.branch} репозитория ${body.repository.name}. <a href="${url}">${message}</a>`);
+  bot?.broadcast(`Пользователь **${body.pusher.name}** закомитил в ветку **${match.groups.branch}** репозитория ${body.repository.name}`, 'MarkdownV2');
+  bot?.broadcast(`<a href="${url}">${message}</a>`, 'HTML');
 
   const updateState = state => octokit
     .request('POST /repos/{owner}/{repo}/statuses/{sha}', {

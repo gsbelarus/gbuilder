@@ -4,7 +4,7 @@ import { existsSync, readFileSync, writeFileSync, mkdirSync } from 'fs';
 import path from 'path';
 
 export interface IBot {
-  broadcast: (msg: string) => void;
+  broadcast: (msg: string, parse_mode?: 'MarkdownV2' | 'HTML') => void;
 };
 
 interface IBotUser {
@@ -78,12 +78,12 @@ export const tg = async (params: IParams): Promise<IBot> => {
   process.once('SIGTERM', () => bot.stop('SIGTERM'));
 
   return {
-    broadcast: async (msg: string) => {
+    broadcast: async (msg: string, parse_mode?: 'MarkdownV2' | 'HTML') => {
       let i = 0;
       let changed = false;
       while (i < botUsers.data.length) {
         try {
-          await bot.telegram.sendMessage(botUsers.data[i].id, msg);
+          await bot.telegram.sendMessage(botUsers.data[i].id, msg, parse_mode && { parse_mode });
           i++;
         } catch (e) {
           // похоже этот пользователь удалился из нашего бота
