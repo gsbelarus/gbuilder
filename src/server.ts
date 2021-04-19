@@ -12,6 +12,7 @@ import { ug } from './ug';
 import { mi } from './mi';
 import { getLogFileName } from './utils';
 import { Semaphore } from './Semaphore';
+import { isPush, Push } from './githubTypes';
 
 // {
 //   "method": "POST",
@@ -560,7 +561,7 @@ const prepareHook = (repo: string, fn: () => Promise<Boolean>) => async (ctx) =>
 
   const body = (ctx.request as any).body;
 
-  if (typeof body.ref !== 'string' || !body.head_commit?.id || !body.head_commit?.message || !body.head_commit?.url) {
+  if (!isPush(body)) {
     // это не наш запрос
     ctx.response.status = 200;
     return;
