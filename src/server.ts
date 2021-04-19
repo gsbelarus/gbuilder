@@ -556,10 +556,21 @@ const run = async (fn: Fn) => {
 };
 
 const prepareHook = (repo: string, fn: () => Promise<Boolean>) => async (ctx) => {
+  console.log(JSON.stringify(ctx.request, undefined, 2));
+
   const body = (ctx.request as any).body;
 
-  if (!body.head_commit?.id || !body.head_commit?.message || !body.head_commit?.url) {
-    // это скорее всего ПИНГ событие
+  if (typeof body.ref !== 'string' || !body.head_commit?.id || !body.head_commit?.message || !body.head_commit?.url) {
+    // это не наш запрос
+    ctx.response.status = 200;
+    return;
+  }
+
+  const branchRegExp = /refs\/heads\/(?<branch>[\w\-]+)/;
+  const match = branchRegExp.exec(body.ref);
+
+  if (!match?.groups?.branch) {
+    console.warn('No branch information found');
     ctx.response.status = 200;
     return;
   }
@@ -567,8 +578,6 @@ const prepareHook = (repo: string, fn: () => Promise<Boolean>) => async (ctx) =>
   const sha = body.head_commit.id;
   const commitMessage = body.head_commit.message;
   const url = body.head_commit.url;
-
-  console.log(JSON.stringify(ctx.request, undefined, 2));
 
   const updateState = state => octokit
     .request('POST /repos/{owner}/{repo}/statuses/{sha}', {
