@@ -50,7 +50,7 @@ const writeBotUsers = (fn: string, botUsers: IBotUsers) => {
   writeFileSync(fn, JSON.stringify(botUsers, undefined, 2), { encoding: 'utf-8' });
 }
 
-export const tg = async (params: IParams): Promise<IBot> => {
+export const tg = async (params: IParams, getQueueLength: () => number): Promise<IBot> => {
   const { tgBotToken, ciDir } = params;
   const botUsersFN = path.join(ciDir, 'bot', 'botusers.json');
 
@@ -69,6 +69,10 @@ export const tg = async (params: IParams): Promise<IBot> => {
       botUsers.data.push({ id });
       writeBotUsers(botUsersFN, botUsers);
     }
+  });
+
+  bot.command('log', (ctx) => {
+    ctx.reply(`Tasks in queue: ${getQueueLength()}...\n<a href="http://213.184.249.125:8087/log">Current log...</a>`, { parse_mode: 'HTML' });
   });
 
   await bot.launch();
