@@ -68,7 +68,16 @@ export const tg = async (params: IParams, getStatus: () => string): Promise<IBot
       writeBotUsers(botUsersFN, botUsers);
     }
 
-    return ctx.reply(`Welcome!\n\nI'm gBuilder bot!\n\nEvery time someone commit code to the gedemin-private or gedemin-apps repositories I will wake up and build projects from the fresh sources.`);
+    return ctx.reply(
+`Welcome!
+
+I'm gBuilder bot!
+
+Every time someone commits code to the gedemin-private or gedemin-apps repositories I will wake up and build projects from the fresh sources.
+
+Send me /log command to see what is going right now or has gone wrong.
+
+🥛🍷🥛`);
   });
 
   bot.command('log', async (ctx) => ctx.reply(getStatus(), { parse_mode: 'HTML' }) );
