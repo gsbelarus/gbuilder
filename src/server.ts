@@ -172,7 +172,7 @@ const main = async (params: IParams) => {
   router.post('/webhook/gedemin', prepareHook('gedemin-private',
     async (branch) => {
       if (branch === 'india') {
-        await bot.broadcast(`I'm  to start building gedemin.exe 🏗️`);
+        await bot.broadcast(`I'm going to build gedemin.exe 🏗️`);
 
         const res =
           await buildWorkbench(ug, bot, { compilationType: 'DEBUG', commitIncBuildNumber: false })
