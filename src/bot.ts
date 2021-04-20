@@ -75,7 +75,7 @@ I'm gBuilder bot!
 
 Every time someone commits code to the gedemin-private or gedemin-apps repositories I will wake up and build projects from the fresh sources.
 
-Send me /log command to see what is going right now or has gone wrong.
+Send me /log command to see what is going on right now or has gone wrong.
 
 🥛🍷🥛`);
   });
