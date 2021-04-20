@@ -128,16 +128,6 @@ const main = async (params: IParams) => {
 
     const { id: sha, message, url } = body.head_commit;
 
-    const broadcastCommitMessage = async () => {
-      await bot.broadcast(`User **${body.pusher.name}** has committed code into **${branch}** branch of **${body.repository.name}** repository.`, 'MarkdownV2');
-      await bot.broadcast(`<a href="${url}">${message}</a>`, 'HTML');
-      if (!semaphore.permits) {
-        await bot.broadcast(`Building of the project will be queued...`);
-      }
-    }
-
-    await broadcastCommitMessage();
-
     const updateState = state => octokit
       .request('POST /repos/{owner}/{repo}/statuses/{sha}', {
         owner: 'GoldenSoftwareLtd',
@@ -151,6 +141,16 @@ const main = async (params: IParams) => {
     if (message === 'Inc build number') {
       updateState('success');
     } else {
+      await bot.broadcast(`User ${body.pusher.name} has committed code into ${branch} branch of ${body.repository.name} repository.`);
+      await bot.broadcast(`Commit message:\n<a href="${url}">${message}</a>`, 'HTML');
+      if (!semaphore.permits) {
+        if (semaphore.acquired === 1) {
+          await bot.broadcast(`There is a task running right now.\nBuilding of the project will be queued...`);
+        } else {
+          await bot.broadcast(`There are ${semaphore.acquired} tasks running right now.\nBuilding of the project will be queued...`);
+        }
+      }
+
       run( async () => {
         await updateState('pending');
         try {
@@ -172,7 +172,7 @@ const main = async (params: IParams) => {
   router.post('/webhook/gedemin', prepareHook('gedemin-private',
     async (branch) => {
       if (branch === 'india') {
-        bot.broadcast(`I'm about to start building gedemin.exe 🏗️`);
+        await bot.broadcast(`I'm  to start building gedemin.exe 🏗️`);
 
         const res =
           await buildWorkbench(ug, bot, { compilationType: 'DEBUG', commitIncBuildNumber: false })
@@ -182,12 +182,12 @@ const main = async (params: IParams) => {
           await buildWorkbench(ug, bot, { compilationType: 'PRODUCT', commitIncBuildNumber: true });
 
         if (res) {
-          bot.broadcast(`gedemin.exe has been successfully built 🏁🏁🏁 `);
+          await bot.broadcast(`gedemin.exe has been successfully built 🏁🏁🏁 `);
         }
 
         return res;
       } else {
-        bot.broadcast(`I will build gedemin.exe only from india branch.`);
+        await bot.broadcast(`I will build gedemin.exe only from india branch.`);
         return true;
       }
     }
@@ -196,10 +196,10 @@ const main = async (params: IParams) => {
   router.post('/webhook/gedemin-apps', prepareHook('gedemin-apps',
     async (branch) => {
       if (branch === 'master') {
-        bot.broadcast(`I'm about to start building apps 🏗️`);
+        await bot.broadcast(`I'm about to start building apps 🏗️`);
         return buildWorkbench(mi, bot);
       } else {
-        bot.broadcast(`I will build apps only from master branch.`);
+        await bot.broadcast(`I will build apps only from master branch.`);
         return true;
       }
     }

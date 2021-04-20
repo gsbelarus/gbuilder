@@ -163,7 +163,7 @@ async function _mi(params: IParams, log: Log) {
       log.log('skip uploading...');
     }
 
-    log.log(`Project ${project} has been successfully built.`, { bot: true });
+    log.log(`Project "${project}" has been successfully built.`, { bot: true });
   };
 
   const filtered = filterProjectList(projectList);
