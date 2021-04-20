@@ -52,7 +52,7 @@ const writeBotUsers = (fn: string, botUsers: IBotUsers) => {
 
 export const tg = async (params: IParams, getStatus: () => string): Promise<IBot> => {
   const { tgBotToken, ciDir } = params;
-  const botUsersFN = path.join(ciDir, 'bot', 'botusers.json');
+  const botUsersFN = path.join(ciDir, 'Bot', 'botusers.json');
 
   if (!tgBotToken) {
     throw new Error('Bot token isnt specified!');
