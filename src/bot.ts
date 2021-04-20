@@ -80,7 +80,7 @@ Send me /log command to see what is going on right now or has gone wrong.
 🥛🍷🥛`);
   });
 
-  bot.command('log', async (ctx) => ctx.reply(getStatus(), { parse_mode: 'HTML' }) );
+  bot.command('log', async (ctx) => ctx.reply(`Users subscribed: ${botUsers.data.length}...\n${getStatus()}`, { parse_mode: 'HTML' }) );
 
   await bot.launch();
 
