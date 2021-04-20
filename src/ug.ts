@@ -7,10 +7,8 @@
  *    Формирование архива по файлу списка
  */
 
-import { execFileSync } from 'child_process';
-import {
-  existsSync, readFileSync, readdirSync, unlinkSync, copyFileSync, writeFileSync,
-  statSync, appendFileSync } from 'fs';
+import { existsSync } from 'fs';
+import { unlink, copyFile, stat, readdir, appendFile, readFile, writeFile } from 'fs/promises';
 import path from 'path';
 import { Log } from './log';
 import {
@@ -18,7 +16,7 @@ import {
   gedeminArchiveName, portableFilesList, projects, gedeminSQL, etalonDBFileName, getFBConnString
 } from './const';
 import { IParams } from './types';
-import { basicExecOptions, bindLog } from './utils';
+import { basicExecOptions, bindLog, execFileAsync } from './utils';
 
 /**
  * Главная функция.
@@ -63,26 +61,26 @@ export async function ug(params: IParams, log: Log) {
   };
 
   /** Снятие из гита последних исходников */
-  const pullSources = () => {
+  const pullSources = async () => {
     const opt = { ...basicExecOptions, cwd: rootGedeminDir };
     // если предыдущий заход завершился с ошибкой на середине процесса,
     // то будет конфликт изменений при выполнении git pull
     log.log(`git stash...`);
-    log.log(execFileSync('git', ['stash'], opt).toString());
+    log.log((await execFileAsync('git', ['stash'], opt)).stdout);
     log.log(`git checkout ${srcBranch}...`);
-    log.log(execFileSync('git', ['checkout', srcBranch], opt).toString());
+    log.log((await execFileAsync('git', ['checkout', srcBranch], opt)).stdout);
     log.log(`git pull...`);
-    log.log(execFileSync('git', ['pull'], opt).toString());
+    log.log((await execFileAsync('git', ['pull'], opt)).stdout);
   };
 
   /** */
-  const pushIncBuildNumber = () => {
+  const pushIncBuildNumber = async () => {
     if (commitIncBuildNumber) {
       const opt = { ...basicExecOptions, cwd: rootGedeminDir };
       log.log(`git commit -a -m "Inc build number"...`);
-      log.log(execFileSync('git', ['commit', '-a', '-m', 'Inc build number'], opt).toString());
+      log.log((await execFileAsync('git', ['commit', '-a', '-m', 'Inc build number'], opt)).stdout);
       log.log(`git push...`);
-      const s = execFileSync('git', ['push'], opt).toString().trim();
+      const s = (await execFileAsync('git', ['push'], opt)).stdout.trim();
       s && log.log(s);
     } else {
       log.log('local changes are not committed...')
@@ -90,11 +88,11 @@ export async function ug(params: IParams, log: Log) {
   };
 
   /** Очистка папки DCU */
-  const clearDCU = () => {
+  const clearDCU = async () => {
     let cnt = 0;
-    for (const f of readdirSync(pathDCU)) {
+    for (const f of (await readdir(pathDCU))) {
       if (path.extname(f).toLowerCase() === '.dcu') {
-        unlinkSync(path.join(pathDCU, f));
+        unlink(path.join(pathDCU, f));
         cnt++;
       }
     }
@@ -110,7 +108,7 @@ export async function ug(params: IParams, log: Log) {
    * Текущий файл сохраним с именем .current.cfg и восстановим в конце процесса.
    * Файл создадим из шаблона, подставив нужные значения в зависимости от типа компиляции.
    */
-  const prepareConfigFile = (project: ProjectID, pathProject: string) => () => {
+  const prepareConfigFile = (project: ProjectID, pathProject: string) => async () => {
     const { dest, loc } = projects[project];
 
     /** Файл конфигурации проекта для компиляции */
@@ -119,7 +117,7 @@ export async function ug(params: IParams, log: Log) {
     const savedCfgFileName = path.join(pathProject, `${project}.current.cfg`);
 
     if (existsSync(cfgFileName)) {
-      copyFileSync(cfgFileName, savedCfgFileName);
+      await copyFile(cfgFileName, savedCfgFileName);
       log.log(`existing ${project}.cfg file saved as ${savedCfgFileName}...`);
     }
 
@@ -145,13 +143,13 @@ export async function ug(params: IParams, log: Log) {
       cfgBody = cfgBody.replace(/\.\.\//gi,'../../');
     }
 
-    writeFileSync(cfgFileName, cfgBody.trim());
+    await writeFile(cfgFileName, cfgBody.trim());
 
     log.log(`Configuration file has been prepared and saved as ${cfgFileName}...`);
   };
 
   /** Компиляция проекта по заданному типу */
-  const buildProject = (project: ProjectID, pathProject: string) => () => {
+  const buildProject = (project: ProjectID, pathProject: string) => async () => {
     const { dest, ext } = projects[project];
 
     /** Целевая папка компиляции */
@@ -161,14 +159,14 @@ export async function ug(params: IParams, log: Log) {
     const destFileName = project + (ext ?? '.exe');
     const destFullFileName = path.join(destDir, destFileName);
 
-    deleteFile(destFullFileName);
+    await deleteFile(destFullFileName);
 
     log.log(`building ${destFileName}...`);
-    const output = execFileSync(
+    const output = (await execFileAsync(
       path.join(pathDelphi, 'Bin', 'dcc32.exe'),
       [gedeminCompilerSwitch[compilationType], `${project}.dpr`],
       { ...basicExecOptions, cwd: pathProject }
-    ).toString().trimEnd().split('\n');
+    )).stdout.trimEnd().split('\n');
     if (output.length) {
       log.log(output[0]);
       log.log(output[output.length - 1]);
@@ -180,18 +178,18 @@ export async function ug(params: IParams, log: Log) {
     // утилиты, которые мы применяем ниже находятся в папке EXE (папка по-умолчанию)
     // не будем применять их для проектов, которые компилируются в другие папки
     if (!dest) {
-      if (path.extname(destFileName) === '.exe' && statSync(path.join(destDir, destFileName)).size > 1024 * 1024) {
-        log.log(execFileSync('StripReloc.exe', ['/b', destFileName], exeOpt).toString());
+      if (path.extname(destFileName) === '.exe' && (await stat(path.join(destDir, destFileName))).size > 1024 * 1024) {
+        log.log((await execFileAsync('StripReloc.exe', ['/b', destFileName], exeOpt)).stdout);
         log.log('relocation section has been stripped from EXE file...');
       };
 
       if (project === 'gedemin' && compilationType === 'DEBUG') {
-        log.log(execFileSync('tdspack.exe', ['-e -o -a', destFileName], exeOpt).toString());
+        log.log((await execFileAsync('tdspack.exe', ['-e -o -a', destFileName], exeOpt)).stdout);
         log.log('debug information has been optimized...');
       };
 
       if (path.extname(destFileName) === '.exe') {
-        log.log(execFileSync(path.join(binEditbin, 'editbin.exe'), ['/SWAPRUN:NET', destFileName], exeOpt).toString());
+        log.log((await execFileAsync(path.join(binEditbin, 'editbin.exe'), ['/SWAPRUN:NET', destFileName], exeOpt)).stdout);
         log.log(`swaprun flag has been set on ${destFileName} file...`);
       };
     }
@@ -199,13 +197,13 @@ export async function ug(params: IParams, log: Log) {
     log.log(`${destFileName} has been successfully built...`);
   };
 
-  const setGedeminEXESize = () => {
+  const setGedeminEXESize = async () => {
     /** Целевая папка компиляции */
     const pathEXE = path.join(rootGedeminDir, 'Gedemin', projects['gedemin'].dest ?? 'EXE');
 
     if (setExeSize) {
       const exeFullFileName = path.join(pathEXE, 'gedemin.exe');
-      const currentExeSize = statSync(exeFullFileName).size;
+      const currentExeSize = (await stat(exeFullFileName)).size;
 
       if (setExeSize < currentExeSize) {
         throw new Error(`gedemin.exe is larger then needed exe size!`);
@@ -213,7 +211,7 @@ export async function ug(params: IParams, log: Log) {
 
       if (setExeSize > currentExeSize) {
         const buf = Buffer.allocUnsafe(setExeSize - currentExeSize).fill(0x90);
-        appendFileSync(exeFullFileName, buf);
+        await appendFile(exeFullFileName, buf);
         log.log(`gedemin.exe size has been set to ${setExeSize}...`);
       }
     } else {
@@ -232,23 +230,23 @@ export async function ug(params: IParams, log: Log) {
    *    обновление файлов более новыми версиями по дате
    *    удаление файлов, которых нет в списке
    */
-  const createArhive = () => {
+  const createArhive = async () => {
     /** Целевая папка компиляции */
     const pathEXE = path.join(rootGedeminDir, 'Gedemin', projects['gedemin'].dest ?? 'EXE');
     const lstFileName = path.join(archiveDir, 'gedemin.lst');
-    deleteFile(gedeminArchiveFileName);
-    writeFileSync(lstFileName, portableFilesList.join('\n'), { encoding: 'utf-8' });
+    await deleteFile(gedeminArchiveFileName);
+    await writeFile(lstFileName, portableFilesList.join('\n'), { encoding: 'utf-8' });
     try {
-      packFiles(gedeminArchiveFileName, '@' + lstFileName, pathEXE, `portable archive has been created ${gedeminArchiveFileName}...`);
-      packFiles(etalonArchiveFileName, etalonDBFileName, baseDir, `etalon db archive has been created ${etalonArchiveFileName}...`);
-      packFiles(gudfArchiveFileName, 'gudf.dll', path.join(rootGedeminDir, 'Gedemin', projects['gudf'].dest ?? 'EXE'), `gudf.dll archive has been created ${gudfArchiveFileName}...`);
+      await packFiles(gedeminArchiveFileName, '@' + lstFileName, pathEXE, `portable archive has been created ${gedeminArchiveFileName}...`);
+      await packFiles(etalonArchiveFileName, etalonDBFileName, baseDir, `etalon db archive has been created ${etalonArchiveFileName}...`);
+      await packFiles(gudfArchiveFileName, 'gudf.dll', path.join(rootGedeminDir, 'Gedemin', projects['gudf'].dest ?? 'EXE'), `gudf.dll archive has been created ${gudfArchiveFileName}...`);
     } finally {
-      unlinkSync(lstFileName);
+      await unlink(lstFileName);
     }
   };
 
   /** Восстановление сохраненных файлов конфигурации */
-  const cleanupConfigFile = (project: ProjectID, pathProject: string) => () => {
+  const cleanupConfigFile = (project: ProjectID, pathProject: string) => async () => {
     /** Файл конфигурации проекта для компиляции */
     const cfgFileName = path.join(pathProject, project + '.cfg');
 
@@ -256,9 +254,9 @@ export async function ug(params: IParams, log: Log) {
     const savedCfgFileName = path.join(pathProject, project + '.current.cfg');
 
     if (existsSync(savedCfgFileName)) {
-      copyFileSync(savedCfgFileName, cfgFileName);
+      await copyFile(savedCfgFileName, cfgFileName);
       log.log(`previous ${project}.cfg file has been restored...`);
-      unlinkSync(savedCfgFileName);
+      await unlink(savedCfgFileName);
     };
   };
 
@@ -266,7 +264,7 @@ export async function ug(params: IParams, log: Log) {
   //но для остальных утилит тоже надо сделать инкремент
 
   /** Инкремент версии */
-  const incVer = (project: ProjectID, pathProject: string) => () => {
+  const incVer = (project: ProjectID, pathProject: string) => async () => {
     /** RC-файл версии  */
     const verRCFileName = path.join(pathProject, `${project}_ver.rc`);
     /** RES-файл версии  */
@@ -280,11 +278,11 @@ export async function ug(params: IParams, log: Log) {
       }
 
       log.log(
-        execFileSync(
+        (await execFileAsync(
           path.join(pathDelphi, 'Bin', 'brcc32.exe'),
           [`-fo${project}_ver.res`, `-i${pathImages}`, `${customRcFile}`],
           { ...basicExecOptions, cwd: pathProject }
-        ).toString()
+        )).stdout
       );
       log.log(`custom res file ${customRcFile} has been successfully built...`);
     } else {
@@ -302,7 +300,7 @@ export async function ug(params: IParams, log: Log) {
       }
 
       if (commitIncBuildNumber) {
-        const rcText = readFileSync(verRCFileName).toString().trim().split('\n');
+        const rcText = (await readFile(verRCFileName)).toString().trim().split('\n');
         const fvIndex = rcText.findIndex( s => s.startsWith('FILEVERSION') );
 
         if (fvIndex === -1) {
@@ -316,7 +314,7 @@ export async function ug(params: IParams, log: Log) {
         newRC = newRC.replace(/<<BUILD_NUMBER>>/gi, buildNumber.toString());
         newRC = newRC.replace('<<YEAR>>', new Date().getFullYear().toString());
 
-        writeFileSync(verRCFileName, newRC);
+        await writeFile(verRCFileName, newRC);
 
         log.log(`build number for ${project} has been incremented to ${buildNumber}...`);
         log.log(`${project}_ver.rc saved...`);
@@ -324,14 +322,14 @@ export async function ug(params: IParams, log: Log) {
         log.log(`version incrementation for ${verRCFileName} is skipped...`);
       }
 
-      deleteFile(verResFileName);
+      await deleteFile(verResFileName);
 
       log.log(
-        execFileSync(
+        (await execFileAsync(
           path.join(pathDelphi, 'Bin', 'brcc32.exe'),
           [`-fo${project}_ver.res`, `-i${pathImages}`, `${project}_ver.rc`],
           { ...basicExecOptions, cwd: pathProject }
-        ).toString()
+        )).stdout
       );
       log.log(`${project}_ver.res has been successfully built...`);
     }
@@ -352,40 +350,40 @@ export async function ug(params: IParams, log: Log) {
     const dbFileName = 'etalon.fdb';
     const dbFullFileName = path.join(baseDir, dbFileName);
 
-    deleteFile(dbFullFileName);
+    await deleteFile(dbFullFileName);
 
     const connectionString = getFBConnString(fbConnect, dbFullFileName);
     const sqlScriptHeader = Buffer.from(gedeminSQL.header
       .replace('<<FB_CONNECT>>', connectionString)
       .replace('<<USER_NAME>>', fbUser ?? 'SYSDBA')
       .replace('<<USER_PASS>>', fbPassword ?? 'masterkey'));
-    const sqlScriptBody = Buffer.concat(gedeminSQL.firstPass.map( fn => readFileSync(path.join(pathSQL, fn), { encoding: undefined }) ) );
+    const sqlScriptBody = Buffer.concat(await Promise.all(gedeminSQL.firstPass.map( fn => readFile(path.join(pathSQL, fn), { encoding: undefined }) ) ) );
 
     const sqlScriptFN = path.join(pathSQL, 'result.sql');
-    writeFileSync(sqlScriptFN, Buffer.concat([sqlScriptHeader, sqlScriptBody]));
+    await writeFile(sqlScriptFN, Buffer.concat([sqlScriptHeader, sqlScriptBody]));
     log.log(`${sqlScriptFN} has been saved...`);
 
     const opt = { ...basicExecOptions, cwd: pathSQL };
 
     log.log(`first pass...`);
-    execFileSync(path.join(binFirebird, 'isql.exe'), ['-q', '-i', sqlScriptFN], opt);
+    await execFileAsync(path.join(binFirebird, 'isql.exe'), ['-q', '-i', sqlScriptFN], opt);
     if (!existsSync(dbFullFileName)) {
       throw new Error('Can not create database!');
     };
 
     const sqlScriptFN2 = path.join(pathSQL, 'result2.sql');
     log.log(`execute makelbrbtree...`);
-    execFileSync(path.join(pathSQL, 'makelbrbtree.exe'), [ '/sn', connectionString, '/fo', sqlScriptFN2 ], opt);
+    await execFileAsync(path.join(pathSQL, 'makelbrbtree.exe'), [ '/sn', connectionString, '/fo', sqlScriptFN2 ], opt);
     log.log(`${sqlScriptFN2} has been saved...`);
 
-    const sqlScriptBody2 = Buffer.concat(['result2.sql', ...gedeminSQL.secondPass].map( fn => readFileSync(path.join(pathSQL, fn), { encoding: undefined }) ) );
-    writeFileSync(sqlScriptFN, Buffer.concat([sqlScriptHeader, sqlScriptBody, sqlScriptBody2]));
+    const sqlScriptBody2 = Buffer.concat(await Promise.all(['result2.sql', ...gedeminSQL.secondPass].map( fn => readFile(path.join(pathSQL, fn), { encoding: undefined }) ) ) );
+    await writeFile(sqlScriptFN, Buffer.concat([sqlScriptHeader, sqlScriptBody, sqlScriptBody2]));
     log.log(`${sqlScriptFN} has been saved...`);
 
-    deleteFile(dbFullFileName);
+    await deleteFile(dbFullFileName);
 
     log.log(`second pass...`);
-    execFileSync(path.join(binFirebird, 'isql.exe'), [ '-q', '-i', sqlScriptFN], opt);
+    await execFileAsync(path.join(binFirebird, 'isql.exe'), [ '-q', '-i', sqlScriptFN], opt);
     if (existsSync(dbFullFileName)) {
       log.log(`${dbFileName} has been created...`);
     };
@@ -398,10 +396,10 @@ export async function ug(params: IParams, log: Log) {
     if (existsSync(sqlScriptEtalon)) {
       log.log(`previous ${sqlScriptEtalon} has been deleted...`);
     };
-    writeFileSync(sqlScriptEtalon, Buffer.concat([sqlScriptHeaderEtalon, sqlScriptBody, sqlScriptBody2]));
+    await writeFile(sqlScriptEtalon, Buffer.concat([sqlScriptHeaderEtalon, sqlScriptBody, sqlScriptBody2]));
     log.log(`${sqlScriptEtalon} has been saved...`);
 
-    [sqlScriptFN, sqlScriptFN2].forEach( fn => deleteFile(fn) );
+    Promise.all([sqlScriptFN, sqlScriptFN2].map( fn => deleteFile(fn) ));
   };
 
   /** Список проектов для компиляции */

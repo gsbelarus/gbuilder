@@ -1,11 +1,15 @@
-import { ExecSyncOptions, ExecFileSyncOptions, execFileSync } from 'child_process';
+import { execFile, exec, ExecFileOptions, ExecOptions } from 'child_process';
 import { Log } from './log';
 import { IParams, Processes } from './types';
 import path from 'path';
-import { existsSync, mkdirSync, unlinkSync, createReadStream } from 'fs';
-import { copyFile, stat } from 'fs/promises';
+import { existsSync, mkdirSync, createReadStream } from 'fs';
+import { copyFile, stat, unlink } from 'fs/promises';
 import FormData from 'form-data';
 import { InstProject, instProjects } from './const';
+import { promisify } from 'util';
+
+export const execFileAsync = promisify(execFile);
+export const execAsync = promisify(exec);
 
 export const bindLog = (params: IParams, log: Log) => ({
   runProcesses: async (name: string, processes: Processes) => {
@@ -18,14 +22,14 @@ export const bindLog = (params: IParams, log: Log) => ({
     log.finishProcess(true);
   },
 
-  packFiles: (arcName: string, fileName: string, cwd: string, msg?: string) => {
+  packFiles: async (arcName: string, fileName: string, cwd: string, msg?: string) => {
     if (existsSync(arcName)) {
-      unlinkSync(arcName);
+      await unlink(arcName);
     }
 
-    const s = execFileSync(path.join(params.binWinRAR, 'WinRAR.exe'),
+    const s = (await execFileAsync(path.join(params.binWinRAR, 'WinRAR.exe'),
       [ 'a', '-u', '-as', '-ibck', arcName, fileName ],
-      { ...basicExecOptions, cwd }).toString().trim();
+      { ...basicExecOptions, cwd })).stdout.trim();
     s && log.log(s);
 
     if (existsSync(arcName)) {
@@ -35,9 +39,9 @@ export const bindLog = (params: IParams, log: Log) => ({
     };
   },
 
-  deleteFile: (fn: string, msg?: string) => {
+  deleteFile: async (fn: string, msg?: string) => {
     if (existsSync(fn)) {
-      unlinkSync(fn);
+      await unlink(fn);
       log.log(msg || `${fn} has been deleted...`);
     }
   },
@@ -96,14 +100,12 @@ export const bindLog = (params: IParams, log: Log) => ({
   })
 });
 
-export const basicExecOptions: ExecFileSyncOptions = {
-  stdio: ['pipe', 'pipe', 'pipe'],
+export const basicExecOptions: ExecFileOptions = {
   maxBuffer: 1024 * 1024 * 64,
   timeout: 1 * 60 * 60 * 1000
 };
 
-export const basicCmdOptions: ExecSyncOptions = {
-  stdio: ['pipe', 'pipe', 'pipe'],
+export const basicCmdOptions: ExecOptions = {
   maxBuffer: 1024 * 1024 * 64,
   timeout: 1 * 60 * 60 * 1000
 };

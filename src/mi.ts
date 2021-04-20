@@ -8,13 +8,13 @@
  *    -Создание архива установчного файла
  */
 
-import { execFileSync, execSync } from 'child_process';
-import { existsSync, rmdirSync, unlinkSync } from 'fs';
+import { existsSync } from 'fs';
+import { unlink, rmdir } from 'fs/promises';
 import path from 'path';
 import { Log } from './log';
 import { portableFilesList, instProjects, etalonDBFileName, getFBConnString, InstProject, cashPortableFilesList, IInstProject } from './const';
 import { IParams } from './types';
-import { basicExecOptions, bindLog } from './utils';
+import { basicExecOptions, bindLog, execFileAsync, execAsync } from './utils';
 import { ug } from './ug';
 
 async function _mi(params: IParams, log: Log) {
@@ -60,21 +60,21 @@ async function _mi(params: IParams, log: Log) {
   };
 
   /** Снятие из гита последних исходников */
-  const pullSources = () => {
+  const pullSources = async () => {
     const opt = { ...basicExecOptions, cwd: settingDir };
     log.log(`git stash...`);
-    log.log(execFileSync('git', ['stash'], opt).toString());
+    log.log((await execFileAsync('git', ['stash'], opt)).stdout);
     log.log(`git checkout ${srcGedeminAppsBranch}...`);
-    log.log(execFileSync('git', ['checkout', srcGedeminAppsBranch], opt).toString());
+    log.log((await execFileAsync('git', ['checkout', srcGedeminAppsBranch], opt)).stdout);
     log.log(`git pull...`);
-    log.log(execFileSync('git', ['pull'], opt).toString());
+    log.log((await execFileAsync('git', ['pull'], opt)).stdout);
   };
 
   /** Копируем все файлы из EXE в папку, из которой будем создавать инстоляцию InnoSetup */
-  const prepareInstallation = (project: InstProject) => () => {
+  const prepareInstallation = (project: InstProject) => async () => {
     const { copyCashFiles } = instProjects[project];
     if (existsSync(instDir)) {
-      rmdirSync(instDir, { recursive: true });
+      await rmdir(instDir, { recursive: true });
       log.log(`Directory ${instDir} has been removed...`);
     }
     const pathEXE = path.join(rootGedeminDir, 'Gedemin', 'EXE');
@@ -100,12 +100,12 @@ async function _mi(params: IParams, log: Log) {
     /** Загрузка пакета настроек */
     const connectionString = getFBConnString(fbConnect, dbProjectFullFileName);
     const settingFullFileName = path.join(settingDir, FSFN);
-    const s = execFileSync(
+    const s = (await execFileAsync(
       path.join(instDir, 'gedemin.exe'),
       [ '/sn', connectionString, '/user', 'Administrator', '/password', 'Administrator',
         '/sp', settingDir, '/rd', '/q',
         '/sfn', settingFullFileName, '/ns' ],
-      { ...basicExecOptions, cwd: instDir }).toString().trim();
+      { ...basicExecOptions, cwd: instDir })).stdout.trim();
     s && log.log(s);
     log.log(`${settingFullFileName} has been loaded...`);
 
@@ -114,13 +114,13 @@ async function _mi(params: IParams, log: Log) {
     await copyFileWithLog(imgSrcFullFileName, imgDestFullFileName);
 
     const bkProjectFullFileName = path.join(pathInstDB, `${project}.bk`);
-    deleteFile(bkProjectFullFileName);
+    await deleteFile(bkProjectFullFileName);
     log.log(
-      execFileSync(
+      (await execFileAsync(
         path.join(binFirebird, 'gbak.exe'),
         [ '-b', connectionString, bkProjectFullFileName,
           '-user', fbUser ?? 'SYSDBA', '-pas', fbPassword ?? 'masterkey', '-g' ],
-        { ...basicExecOptions, cwd: instDir }).toString()
+        { ...basicExecOptions, cwd: instDir })).stdout
     );
     log.log(`${bkProjectFullFileName} has been created...`);
 
@@ -129,30 +129,28 @@ async function _mi(params: IParams, log: Log) {
     const setupFullFileName = path.join(setupPath, outputName + '.exe');
 
     const issFileName = IFN + '.iss';
-    const output = execSync(
+    const output = (await execAsync(
       `"${path.join(binInnoSetup, 'iscc.exe')}" /O"${setupPath}" /F${outputName} /Q /DGedInstDir="${instDir}" ${issFileName}`, {
       maxBuffer: 1024 * 1024 * 64,
       timeout: 1 * 60 * 60 * 1000,
       cwd: pathISS
-    }).toString().trim();
+    })).stdout.trim();
     output && log.log(output);
     log.log(`setup file ${setupFullFileName} has been created...`);
 
     const arcFullFileName = path.join(archiveDir, AFN + '.rar');
-    packFiles(arcFullFileName, setupFullFileName, distribDir);
+    await packFiles(arcFullFileName, setupFullFileName, distribDir);
 
     // portable archive
-    [`Database/${project}.bk`, 'gedemin.ini', 'databases.ini'].forEach(
-      f => {
-        const fn = path.join(instDir, f);
-        if (existsSync(fn)) {
-          unlinkSync(fn);
-        }
-      }
+    Promise.all(
+      [`Database/${project}.bk`, 'gedemin.ini', 'databases.ini']
+        .map( f => path.join(instDir, f) )
+        .filter( f => existsSync(f) )
+        .map( f => unlink(f) )
     );
 
     const portableArcFullFileName = path.join(archiveDir, project + '_portable.rar');
-    packFiles(portableArcFullFileName, 'Gedemin', ciDir);
+    await packFiles(portableArcFullFileName, 'Gedemin', ciDir);
 
     if (upload) {
       await Promise.all([
