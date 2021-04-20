@@ -50,7 +50,7 @@ const writeBotUsers = (fn: string, botUsers: IBotUsers) => {
   writeFileSync(fn, JSON.stringify(botUsers, undefined, 2), { encoding: 'utf-8' });
 }
 
-export const tg = async (params: IParams, getQueueLength: () => number): Promise<IBot> => {
+export const tg = async (params: IParams, getStatus: () => string): Promise<IBot> => {
   const { tgBotToken, ciDir } = params;
   const botUsersFN = path.join(ciDir, 'bot', 'botusers.json');
 
@@ -61,19 +61,17 @@ export const tg = async (params: IParams, getQueueLength: () => number): Promise
   const botUsers = readBotUsers(botUsersFN);
   const bot = new Telegraf(tgBotToken);
 
-  bot.start( (ctx) => {
-    ctx.reply(`Welcome!\n\nI'm gBuilder bot!\n\nEvery time you commit something new to the gedemin-private or gedemin-apps repositories I will wake up and build projects from the fresh sources.`);
-
+  bot.start( async (ctx) => {
     const { id } = ctx.message.chat;
     if (!botUsers.data.find( u => u.id === id )) {
       botUsers.data.push({ id });
       writeBotUsers(botUsersFN, botUsers);
     }
+
+    return ctx.reply(`Welcome!\n\nI'm gBuilder bot!\n\nEvery time someone commit code to the gedemin-private or gedemin-apps repositories I will wake up and build projects from the fresh sources.`);
   });
 
-  bot.command('log', (ctx) => {
-    ctx.reply(`Tasks in queue: ${getQueueLength()}...\n<a href="http://213.184.249.125:8087/log">Current log...</a>`, { parse_mode: 'HTML' });
-  });
+  bot.command('log', async (ctx) => ctx.reply(getStatus(), { parse_mode: 'HTML' }) );
 
   await bot.launch();
 

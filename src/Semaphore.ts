@@ -2,19 +2,25 @@ type Unlock = () => void;
 
 export class Semaphore {
 
+  private _maxAllowed: number;
   private _permits: number;
   private _queue: Unlock[] = [];
 
-  constructor(count: number = 1) {
-    this._permits = count;
+  constructor(maxAllowed: number = 1) {
+    this._maxAllowed = maxAllowed;
+    this._permits = maxAllowed;
   }
 
-  get permits(): number {
+  get permits() {
     return this._permits;
   }
 
-  get queueLength(): number {
+  get queueLength() {
     return this._queue.length;
+  }
+
+  get acquired() {
+    return this._maxAllowed - this._permits;
   }
 
   public async acquire(): Promise<void> {
@@ -27,13 +33,14 @@ export class Semaphore {
   }
 
   public release(): void {
-    this._permits += 1;
-
-    if (this._permits > 1 && this._queue.length > 0) {
-      console.warn("Should never be");
-    } else if (this._permits === 1 && this._queue.length > 0) {
-      this._permits -= 1;
+    if (this._queue.length) {
       this._queue.shift()?.();
+    } else {
+      this._permits += 1;
+    }
+
+    if (this._permits > this._maxAllowed) {
+      console.error('Release() has been called without previous acquire!');
     }
   }
 }

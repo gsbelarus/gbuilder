@@ -14,6 +14,7 @@ import { getLogFileName } from './utils';
 import { Semaphore } from './Semaphore';
 import { PushEvent } from '@octokit/webhooks-types';
 import { tg } from './bot';
+//import path from 'path';
 
 interface ILog {
   logged: Date;
@@ -37,10 +38,25 @@ const parseParams = () => {
   }
 };
 
+/*
+const cert = readFileSync(path.resolve(process.cwd(), 'ssl/star.gdmn.app.crt'));
+const key = readFileSync(path.resolve(process.cwd(), 'ssl/gdmn.app.key'));
+const ca = readFileSync(path.resolve(process.cwd(), 'ssl/star.gdmn.app.ca-bundle'), {encoding:'utf8'})
+  .split('-----END CERTIFICATE-----\r\n')
+  .map(cert => cert +'-----END CERTIFICATE-----\r\n')
+  .pop();
+
+if (!ca) {
+  throw new Error('No CA file or file is invalid');
+}
+*/
+
 const main = async (params: IParams) => {
   const log: ILog[] = [];
   const semaphore = new Semaphore();
-  const bot = await tg(params, () => semaphore.queueLength);
+  const bot = await tg(params,
+    () => `Tasks running: ${semaphore.acquired}...\nTasks in queue: ${semaphore.queueLength}...\n<a href="http://213.184.249.125:8087/log">Current log...</a>`
+  );
 
   console.log('Telegram bot has been successfully started!');
   await bot.broadcast(`Hi there again!\n\nSeems that server was reloaded.\nI'm eager to start building projects.\nJust give me new sources.`);
@@ -120,7 +136,7 @@ const main = async (params: IParams) => {
       }
     }
 
-    broadcastCommitMessage();
+    await broadcastCommitMessage();
 
     const updateState = state => octokit
       .request('POST /repos/{owner}/{repo}/statuses/{sha}', {

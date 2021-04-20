@@ -79,7 +79,7 @@ export class Log {
     const step = this._process?.subProcesses.length
       ? `${this._process.subProcesses.length.toString().padStart(this._process.steps.toString().length, ' ')}/${this._process.steps} `
       : '';
-    const prefix = `${dateFormat(date, 'dd.mm.yyyy HH:MM:ss')} ${step}`;
+    const prefix = meta?.bot ? '' : `${dateFormat(date, 'dd.mm.yyyy HH:MM:ss')} ${step}`;
     const m = message.trim().split('\n').map( (s, idx) => (idx ? ' '.repeat(prefix.length) : '') + s ).join('\n');
     this._log.forEach( ({ log }) => log(`${prefix}${m}`, meta) );
   }
