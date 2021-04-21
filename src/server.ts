@@ -14,7 +14,6 @@ import { getLogFileName } from './utils';
 import { Semaphore } from './Semaphore';
 import { PushEvent } from '@octokit/webhooks-types';
 import { tg } from './bot';
-//import path from 'path';
 
 interface ILog {
   logged: Date;
@@ -54,6 +53,7 @@ if (!ca) {
 const main = async (params: IParams) => {
   const log: ILog[] = [];
   const semaphore = new Semaphore();
+  const { pat, ciDir, srcBranch, srcGedeminAppsBranch, buildServerPort } = params;
   const bot = await tg(params,
     () => `Tasks running: ${semaphore.acquired}...\nTasks in queue: ${semaphore.queueLength}...\n<a href="http://213.184.249.125:8087/log">Current log...</a>`
   );
@@ -63,7 +63,7 @@ const main = async (params: IParams) => {
 
   const app = new Koa();
   const router = new Router();
-  const octokit = new Octokit({ auth: params.pat });
+  const octokit = new Octokit({ auth: pat });
 
   router.get('/log', async (ctx) => {
     const l = log.map(
@@ -72,7 +72,7 @@ const main = async (params: IParams) => {
     );
 
     let data;
-    const logFile = getLogFileName(params.ciDir);
+    const logFile = getLogFileName(ciDir);
     if (existsSync(logFile)) {
       let fh = await open(logFile, 'r');
       const buffer = await fh.readFile();
@@ -171,7 +171,7 @@ const main = async (params: IParams) => {
 
   router.post('/webhook/gedemin', prepareHook('gedemin-private',
     async (branch) => {
-      if (branch === 'india') {
+      if (branch === srcBranch) {
         await bot.broadcast(`I'm going to build gedemin.exe 🏗️`);
 
         const res =
@@ -187,7 +187,7 @@ const main = async (params: IParams) => {
 
         return res;
       } else {
-        await bot.broadcast(`I will build gedemin.exe only from india branch.`);
+        await bot.broadcast(`I will build gedemin.exe only from ${srcBranch} branch.`);
         return true;
       }
     }
@@ -195,11 +195,11 @@ const main = async (params: IParams) => {
 
   router.post('/webhook/gedemin-apps', prepareHook('gedemin-apps',
     async (branch) => {
-      if (branch === 'master') {
+      if (branch === srcGedeminAppsBranch) {
         await bot.broadcast(`I'm about to start building apps 🏗️`);
         return buildWorkbench(mi, bot);
       } else {
-        await bot.broadcast(`I will build apps only from master branch.`);
+        await bot.broadcast(`I will build apps only from ${srcGedeminAppsBranch} branch.`);
         return true;
       }
     }
@@ -215,7 +215,7 @@ const main = async (params: IParams) => {
 
   const httpServer = http.createServer(app.callback());
 
-  httpServer.listen(params.buildServerPort, () => console.info(`>>> HTTP server is running at http://localhost:${params.buildServerPort}`) );
+  httpServer.listen(buildServerPort, () => console.info(`>>> HTTP server is running at http://localhost:${buildServerPort}`) );
 };
 
 main(parseParams());
