@@ -1,5 +1,3 @@
-//FIXME: было бы неплохо дать краткое описание процесса компиляции. чтомы берем, откуда, для чего, что и куда помещаем
-
 /**
  * Текущий функционал
  *    Снятие из гита последних исходников
@@ -161,7 +159,7 @@ export async function ug(params: IParams, log: Log) {
 
     await deleteFile(destFullFileName);
 
-    log.log(`building ${destFileName}...`);
+    log.log(`building ${destFileName}: dcc32 ${gedeminCompilerSwitch[compilationType]} ${project}.dpr...`);
     const output = (await execFileAsync(
       path.join(pathDelphi, 'Bin', 'dcc32.exe'),
       [gedeminCompilerSwitch[compilationType], `${project}.dpr`],
