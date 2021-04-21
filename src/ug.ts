@@ -22,9 +22,9 @@ import { basicExecOptions, bindLog, execFileAsync } from './utils';
  */
 export async function ug(params: IParams, log: Log) {
 
-  const { runProcesses, packFiles, deleteFile, assureDir, uploadFile } = bindLog(params, log);
+  const { runProcesses, packFiles, deleteFile, assureDir, uploadFile, copyFileWithLog } = bindLog(params, log);
   const { compilationType, setExeSize, customRcFile, ciDir, rootGedeminDir, pathDelphi, binEditbin, binFirebird,
-    upload, srcBranch, commitIncBuildNumber, fbConnect, fbUser, fbPassword } = params;
+    upload, srcBranch, commitIncBuildNumber, fbConnect, fbUser, fbPassword, postCopyDir } = params;
 
   /** В процессе компиляции DCU файлы помещаются в эту папку */
   const pathDCU = path.join(rootGedeminDir, 'Gedemin', 'DCU');
@@ -82,6 +82,18 @@ export async function ug(params: IParams, log: Log) {
       s && log.log(s);
     } else {
       log.log('local changes are not committed...')
+    }
+  };
+
+  /** */
+  const postCopy = async () => {
+    if (postCopyDir) {
+      const pathEXE = path.join(rootGedeminDir, 'Gedemin', 'EXE');
+      return Promise.all(portableFilesList.map(
+        fn => copyFileWithLog(path.join(pathEXE, fn), path.join(postCopyDir, fn))
+      ) );
+    } else {
+      log.log('post copy dir is not specified...')
     }
   };
 
@@ -425,6 +437,7 @@ export async function ug(params: IParams, log: Log) {
     { name: 'Create etalon database', fn: createEtalonDB },
     { name: 'Create portable version archive', fn: createArhive },
     { name: 'Upload archive', fn: uploadArhive },
-    { name: 'Inc build number', fn: pushIncBuildNumber }
+    { name: 'Inc build number', fn: pushIncBuildNumber },
+    { name: 'Post copy', fn: postCopy }
   ]);
 };

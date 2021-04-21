@@ -56,6 +56,8 @@ export interface IParams {
   projectList: InstProject[];
   /** Токен телеграм бота */
   tgBotToken?: string;
+  /** Папка, куда копировать все файлы гедымина после успешной компиляции */
+  postCopyDir?: string;
 };
 
 export type BuildFunc = (params: IParams, log: Log) => Promise<void>;
