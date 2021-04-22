@@ -328,6 +328,10 @@ export async function ug(params: IParams, log: Log) {
 
         log.log(`build number for ${project} has been incremented to ${buildNumber}...`);
         log.log(`${project}_ver.rc saved...`);
+
+        if (project === 'gedemin') {
+          log.log(`newest gedemin.exe version ${buildNumber}...`, { bot: true });
+        }
       } else {
         log.log(`version incrementation for ${verRCFileName} is skipped...`);
       }
