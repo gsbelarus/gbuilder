@@ -10,7 +10,7 @@
     "@koa/router": "^10.0.0",
     "@octokit/core": "^3.4.0",
     "@octokit/webhooks": "^9.1.0",
-    "@octokit/webhooks-types": "^3.69.0",
+    "@octokit/webhooks-types": "^3.69.2",
     "dateformat": "^4.5.1",
     "form-data": "^4.0.0",
     "koa": "^2.13.1",

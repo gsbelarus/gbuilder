@@ -86,15 +86,13 @@ export async function ug(params: IParams, log: Log) {
   };
 
   /** */
-  const postCopy = async () => {
-    if (postCopyDir) {
+  const postCopy = (project: ProjectID) => async () => {
+    if (postCopyDir && commitIncBuildNumber && project === 'gedemin') {
       const pathEXE = path.join(rootGedeminDir, 'Gedemin', 'EXE');
       return Promise.all(portableFilesList.map(
         fn => copyFileWithLog(path.join(pathEXE, fn), path.join(postCopyDir, fn))
       ) );
-    } else {
-      log.log('post copy dir is not specified...')
-    }
+    }     
   };
 
   /** Очистка папки DCU */
@@ -434,6 +432,7 @@ export async function ug(params: IParams, log: Log) {
         { name: `Increment version for ${pr}`, fn: incVer(pr, pathProject) },
         { name: `Prepare config files for ${pr}`, fn: prepareConfigFile(pr, pathProject) },
         { name: `Build ${pr}`, fn: buildProject(pr, pathProject) },
+        { name: 'Post copy', fn: postCopy(pr) },
         { name: `Clean up after building ${pr}`, fn: cleanupConfigFile(pr, pathProject) }
       ]
     }),
@@ -442,6 +441,5 @@ export async function ug(params: IParams, log: Log) {
     { name: 'Create portable version archive', fn: createArhive },
     { name: 'Upload archive', fn: uploadArhive },
     { name: 'Inc build number', fn: pushIncBuildNumber },
-    { name: 'Post copy', fn: postCopy }
   ]);
 };

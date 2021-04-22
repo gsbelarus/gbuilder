@@ -166,10 +166,17 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@octokit/webhooks-types@npm:3.69.0, @octokit/webhooks-types@npm:^3.69.0":
+"@octokit/webhooks-types@npm:3.69.0":
   version: 3.69.0
   resolution: "@octokit/webhooks-types@npm:3.69.0"
   checksum: e25cdb277a5bd9973b3642b848cd1309122d91eb12b63ca45b6e5d64e9d194174c8c862716fd1823f3fe2f8e7adfc76e673499aa105227dc16bad39e6198650f
+  languageName: node
+  linkType: hard
+
+"@octokit/webhooks-types@npm:^3.69.2":
+  version: 3.69.2
+  resolution: "@octokit/webhooks-types@npm:3.69.2"
+  checksum: 816bc3fad84d48663299e72ca6927be4520a867190c511df66b2920655167f2475488a7602897631543d7b4aaf65469e2bfb40c1b5152fa975d560f78243998b
   languageName: node
   linkType: hard
 
@@ -725,7 +732,7 @@ __metadata:
     "@octokit/core": ^3.4.0
     "@octokit/types": ^6.13.1
     "@octokit/webhooks": ^9.1.0
-    "@octokit/webhooks-types": ^3.69.0
+    "@octokit/webhooks-types": ^3.69.2
     "@types/koa": ^2.13.1
     "@types/koa__router": ^8.0.4
     "@types/node": ^14.14.41
