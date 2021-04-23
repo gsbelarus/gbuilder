@@ -521,7 +521,7 @@ export const gedeminSQL = {
   ],
   secondPass: [
     'gd_constants.sql',
-    'gd_oper_const.sql',
+     //'gd_oper_const.sql',
     'gd_securityrole.sql',
     'gd_db_triggers.sql'
   ],
