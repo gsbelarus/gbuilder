@@ -86,7 +86,7 @@ export const gedeminCfgVariables = {
   DEBUG: {
     d_switch: '+',
     o_switch: '-',
-    cond: 'SPLASH;MESSAGE;SYNEDIT;GEDEMIN;GED_LOC_RUS;FR4;EXCMAGIC_GEDEMIN;WITH_INDY'
+    cond: 'SPLASH;MESSAGE;SYNEDIT;GEDEMIN;GED_LOC_RUS;FR4;EXCMAGIC_GEDEMIN;WITH_INDY;DEBUG'
   },
   LOCK: {
     d_switch: '+',
