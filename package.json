@@ -9,8 +9,8 @@
   "dependencies": {
     "@koa/router": "^10.0.0",
     "@octokit/core": "^3.4.0",
-    "@octokit/webhooks": "^9.1.0",
-    "@octokit/webhooks-types": "^3.69.2",
+    "@octokit/webhooks": "^9.6.0",
+    "@octokit/webhooks-types": "^3.74.0",
     "dateformat": "^4.5.1",
     "form-data": "^4.0.0",
     "koa": "^2.13.1",
@@ -20,10 +20,10 @@
     "typescript": "^4.2.4"
   },
   "devDependencies": {
-    "@octokit/types": "^6.13.1",
+    "@octokit/types": "^6.14.2",
     "@types/koa": "^2.13.1",
     "@types/koa__router": "^8.0.4",
-    "@types/node": "^14.14.41",
+    "@types/node": "^15.0.3",
     "@yarnpkg/pnpify": "^3.0.0-rc.3"
   }
 }
