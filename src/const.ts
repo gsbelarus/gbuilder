@@ -195,6 +195,58 @@ export const cashPortableFilesList = [
   'ppServer.exe'
 ];
 
+export interface IBuildProject {
+  /** Папка, куда будет компилироваться экзешник. Задается относительно корневой папки проекта Gedemin. */
+  dstDir: string;
+  /** git branch */
+  gitBranch: string;
+  /** ключи компилятора командной строки */
+  dccSwitches: string;
+  /** */
+  cfgVariables: {
+    d_switch: '-' | '+';
+    o_switch: '-' | '+';
+    cond: string;
+  },
+  /** */
+  incBuildNumber: boolean;
+  /** */
+  commitBuildNumber: boolean;
+  /** */
+  exeSize?: number;
+  /** */
+  portableFilesList: string[];
+  /** */
+  archiveName: string;
+  /** */
+  uploadURL: string;
+  /** */
+  distrToFolder: string;
+};
+
+interface IBuildProjects {
+  product: IBuildProject;
+};
+
+export const buildProjects: IBuildProjects = {
+  product: {
+    dstDir: 'EXE',
+    gitBranch: 'india',
+    dccSwitches: '-b',
+    cfgVariables: {
+      d_switch: '-',
+      o_switch: '+',
+      cond: 'SPLASH;MESSAGE;SYNEDIT;GEDEMIN;GED_LOC_RUS;FR4;WITH_INDY;'
+    },
+    incBuildNumber: true,
+    commitBuildNumber: true,
+    portableFilesList,
+    archiveName: 'gedemin.rar',
+    uploadURL: 'http://gsbelarus.com/gs/content/upload2.php',
+    distrToFolder: 'BETA'
+  }
+};
+
 export interface IInstProject {
   /** FSFN -- полное имя файла с пакетом настроек */
   FSFN: string;
@@ -323,7 +375,11 @@ interface IProject {
 };
 
 interface IProjects {
-  [project: string]: IProject;
+  gedemin: IProject;
+  gdcc: IProject;
+  gedemin_upd: IProject;
+  gudf: IProject;
+  makelbrbtree: IProject;
 };
 
 export const projects: IProjects = {
