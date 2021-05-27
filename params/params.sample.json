@@ -1,5 +1,4 @@
 {
-  "compilationType": "PRODUCT",
   "ciDir": "c:\\CI",
   "rootGedeminDir": "c:/golden/gedemin",
   "pathDelphi": "c:/Delphi5",
@@ -7,7 +6,6 @@
   "binEditbin": "",
   "binWinRAR": "c:/Program Files/WinRAR",
   "binInnoSetup": "C:\\Program Files (x86)\\Inno Setup 5",
-  "srcBranch": "india",
   "srcGedeminAppsBranch": "master",
   "upload": true,
   "maxLogSize": 10000000,
@@ -15,10 +13,8 @@
   "fbConnect": "localhost/3053",
   "fbUser": "SYSDBA",
   "fbPassword": "masterkey",
-  "commitIncBuildNumber": true,
   "pat": "...",
   "buildServerPort": 8087,
   "projectList": ["cash", "cash_server", "menufront", "business", "devel", "plat", "menuback", "hotel", "san"],
-  "tgBotToken": "some_token",
-  "postCopyDir": "c:/Web/Beta"
+  "tgBotToken": "some_token"
 }

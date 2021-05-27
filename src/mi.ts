@@ -9,10 +9,10 @@
  */
 
 import { existsSync } from 'fs';
-import { unlink, rmdir } from 'fs/promises';
+import { unlink, rm } from 'fs/promises';
 import path from 'path';
 import { Log } from './log';
-import { portableFilesList, instProjects, etalonDBFileName, getFBConnString, InstProject, cashPortableFilesList, IInstProject } from './const';
+import { portableFilesList, instProjects, etalonDBFileName, getFBConnString, InstProject, cashPortableFilesList, IInstProject, buildProjects } from './const';
 import { IParams } from './types';
 import { basicExecOptions, bindLog, execFileAsync, execAsync } from './utils';
 import { ug } from './ug';
@@ -74,7 +74,7 @@ async function _mi(params: IParams, log: Log) {
   const prepareInstallation = (project: InstProject) => async () => {
     const { copyCashFiles } = instProjects[project];
     if (existsSync(instDir)) {
-      await rmdir(instDir, { recursive: true });
+      await rm(instDir, { recursive: true });
       log.log(`Directory ${instDir} has been removed...`);
     }
     const pathEXE = path.join(rootGedeminDir, 'Gedemin', 'EXE');
@@ -177,7 +177,7 @@ async function _mi(params: IParams, log: Log) {
 };
 
 export async function mi(params: IParams, log: Log) {
-  const getSign = ({ compilationType, setExeSize, customRcFile }: IInstProject) => `${compilationType}${setExeSize}${customRcFile}`;
+  const getSign = ({ buildParams: { exeSize, customRcFile, cfgVariables } }: IInstProject) => `${cfgVariables.cond}${exeSize}${customRcFile}`;
 
   const sorted = params.projectList
     .filter( pr => {
@@ -201,16 +201,9 @@ export async function mi(params: IParams, log: Log) {
     projectList.push(pr);
 
     if (!nextPr || getSign(instProject) !== getSign(nextProject)) {
-      const { compilationType, setExeSize, customRcFile } = instProject;
+      const { buildParams } = instProject;
 
-      await ug({
-        ...params,
-        compilationType: compilationType ?? 'PRODUCT',
-        setExeSize,
-        customRcFile,
-        commitIncBuildNumber: false
-      }, log);
-
+      await ug({ ...params, upload: false, buildParams: { ...buildParams, incBuildNumber: false, commitBuildNumber: false } }, log);
       await _mi({ ...params, projectList }, log);
       projectList.length = 0;
     }

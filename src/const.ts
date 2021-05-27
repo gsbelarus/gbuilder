@@ -1,5 +1,3 @@
-import { CompilationType } from "./types";
-
 export const gedeminSrcPath = [
   '../queryfilter',
   '../classtree',
@@ -77,6 +75,7 @@ export const gedeminSrcPath = [
 // available switches
 // -D_QEXPORT;SPLASH;MESSAGE;_REALIZATION;SYNEDIT;_PROTECT;GEDEMIN;_LOADMODULE;_MODEM;GED_LOC_RUS;_GEDEMIN_LOCK;_DEBUG;_LOCALIZATION;_NEW_GRID;FR4;_QBUILDER;_TEECHARTPRO;_DUNIT_TEST;WITH_INDY;_FULL_MODIFY;_EXCMAGIC_GEDEMIN;ID64
 
+/*
 export const gedeminCfgVariables = {
   PRODUCT: {
     d_switch: '-',
@@ -93,7 +92,8 @@ export const gedeminCfgVariables = {
     o_switch: '-',
     cond: 'SPLASH;MESSAGE;SYNEDIT;GEDEMIN;GED_LOC_RUS;FR4;WITH_INDY'
   },
-}
+};
+*/
 
 export const gedeminCfgTemplate =
 `-$A+
@@ -139,6 +139,7 @@ export const gedeminCfgTemplate =
 -R"<<GEDEMIN_SRC_PATH>>"
 -D<<COND>>`;
 
+/*
 export const gedeminCompilerSwitch = {
   PRODUCT: '-b',
   DEBUG: '-b -vt',
@@ -148,7 +149,9 @@ export const gedeminCompilerSwitch = {
 export const gedeminArchiveName = {
   PRODUCT: 'gedemin.rar',
   DEBUG: 'gedemin_debug.rar',
-  LOCK: 'gedemin_lock.rar'};
+  LOCK: 'gedemin_lock.rar'
+};
+*/
 
 /**
  * Список файлов для формирования архива портативной инстоляции.
@@ -195,11 +198,13 @@ export const cashPortableFilesList = [
   'ppServer.exe'
 ];
 
-export interface IBuildProject {
+export interface IBuildParams {
+  /** */
+  label: string;
   /** Папка, куда будет компилироваться экзешник. Задается относительно корневой папки проекта Gedemin. */
-  dstDir: string;
+  dstDir: 'EXE';
   /** git branch */
-  gitBranch: string;
+  srcBranch: string;
   /** ключи компилятора командной строки */
   dccSwitches: string;
   /** */
@@ -209,11 +214,15 @@ export interface IBuildProject {
     cond: string;
   },
   /** */
+  useTDSPack: boolean;
+  /** */
   incBuildNumber: boolean;
   /** */
   commitBuildNumber: boolean;
   /** */
   exeSize?: number;
+  /** */
+  customRcFile?: string;
   /** */
   portableFilesList: string[];
   /** */
@@ -225,25 +234,65 @@ export interface IBuildProject {
 };
 
 interface IBuildProjects {
-  product: IBuildProject;
+  product: IBuildParams;
+  debug: IBuildParams;
+  lock: IBuildParams;
 };
 
 export const buildProjects: IBuildProjects = {
   product: {
+    label: 'PRODUCT',
     dstDir: 'EXE',
-    gitBranch: 'india',
+    srcBranch: 'india',
     dccSwitches: '-b',
     cfgVariables: {
       d_switch: '-',
       o_switch: '+',
-      cond: 'SPLASH;MESSAGE;SYNEDIT;GEDEMIN;GED_LOC_RUS;FR4;WITH_INDY;'
+      cond: 'SPLASH;MESSAGE;SYNEDIT;GEDEMIN;GED_LOC_RUS;FR4;WITH_INDY'
     },
+    useTDSPack: true,
     incBuildNumber: true,
     commitBuildNumber: true,
     portableFilesList,
     archiveName: 'gedemin.rar',
     uploadURL: 'http://gsbelarus.com/gs/content/upload2.php',
     distrToFolder: 'BETA'
+  },
+  debug: {
+    label: 'DEBUG',
+    dstDir: 'EXE',
+    srcBranch: 'india',
+    dccSwitches: '-b -vt',
+    cfgVariables: {
+      d_switch: '+',
+      o_switch: '-',
+      cond: 'SPLASH;MESSAGE;SYNEDIT;GEDEMIN;GED_LOC_RUS;FR4;EXCMAGIC_GEDEMIN;WITH_INDY;DEBUG'
+    },
+    useTDSPack: false,
+    incBuildNumber: false,
+    commitBuildNumber: false,
+    portableFilesList,
+    archiveName: 'gedemin_debug.rar',
+    uploadURL: 'http://gsbelarus.com/gs/content/upload2.php',
+    distrToFolder: 'DEBUG'
+  },
+  lock: {
+    label: 'LOCK',
+    dstDir: 'EXE',
+    srcBranch: 'india',
+    dccSwitches: '-b',
+    cfgVariables: {
+      d_switch: '+',
+      o_switch: '-',
+      cond: 'SPLASH;MESSAGE;SYNEDIT;GEDEMIN;GED_LOC_RUS;FR4;WITH_INDY'
+    },
+    useTDSPack: true,
+    incBuildNumber: false,
+    commitBuildNumber: false,
+    portableFilesList,
+    archiveName: 'gedemin_lock.rar',
+    uploadURL: 'http://gsbelarus.com/gs/content/upload2.php',
+    distrToFolder: 'LOCK'
   }
 };
 
@@ -258,13 +307,9 @@ export interface IInstProject {
   AFN: string;
   /** TFN  -- имя файла в каталоге дистрибутива установки */
   TFN: string;
-  /** Нужен экзешник с защитой? */
-  compilationType?: CompilationType;
-  /** Нужен экзешник установленного размера */
-  setExeSize?: number;
-  /** Специфический файл ресурсов при компиляции экзешника */
-  customRcFile?: string;
-  /** имя файла установки, если отличается от setup.exe, без расширения */
+  /** */
+  buildParams: IBuildParams;
+  /** */
   setupFileName?: string;
   /** */
   demoBk?: string;
@@ -291,9 +336,7 @@ export const instProjects: IInstProjects = {
     IFN: 'kkc_positive_cash',
     AFN: 'cash_setup',
     TFN: 'Касса',
-    compilationType: 'LOCK',
-    setExeSize: 20774976,
-    customRcFile: 'gedemin_positive_cash_ver.rc',
+    buildParams: { ...buildProjects.lock, exeSize: 20774976, customRcFile: 'gedemin_positive_cash_ver.rc' },
     copyCashFiles: true
   },
   cash_server: {
@@ -302,9 +345,7 @@ export const instProjects: IInstProjects = {
     IFN: 'kkc_cash_server',
     AFN: 'cash_server_setup',
     TFN: 'Касса',
-    compilationType: 'LOCK',
-    setExeSize: 20774976,
-    customRcFile: 'gedemin_positive_cash_ver.rc',
+    buildParams: { ...buildProjects.lock, exeSize: 20774976, customRcFile: 'gedemin_positive_cash_ver.rc' },
     setupFileName: 'setup_server'
   },
   menufront: {
@@ -313,9 +354,7 @@ export const instProjects: IInstProjects = {
     IFN: 'kkc_positive_check',
     AFN: 'menufront_setup',
     TFN: 'Меню',
-    compilationType: 'LOCK',
-    setExeSize: 20774976,
-    customRcFile: 'gedemin_positive_check_ver.rc',
+    buildParams: { ...buildProjects.lock, exeSize: 20774976, customRcFile: 'gedemin_positive_check_ver.rc' },
     setupFileName: 'setup_front',
     copyCashFiles: true
   },
@@ -325,6 +364,7 @@ export const instProjects: IInstProjects = {
     IFN: 'businesslocal',
     AFN: 'compl_setup',
     TFN: 'Комплексная автоматизация',
+    buildParams: buildProjects.product,
     demoBk: 'demo.bk'
   },
   devel: {
@@ -332,14 +372,16 @@ export const instProjects: IInstProjects = {
     SFN: 'complex.jpg',
     IFN: 'devellocal',
     AFN: 'devel_setup',
-    TFN: 'Разработчик'
+    TFN: 'Разработчик',
+    buildParams: buildProjects.product,
   },
   plat: {
     FSFN: 'Банк\\Банк и касса.yml',
     SFN: 'doc.jpg',
     IFN: 'platlocal',
     AFN: 'plat_setup',
-    TFN: 'Платежные документы'
+    TFN: 'Платежные документы',
+    buildParams: buildProjects.product,
   },
   menuback: {
     FSFN: 'Меню\\2014 Бэк-офис\\GS.Общепит.back.yml',
@@ -347,6 +389,7 @@ export const instProjects: IInstProjects = {
     IFN: 'menubacklocal',
     AFN: 'menuback_setup',
     TFN: 'Меню',
+    buildParams: buildProjects.product,
     setupFileName: 'setup_back'
   },
   hotel: {
@@ -354,14 +397,16 @@ export const instProjects: IInstProjects = {
     SFN: 'doc.jpg',
     IFN: 'hotellocal',
     AFN: 'hotel_setup',
-    TFN: 'Гостиница'
+    TFN: 'Гостиница',
+    buildParams: buildProjects.product,
   },
   san: {
     FSFN: 'Санаторий\\GS.Санаторий.yml',
     SFN: 'doc.jpg',
     IFN: 'sanlocal',
     AFN: 'san_setup',
-    TFN: 'Санаторий'
+    TFN: 'Санаторий',
+    buildParams: buildProjects.product,
   }
 } as const;
 

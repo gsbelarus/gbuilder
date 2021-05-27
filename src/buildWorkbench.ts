@@ -4,6 +4,7 @@ import { open } from 'fs/promises';
 import { BuildFunc, IParams } from './types';
 import { getLogFileName } from './utils';
 import { IBot } from './bot';
+import { buildProjects } from './const';
 
 const defMaxLogSize = 10 * 1024 * 1024;
 
@@ -30,17 +31,17 @@ export const buildWorkbench = async (ug: BuildFunc, bot?: IBot, augParams?: Part
       params = { ...params, ...augParams };
     }
 
-    if (!params.compilationType) {
-      params.compilationType = 'PRODUCT';
+    if (!params.buildParams) {
+      params.buildParams = buildProjects.product;
     }
 
     for (let i = 3; i < process.argv.length; i++) {
       const p = process.argv[i].toUpperCase();
       console.info('Compilation parameter overriden through command line: ',
         p === 'DEBUG'
-          ? params.compilationType = 'DEBUG'
+          ? params.buildParams = buildProjects.debug
           : p === 'LOCK'
-          ? params.compilationType = 'LOCK'
+          ? params.buildParams = buildProjects.lock
           : p
       );
     }
