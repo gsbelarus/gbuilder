@@ -182,6 +182,7 @@ const main = async (params: IParams) => {
             await bot.broadcast(`gedemin.exe has been successfully built 🏁🏁🏁 `);
             neverBuilt = false;
           } else {
+            await bot.broadcast(`Ooops! Something went wrong ☠️`);
             return res;
           }
         }
