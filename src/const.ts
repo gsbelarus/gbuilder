@@ -256,7 +256,7 @@ export const buildProjects: IBuildProjects = {
     portableFilesList,
     archiveName: 'gedemin.rar',
     uploadURL: 'http://gsbelarus.com/gs/content/upload2.php',
-    distrToFolder: 'BETA'
+    distrToFolder: 'Beta'
   },
   debug: {
     label: 'DEBUG',
@@ -274,7 +274,7 @@ export const buildProjects: IBuildProjects = {
     portableFilesList,
     archiveName: 'gedemin_debug.rar',
     uploadURL: 'http://gsbelarus.com/gs/content/upload2.php',
-    distrToFolder: 'DEBUG'
+    distrToFolder: 'Debug'
   },
   lock: {
     label: 'LOCK',
@@ -292,7 +292,7 @@ export const buildProjects: IBuildProjects = {
     portableFilesList,
     archiveName: 'gedemin_lock.rar',
     uploadURL: 'http://gsbelarus.com/gs/content/upload2.php',
-    distrToFolder: 'LOCK'
+    distrToFolder: 'Lock'
   }
 };
 
