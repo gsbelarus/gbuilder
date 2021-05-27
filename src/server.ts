@@ -54,7 +54,7 @@ if (!ca) {
 const main = async (params: IParams) => {
   const log: ILog[] = [];
   const semaphore = new Semaphore();
-  const { pat, ciDir, srcGedeminAppsBranch, buildServerPort, buildParams } = params;
+  const { pat, ciDir, srcGedeminAppsBranch, buildServerPort } = params;
   const bot = await tg(params,
     () => `Tasks running: ${semaphore.acquired}...\nTasks in queue: ${semaphore.queueLength}...\n<a href="http://213.184.249.125:8087/log">Current log...</a>`
   );
@@ -172,25 +172,26 @@ const main = async (params: IParams) => {
 
   router.post('/webhook/gedemin', prepareHook('gedemin-private',
     async (branch) => {
-      if (branch === buildParams.srcBranch) {
-        await bot.broadcast(`I'm going to build gedemin.exe 🏗️`);
+      let neverBuilt = true;
 
-        const res =
-          await buildWorkbench(ug, bot, { buildParams: buildProjects.lock })
-          &&
-          await buildWorkbench(ug, bot, { buildParams: buildProjects.debug })
-          &&
-          await buildWorkbench(ug, bot, { buildParams: buildProjects.product });
-
-        if (res) {
-          await bot.broadcast(`gedemin.exe has been successfully built 🏁🏁🏁 `);
+      for (const buildParams of Object.values(buildProjects)) {
+        if (branch === buildParams.srcBranch) {
+          await bot.broadcast(`I'm going to build ${buildParams.label} version of gedemin.exe 🏗️`);
+          const res = await buildWorkbench(ug, bot, { buildParams });
+          if (res) {
+            await bot.broadcast(`gedemin.exe has been successfully built 🏁🏁🏁 `);
+            neverBuilt = false;
+          } else {
+            return res;
+          }
         }
-
-        return res;
-      } else {
-        await bot.broadcast(`I will build gedemin.exe only from ${buildParams.srcBranch} branch.`);
-        return true;
       }
+
+      if (neverBuilt) {
+        await bot.broadcast(`I don't build from ${branch} branch.`);
+      }
+
+      return true;
     }
   ));
 

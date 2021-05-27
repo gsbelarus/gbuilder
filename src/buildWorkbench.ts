@@ -42,6 +42,8 @@ export const buildWorkbench = async (ug: BuildFunc, bot?: IBot, augParams?: Part
           ? params.buildParams = buildProjects.debug
           : p === 'LOCK'
           ? params.buildParams = buildProjects.lock
+          : p === 'BETA_NO_ID64'
+          ? params.buildParams = buildProjects.beta_no_id64
           : p
       );
     }

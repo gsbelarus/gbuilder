@@ -237,6 +237,7 @@ interface IBuildProjects {
   product: IBuildParams;
   debug: IBuildParams;
   lock: IBuildParams;
+  beta_no_id64: IBuildParams;
 };
 
 export const buildProjects: IBuildProjects = {
@@ -293,6 +294,24 @@ export const buildProjects: IBuildProjects = {
     archiveName: 'gedemin_lock.rar',
     uploadURL: 'http://gsbelarus.com/gs/content/upload2.php',
     distrToFolder: 'Lock'
+  },
+  beta_no_id64: {
+    label: 'BETA_NO_ID64',
+    dstDir: 'EXE',
+    srcBranch: 'master',
+    dccSwitches: '-b',
+    cfgVariables: {
+      d_switch: '-',
+      o_switch: '+',
+      cond: 'SPLASH;MESSAGE;SYNEDIT;GEDEMIN;GED_LOC_RUS;FR4;WITH_INDY'
+    },
+    useTDSPack: true,
+    incBuildNumber: false,
+    commitBuildNumber: false,
+    portableFilesList,
+    archiveName: 'gedemin_beta_noid64.rar',
+    uploadURL: 'http://gsbelarus.com/gs/content/upload2.php',
+    distrToFolder: 'BetaNoID64'
   }
 };
 
@@ -416,7 +435,7 @@ interface IProject {
   rc?: string;
   loc?: 'GUDF' | 'Utility/MakeLBRBTree';
   ext?: '.dll';
-  dest?: 'EXE/UDF' | 'SQL';
+  dest?: 'EXE/UDF' | 'SQL';  // subsequence 'EXE/' will be replaced with destination directory
 };
 
 interface IProjects {

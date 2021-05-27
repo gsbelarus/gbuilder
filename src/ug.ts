@@ -35,6 +35,8 @@ export async function ug(params: IParams, log: Log) {
   const baseDir = path.join(ciDir, 'Database');
   /** */
   const archiveDir = path.join(ciDir, 'Archive');
+  /** Папка SQL-файлов для создания эталонной БД */
+  const fullDstDir = path.join(rootGedeminDir, 'Gedemin', dstDir);
 
   /**
    * Снимаем исходники с гита.
@@ -55,6 +57,7 @@ export async function ug(params: IParams, log: Log) {
     assureDir(pathDCU);
     assureDir(baseDir);
     assureDir(archiveDir);
+    assureDir(fullDstDir);
 
     log.log('everything is ok!');
   };
@@ -117,6 +120,8 @@ export async function ug(params: IParams, log: Log) {
     }
   };
 
+  const adjustDest = (dest?: string) => dest ? dest.replace('EXE/', dstDir + '/') : dstDir;
+
   /**
    * Подготавливаем CFG файл для компиляции.
    * Текущий файл сохраним с именем .current.cfg и восстановим в конце процесса.
@@ -139,7 +144,7 @@ export async function ug(params: IParams, log: Log) {
     const srcPath = gedeminSrcPath.join(';').replace(/<<DELPHI>>/gi, pathDelphi.replace(/\\/gi, '/'));
 
     let cfgBody = gedeminCfgTemplate.replace(/<<GEDEMIN_SRC_PATH>>/gi, srcPath);
-    cfgBody = cfgBody.replace('<<GEDEMIN_PROJECT_DEST>>', dest ?? dstDir);
+    cfgBody = cfgBody.replace('<<GEDEMIN_PROJECT_DEST>>', adjustDest(dest));
 
     if (project === 'gedemin') {
       const { d_switch, o_switch, cond } = cfgVariables;
@@ -167,7 +172,7 @@ export async function ug(params: IParams, log: Log) {
     const { dest, ext } = projects[project];
 
     /** Целевая папка компиляции */
-    const destDir = path.join(rootGedeminDir, 'Gedemin', dest ?? dstDir);
+    const destDir = path.join(rootGedeminDir, 'Gedemin', adjustDest(dest));
 
     /** Имя компилируемого файла */
     const destFileName = project + (ext ?? '.exe');
@@ -213,7 +218,7 @@ export async function ug(params: IParams, log: Log) {
 
   const setGedeminEXESize = async () => {
     /** Целевая папка компиляции */
-    const pathEXE = path.join(rootGedeminDir, 'Gedemin', projects['gedemin'].dest ?? dstDir);
+    const pathEXE = path.join(rootGedeminDir, 'Gedemin', adjustDest(projects['gedemin'].dest));
 
     if (exeSize) {
       const exeFullFileName = path.join(pathEXE, 'gedemin.exe');
@@ -246,14 +251,14 @@ export async function ug(params: IParams, log: Log) {
    */
   const createArhive = async () => {
     /** Целевая папка компиляции */
-    const pathEXE = path.join(rootGedeminDir, 'Gedemin', projects['gedemin'].dest ?? dstDir);
+    const pathEXE = path.join(rootGedeminDir, 'Gedemin', adjustDest(projects['gedemin'].dest));
     const lstFileName = path.join(archiveDir, 'gedemin.lst');
     await deleteFile(gedeminArchiveFileName);
     await writeFile(lstFileName, portableFilesList.join('\n'), { encoding: 'utf-8' });
     try {
       await packFiles(gedeminArchiveFileName, '@' + lstFileName, pathEXE, `portable archive has been created ${gedeminArchiveFileName}...`);
       await packFiles(etalonArchiveFileName, etalonDBFileName, baseDir, `etalon db archive has been created ${etalonArchiveFileName}...`);
-      await packFiles(gudfArchiveFileName, 'gudf.dll', path.join(rootGedeminDir, 'Gedemin', projects['gudf'].dest ?? dstDir), `gudf.dll archive has been created ${gudfArchiveFileName}...`);
+      await packFiles(gudfArchiveFileName, 'gudf.dll', path.join(rootGedeminDir, 'Gedemin', adjustDest(projects['gudf'].dest)), `gudf.dll archive has been created ${gudfArchiveFileName}...`);
     } finally {
       await unlink(lstFileName);
     }
