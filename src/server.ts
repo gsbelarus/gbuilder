@@ -14,6 +14,7 @@ import { getLogFileName } from './utils';
 import { Semaphore } from './Semaphore';
 import { PushEvent } from '@octokit/webhooks-types';
 import { tg } from './bot';
+import { buildProjects } from './const';
 
 interface ILog {
   logged: Date;
@@ -53,7 +54,7 @@ if (!ca) {
 const main = async (params: IParams) => {
   const log: ILog[] = [];
   const semaphore = new Semaphore();
-  const { pat, ciDir, srcBranch, srcGedeminAppsBranch, buildServerPort } = params;
+  const { pat, ciDir, srcGedeminAppsBranch, buildServerPort, buildParams } = params;
   const bot = await tg(params,
     () => `Tasks running: ${semaphore.acquired}...\nTasks in queue: ${semaphore.queueLength}...\n<a href="http://213.184.249.125:8087/log">Current log...</a>`
   );
@@ -171,15 +172,15 @@ const main = async (params: IParams) => {
 
   router.post('/webhook/gedemin', prepareHook('gedemin-private',
     async (branch) => {
-      if (branch === srcBranch) {
+      if (branch === buildParams.srcBranch) {
         await bot.broadcast(`I'm going to build gedemin.exe 🏗️`);
 
         const res =
-          await buildWorkbench(ug, bot, { compilationType: 'DEBUG', commitIncBuildNumber: false })
+          await buildWorkbench(ug, bot, { buildParams: buildProjects.lock })
           &&
-          await buildWorkbench(ug, bot, { compilationType: 'LOCK', commitIncBuildNumber: false })
+          await buildWorkbench(ug, bot, { buildParams: buildProjects.debug })
           &&
-          await buildWorkbench(ug, bot, { compilationType: 'PRODUCT', commitIncBuildNumber: true });
+          await buildWorkbench(ug, bot, { buildParams: buildProjects.product });
 
         if (res) {
           await bot.broadcast(`gedemin.exe has been successfully built 🏁🏁🏁 `);
@@ -187,7 +188,7 @@ const main = async (params: IParams) => {
 
         return res;
       } else {
-        await bot.broadcast(`I will build gedemin.exe only from ${srcBranch} branch.`);
+        await bot.broadcast(`I will build gedemin.exe only from ${buildParams.srcBranch} branch.`);
         return true;
       }
     }

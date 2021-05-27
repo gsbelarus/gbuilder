@@ -9,10 +9,7 @@ import { existsSync } from 'fs';
 import { unlink, copyFile, stat, readdir, appendFile, readFile, writeFile } from 'fs/promises';
 import path from 'path';
 import { Log } from './log';
-import {
-  gedeminCfgTemplate, gedeminCfgVariables, gedeminSrcPath, gedeminCompilerSwitch,
-  gedeminArchiveName, portableFilesList, projects, gedeminSQL, etalonDBFileName, getFBConnString
-} from './const';
+import { gedeminCfgTemplate,  gedeminSrcPath, portableFilesList, projects, gedeminSQL, etalonDBFileName, getFBConnString } from './const';
 import { IParams } from './types';
 import { basicExecOptions, bindLog, execFileAsync } from './utils';
 
@@ -23,8 +20,12 @@ import { basicExecOptions, bindLog, execFileAsync } from './utils';
 export async function ug(params: IParams, log: Log) {
 
   const { runProcesses, packFiles, deleteFile, assureDir, uploadFile, copyFileWithLog } = bindLog(params, log);
-  const { compilationType, setExeSize, customRcFile, ciDir, rootGedeminDir, pathDelphi, binEditbin, binFirebird,
-    upload, srcBranch, commitIncBuildNumber, fbConnect, fbUser, fbPassword, postCopyDir } = params;
+  const {
+    buildParams, ciDir, rootGedeminDir, pathDelphi, binEditbin,
+    binFirebird, upload, fbConnect, fbUser, fbPassword } = params;
+  const {
+    srcBranch, commitBuildNumber, distrToFolder, cfgVariables, exeSize,
+    useTDSPack, archiveName, dccSwitches, customRcFile, dstDir, label } = buildParams;
 
   /** В процессе компиляции DCU файлы помещаются в эту папку */
   const pathDCU = path.join(rootGedeminDir, 'Gedemin', 'DCU');
@@ -64,16 +65,21 @@ export async function ug(params: IParams, log: Log) {
     // если предыдущий заход завершился с ошибкой на середине процесса,
     // то будет конфликт изменений при выполнении git pull
     log.log(`git stash...`);
-    log.log((await execFileAsync('git', ['stash'], opt)).stdout);
+    const res = (await execFileAsync('git', ['stash'], opt)).stdout.trim();
+    log.log(res);
     log.log(`git checkout ${srcBranch}...`);
     log.log((await execFileAsync('git', ['checkout', srcBranch], opt)).stdout);
     log.log(`git pull...`);
     log.log((await execFileAsync('git', ['pull'], opt)).stdout);
+    if (res !== 'No local changes to save') {
+      log.log(`git stash pop...`);
+      log.log((await execFileAsync('git', ['stash', 'pop'], opt)).stdout);
+    }
   };
 
   /** */
   const pushIncBuildNumber = async () => {
-    if (commitIncBuildNumber) {
+    if (commitBuildNumber) {
       const opt = { ...basicExecOptions, cwd: rootGedeminDir };
       log.log(`git commit -a -m "Inc build number"...`);
       log.log((await execFileAsync('git', ['commit', '-a', '-m', 'Inc build number'], opt)).stdout);
@@ -86,13 +92,13 @@ export async function ug(params: IParams, log: Log) {
   };
 
   /** */
-  const postCopy = (project: ProjectID) => async () => {
-    if (postCopyDir && commitIncBuildNumber && project === 'gedemin') {
-      const pathEXE = path.join(rootGedeminDir, 'Gedemin', 'EXE');
+  const postCopy = async () => {
+    if (distrToFolder) {
+      const pathEXE = path.join(rootGedeminDir, 'Gedemin', dstDir);
       return Promise.all(portableFilesList.map(
-        fn => copyFileWithLog(path.join(pathEXE, fn), path.join(postCopyDir, fn))
+        fn => copyFileWithLog(path.join(pathEXE, fn), path.join(ciDir, distrToFolder, fn))
       ) );
-    }     
+    }
   };
 
   /** Очистка папки DCU */
@@ -133,10 +139,10 @@ export async function ug(params: IParams, log: Log) {
     const srcPath = gedeminSrcPath.join(';').replace(/<<DELPHI>>/gi, pathDelphi.replace(/\\/gi, '/'));
 
     let cfgBody = gedeminCfgTemplate.replace(/<<GEDEMIN_SRC_PATH>>/gi, srcPath);
-    cfgBody = cfgBody.replace('<<GEDEMIN_PROJECT_DEST>>', dest ?? 'EXE');
+    cfgBody = cfgBody.replace('<<GEDEMIN_PROJECT_DEST>>', dest ?? dstDir);
 
     if (project === 'gedemin') {
-      const { d_switch, o_switch, cond } = gedeminCfgVariables[compilationType];
+      const { d_switch, o_switch, cond } = cfgVariables;
 
       cfgBody = cfgBody.replace('<<D_SWITCH>>', d_switch);
       cfgBody = cfgBody.replace('<<O_SWITCH>>', o_switch);
@@ -161,7 +167,7 @@ export async function ug(params: IParams, log: Log) {
     const { dest, ext } = projects[project];
 
     /** Целевая папка компиляции */
-    const destDir = path.join(rootGedeminDir, 'Gedemin', dest ?? 'EXE');
+    const destDir = path.join(rootGedeminDir, 'Gedemin', dest ?? dstDir);
 
     /** Имя компилируемого файла */
     const destFileName = project + (ext ?? '.exe');
@@ -169,10 +175,10 @@ export async function ug(params: IParams, log: Log) {
 
     await deleteFile(destFullFileName);
 
-    log.log(`building ${destFileName}: dcc32 ${gedeminCompilerSwitch[compilationType]} ${project}.dpr...`);
+    log.log(`building ${destFileName}: dcc32 ${dccSwitches} ${project}.dpr...`);
     const output = (await execFileAsync(
       path.join(pathDelphi, 'Bin', 'dcc32.exe'),
-      [gedeminCompilerSwitch[compilationType], `${project}.dpr`],
+      [dccSwitches, `${project}.dpr`],
       { ...basicExecOptions, cwd: pathProject }
     )).stdout.trimEnd().split('\n');
     if (output.length) {
@@ -191,7 +197,7 @@ export async function ug(params: IParams, log: Log) {
         log.log('relocation section has been stripped from EXE file...');
       };
 
-      if (project === 'gedemin' && compilationType === 'DEBUG') {
+      if (project === 'gedemin' && useTDSPack) {
         log.log((await execFileAsync('tdspack.exe', ['-e -o -a', destFileName], exeOpt)).stdout);
         log.log('debug information has been optimized...');
       };
@@ -207,20 +213,20 @@ export async function ug(params: IParams, log: Log) {
 
   const setGedeminEXESize = async () => {
     /** Целевая папка компиляции */
-    const pathEXE = path.join(rootGedeminDir, 'Gedemin', projects['gedemin'].dest ?? 'EXE');
+    const pathEXE = path.join(rootGedeminDir, 'Gedemin', projects['gedemin'].dest ?? dstDir);
 
-    if (setExeSize) {
+    if (exeSize) {
       const exeFullFileName = path.join(pathEXE, 'gedemin.exe');
       const currentExeSize = (await stat(exeFullFileName)).size;
 
-      if (setExeSize < currentExeSize) {
+      if (exeSize < currentExeSize) {
         throw new Error(`gedemin.exe is larger then needed exe size!`);
       }
 
-      if (setExeSize > currentExeSize) {
-        const buf = Buffer.allocUnsafe(setExeSize - currentExeSize).fill(0x90);
+      if (exeSize > currentExeSize) {
+        const buf = Buffer.allocUnsafe(exeSize - currentExeSize).fill(0x90);
         await appendFile(exeFullFileName, buf);
-        log.log(`gedemin.exe size has been set to ${setExeSize}...`);
+        log.log(`gedemin.exe size has been set to ${exeSize}...`);
       }
     } else {
       log.log(`gedemin.exe size is not specified. Nothing to set...`);
@@ -228,7 +234,7 @@ export async function ug(params: IParams, log: Log) {
   };
 
   /** Файл архива */
-  const gedeminArchiveFileName = path.join(archiveDir, gedeminArchiveName[compilationType]);
+  const gedeminArchiveFileName = path.join(archiveDir, archiveName);
   const etalonArchiveFileName = path.join(archiveDir, 'etalon.rar');
   const gudfArchiveFileName = path.join(archiveDir, 'gudf.rar');
 
@@ -240,14 +246,14 @@ export async function ug(params: IParams, log: Log) {
    */
   const createArhive = async () => {
     /** Целевая папка компиляции */
-    const pathEXE = path.join(rootGedeminDir, 'Gedemin', projects['gedemin'].dest ?? 'EXE');
+    const pathEXE = path.join(rootGedeminDir, 'Gedemin', projects['gedemin'].dest ?? dstDir);
     const lstFileName = path.join(archiveDir, 'gedemin.lst');
     await deleteFile(gedeminArchiveFileName);
     await writeFile(lstFileName, portableFilesList.join('\n'), { encoding: 'utf-8' });
     try {
       await packFiles(gedeminArchiveFileName, '@' + lstFileName, pathEXE, `portable archive has been created ${gedeminArchiveFileName}...`);
       await packFiles(etalonArchiveFileName, etalonDBFileName, baseDir, `etalon db archive has been created ${etalonArchiveFileName}...`);
-      await packFiles(gudfArchiveFileName, 'gudf.dll', path.join(rootGedeminDir, 'Gedemin', projects['gudf'].dest ?? 'EXE'), `gudf.dll archive has been created ${gudfArchiveFileName}...`);
+      await packFiles(gudfArchiveFileName, 'gudf.dll', path.join(rootGedeminDir, 'Gedemin', projects['gudf'].dest ?? dstDir), `gudf.dll archive has been created ${gudfArchiveFileName}...`);
     } finally {
       await unlink(lstFileName);
     }
@@ -307,7 +313,7 @@ export async function ug(params: IParams, log: Log) {
         throw new Error(`rc file ${verRCFileName} not found!`);
       }
 
-      if (commitIncBuildNumber) {
+      if (commitBuildNumber) {
         const rcText = (await readFile(verRCFileName)).toString().trim().split('\n');
         const fvIndex = rcText.findIndex( s => s.startsWith('FILEVERSION') );
 
@@ -418,7 +424,7 @@ export async function ug(params: IParams, log: Log) {
   type ProjectID = 'gedemin' | 'gdcc' | 'gedemin_upd' | 'gudf' | 'makelbrbtree';
   const ugProjectList: ProjectID[] = ['gedemin', 'gdcc', 'gedemin_upd', 'gudf', 'makelbrbtree'];
 
-  await runProcesses(`Gedemin compilation: ${compilationType}`, [
+  await runProcesses(`Gedemin compilation: ${label}`, [
     { name: 'Check prerequisites', fn: checkPrerequisites },
     { name: 'Pull latest sources', fn: pullSources },
     { name: 'Clear DCU folder', fn: clearDCU },
@@ -432,10 +438,10 @@ export async function ug(params: IParams, log: Log) {
         { name: `Increment version for ${pr}`, fn: incVer(pr, pathProject) },
         { name: `Prepare config files for ${pr}`, fn: prepareConfigFile(pr, pathProject) },
         { name: `Build ${pr}`, fn: buildProject(pr, pathProject) },
-        { name: 'Post copy', fn: postCopy(pr) },
         { name: `Clean up after building ${pr}`, fn: cleanupConfigFile(pr, pathProject) }
       ]
     }),
+    { name: 'Post copy', fn: postCopy },
     { name: 'Set gedemin.exe size', fn: setGedeminEXESize },
     { name: 'Create etalon database', fn: createEtalonDB },
     { name: 'Create portable version archive', fn: createArhive },

@@ -1,18 +1,9 @@
-import { InstProject } from "./const";
+import { IBuildParams, InstProject } from "./const";
 import { Log } from "./log";
 
-export type CompilationType = 'PRODUCT' | 'DEBUG' | 'LOCK';
-
 export interface IParams {
-  /**
-   * Тип компиляции:
-   *    выбор файла конфигурации, ключей компиляции, файла архива
-   */
-  compilationType: CompilationType;
-  /** Установить заданный размер исполнимого файла */
-  setExeSize?: number;
   /** */
-  customRcFile?: string;
+  buildParams: IBuildParams;
   /** */
   ciDir: string;
   /**
@@ -36,12 +27,8 @@ export interface IParams {
   upload?: boolean;
   /** */
   maxLogSize?: number;
-  /** Ветка исходников Гедымина из которой будем компилировать */
-  srcBranch: string;
   /** Ветка ПИ из которых будем собирать бд для инстоляции */
   srcGedeminAppsBranch: string;
-  /** */
-  commitIncBuildNumber?: boolean;
   /** Строка подключения к серверу файреберд. Имя сервера и порт. По-умолчанию localhost/3050 */
   fbConnect?: string;
   /** Имя пользователя для подключения к серверу файреберд. По-умолчанию, SYSDBA */
@@ -56,8 +43,6 @@ export interface IParams {
   projectList: InstProject[];
   /** Токен телеграм бота */
   tgBotToken?: string;
-  /** Папка, куда копировать все файлы гедымина после успешной компиляции */
-  postCopyDir?: string;
 };
 
 export type BuildFunc = (params: IParams, log: Log) => Promise<void>;

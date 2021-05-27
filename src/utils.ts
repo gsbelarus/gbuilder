@@ -66,9 +66,10 @@ export const bindLog = (params: IParams, log: Log) => ({
     if (!existsSync(dir)) {
       mkdirSync(dir, { recursive: true });
     };
+    const op = existsSync(dest) ? 'overwritten' : 'copied';
     await copyFile(src, dest);
     const { size } = await stat(dest);
-    log.log(`copied: ${src} --> ${dest}, ${size.toLocaleString(undefined, { maximumFractionDigits: 0 })} bytes...`);
+    log.log(`${op}: ${src} --> ${dest}, ${size.toLocaleString(undefined, { maximumFractionDigits: 0 })} bytes...`);
   },
 
   uploadFile: async (fn: string, url: string) => {
