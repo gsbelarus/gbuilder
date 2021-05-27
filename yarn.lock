@@ -107,10 +107,10 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@octokit/openapi-types@npm:^7.0.0":
-  version: 7.0.0
-  resolution: "@octokit/openapi-types@npm:7.0.0"
-  checksum: 703727ff2e1956c353350628cdbc54f7c206cd363908b887b632c7b7c8840e7d25528442485f77d3c7059c85ed3797de9083fdfd036b1d8f752bbd1bb12979ec
+"@octokit/openapi-types@npm:^7.2.0":
+  version: 7.2.1
+  resolution: "@octokit/openapi-types@npm:7.2.1"
+  checksum: 4bf89367c4e211f7cfa9561d5534cff272ee6293407bb4ad50055786eac8fc54a799123d58aef7d4e616aa12ff5d1d32dd9fa65030b5f39ceb3f0f88423ff306
   languageName: node
   linkType: hard
 
@@ -150,12 +150,12 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@octokit/types@npm:^6.14.2":
-  version: 6.14.2
-  resolution: "@octokit/types@npm:6.14.2"
+"@octokit/types@npm:^6.16.0":
+  version: 6.16.0
+  resolution: "@octokit/types@npm:6.16.0"
   dependencies:
-    "@octokit/openapi-types": ^7.0.0
-  checksum: b717cb855c7ea65b721452e278d6543a0cbe9729f9dc1fa02da93d726202e6526f95f21870ef0c67d7dceeb769e4ff183f650f362aceb6bd6b766caa781ca025
+    "@octokit/openapi-types": ^7.2.0
+  checksum: e24da19b64b6ce856b55d6e614de7675431eaecb13e507cb9e58ba3c5e288d114d10b186ad8c93c872d59de62b21b93becd96e43b284b77843745f107b627ee8
   languageName: node
   linkType: hard
 
@@ -166,22 +166,29 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@octokit/webhooks-types@npm:3.74.0, @octokit/webhooks-types@npm:^3.74.0":
-  version: 3.74.0
-  resolution: "@octokit/webhooks-types@npm:3.74.0"
-  checksum: 246083916aecdcb12887d3e4a1f08f6e9feb79f511b86e9d4363a563c5d2c2803eecb0e871dbc56ae2b9235fcebe8d8c9984e3d628103cd9470067a3cd879753
+"@octokit/webhooks-types@npm:3.75.1":
+  version: 3.75.1
+  resolution: "@octokit/webhooks-types@npm:3.75.1"
+  checksum: b5bc25a696dfc9f9cc092eecf47a8619bb9facbda65a284bf5b3b96720c9a44f08ed7ce92d4034440d3886bdc86e2fa286ef7291c4b64283802c48f2b3193601
   languageName: node
   linkType: hard
 
-"@octokit/webhooks@npm:^9.6.0":
-  version: 9.6.0
-  resolution: "@octokit/webhooks@npm:9.6.0"
+"@octokit/webhooks-types@npm:^3.75.2":
+  version: 3.75.2
+  resolution: "@octokit/webhooks-types@npm:3.75.2"
+  checksum: aaeb17a4828766d42be5363cd994405c1185bc97d47559965b625552eaaa9d2b5bd91f8de69ede4359becfa7490fbf721b158c90edf691c4c86cad97d06faaf0
+  languageName: node
+  linkType: hard
+
+"@octokit/webhooks@npm:^9.6.2":
+  version: 9.6.2
+  resolution: "@octokit/webhooks@npm:9.6.2"
   dependencies:
     "@octokit/request-error": ^2.0.2
     "@octokit/webhooks-methods": ^1.0.0
-    "@octokit/webhooks-types": 3.74.0
+    "@octokit/webhooks-types": 3.75.1
     aggregate-error: ^3.1.0
-  checksum: 5ed275f36751cb06ed33546e028b26bc31c31fe8dd36f9716a439553aa3a98c9a33f00a1191a903d2db958308cf525d8664169913958b45447dbfb9662c78ecb
+  checksum: e5a23fae74a8978327545d6c80b27f8688f437dadb042b98ab8431ab366fdac7e653ecbcbd0fc2608e35c57498c7bad23aec391b17350385a0894e48da6b13d7
   languageName: node
   linkType: hard
 
@@ -198,6 +205,34 @@ __metadata:
   dependencies:
     defer-to-connect: ^2.0.0
   checksum: 13d8f71dbd792b620b2cd13d72d086ef031ebefd5263a9db2f34693a32e4d90920fa1d7075cd59bf0c9810b2b1b93ad36d89fc88aba4cd3b8022df7ecc5ffdec
+  languageName: node
+  linkType: hard
+
+"@tsconfig/node10@npm:^1.0.7":
+  version: 1.0.7
+  resolution: "@tsconfig/node10@npm:1.0.7"
+  checksum: a1ca75224357c60829533061f9be6898a2df02cb0e360a356112070596ffa6102c56964d195023d5abb451e22473ceb7e138c82025ae84c7b5a1f69259e5f8a4
+  languageName: node
+  linkType: hard
+
+"@tsconfig/node12@npm:^1.0.7":
+  version: 1.0.7
+  resolution: "@tsconfig/node12@npm:1.0.7"
+  checksum: 82b0352f66bb84afcf4fe4d771d25dcdc2fbfd0dcd6c5efe475830e0df6806d687bdde3aba52d5c4d2d4dfee252093ed5cfc27a3fc47dc389a3f4fb0ea323390
+  languageName: node
+  linkType: hard
+
+"@tsconfig/node14@npm:^1.0.0":
+  version: 1.0.0
+  resolution: "@tsconfig/node14@npm:1.0.0"
+  checksum: 3eda14250ed8a03910ce822056f0d2fc2bcf41d9f1f3c6b202a6b32277dc638f475425fe7a1c03fbdba4e7f3b89668ecbac92d101c9e9fb56018c098393759ec
+  languageName: node
+  linkType: hard
+
+"@tsconfig/node16@npm:^1.0.1":
+  version: 1.0.1
+  resolution: "@tsconfig/node16@npm:1.0.1"
+  checksum: c389a4a81c291a27b96705de7fbe46d29aa4eb771450a41dfc075d89e1fdd63141898043a0d9f627460a1c409d06635a044dc4b3a4516173769a7d0a1558c51d
   languageName: node
   linkType: hard
 
@@ -382,10 +417,10 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@types/node@npm:^15.0.3":
-  version: 15.0.3
-  resolution: "@types/node@npm:15.0.3"
-  checksum: 72bfbac4282443a7b5d5b43c7c39fe855aa1687b5fa5629b735fd2ceacf371b711ccfc956c8af1b1cbd9c74c79be845a801a4c7275048f340aa0df3beec6b10f
+"@types/node@npm:^15.6.1":
+  version: 15.6.1
+  resolution: "@types/node@npm:15.6.1"
+  checksum: 07b3855bc0a1ba2215455a3ef4ed5e88711321b3cdc0ba1ea0286f6facbdf61530970b9fa7eec79eb1d46231f986c21ef3b7c1f1e0c365cf1b887d76b0addb86
   languageName: node
   linkType: hard
 
@@ -723,19 +758,19 @@ __metadata:
   dependencies:
     "@koa/router": ^10.0.0
     "@octokit/core": ^3.4.0
-    "@octokit/types": ^6.14.2
-    "@octokit/webhooks": ^9.6.0
-    "@octokit/webhooks-types": ^3.74.0
+    "@octokit/types": ^6.16.0
+    "@octokit/webhooks": ^9.6.2
+    "@octokit/webhooks-types": ^3.75.2
     "@types/koa": ^2.13.1
     "@types/koa__router": ^8.0.4
-    "@types/node": ^15.0.3
+    "@types/node": ^15.6.1
     "@yarnpkg/pnpify": ^3.0.0-rc.3
     dateformat: ^4.5.1
     form-data: ^4.0.0
     koa: ^2.13.1
     koa-bodyparser: ^4.3.0
     telegraf: ^4.3.0
-    ts-node: ^9.1.1
+    ts-node: ^10.0.0
     typescript: ^4.2.4
   languageName: unknown
   linkType: soft
@@ -2204,10 +2239,14 @@ __metadata:
   languageName: node
   linkType: hard
 
-"ts-node@npm:^9.1.1":
-  version: 9.1.1
-  resolution: "ts-node@npm:9.1.1"
+"ts-node@npm:^10.0.0":
+  version: 10.0.0
+  resolution: "ts-node@npm:10.0.0"
   dependencies:
+    "@tsconfig/node10": ^1.0.7
+    "@tsconfig/node12": ^1.0.7
+    "@tsconfig/node14": ^1.0.0
+    "@tsconfig/node16": ^1.0.1
     arg: ^4.1.0
     create-require: ^1.1.0
     diff: ^4.0.1
@@ -2215,13 +2254,22 @@ __metadata:
     source-map-support: ^0.5.17
     yn: 3.1.1
   peerDependencies:
+    "@swc/core": ">=1.2.45"
+    "@swc/wasm": ">=1.2.45"
+    "@types/node": "*"
     typescript: ">=2.7"
+  peerDependenciesMeta:
+    "@swc/core":
+      optional: true
+    "@swc/wasm":
+      optional: true
   bin:
     ts-node: dist/bin.js
+    ts-node-cwd: dist/bin-cwd.js
     ts-node-script: dist/bin-script.js
     ts-node-transpile-only: dist/bin-transpile.js
     ts-script: dist/bin-script-deprecated.js
-  checksum: a90db4a342872cd0e7a80babdfcb15d2f7c06e700d735003098f7cc79db575c3380580c58a19ae0d0eaab553af083651d4237060c92170e6f8ac4e64693113ea
+  checksum: dc461e2b9b931b00ff065530a0247f86da1d035e72a7ef6d7ed072dd8e6b236d1879f113dcc73a354d240c81b6b845445c3d32b16eeb68022ed27ab6d130c049
   languageName: node
   linkType: hard
 
