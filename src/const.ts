@@ -299,13 +299,13 @@ export const buildProjects: IBuildProjects = {
     label: 'BETA_NO_ID64',
     dstDir: 'EXE',
     srcBranch: 'master',
-    dccSwitches: '-b',
+    dccSwitches: '-b -vt',
     cfgVariables: {
-      d_switch: '-',
-      o_switch: '+',
-      cond: 'SPLASH;MESSAGE;SYNEDIT;GEDEMIN;GED_LOC_RUS;FR4;WITH_INDY'
+      d_switch: '+',
+      o_switch: '-',
+      cond: 'SPLASH;MESSAGE;SYNEDIT;GEDEMIN;GED_LOC_RUS;FR4;EXCMAGIC_GEDEMIN;WITH_INDY;DEBUG'
     },
-    useTDSPack: true,
+    useTDSPack: false,
     incBuildNumber: false,
     commitBuildNumber: false,
     portableFilesList,
