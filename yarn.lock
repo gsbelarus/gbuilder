@@ -107,10 +107,10 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@octokit/openapi-types@npm:^7.2.0":
-  version: 7.2.1
-  resolution: "@octokit/openapi-types@npm:7.2.1"
-  checksum: 4bf89367c4e211f7cfa9561d5534cff272ee6293407bb4ad50055786eac8fc54a799123d58aef7d4e616aa12ff5d1d32dd9fa65030b5f39ceb3f0f88423ff306
+"@octokit/openapi-types@npm:^7.2.3":
+  version: 7.2.3
+  resolution: "@octokit/openapi-types@npm:7.2.3"
+  checksum: 2fdaaabce868aaa51980baf787c05af12fe1d963ab10e2ec967fe75af523314ccf364abb56d5aecb9b0711ebd06a8e4b91ed2c205bbe4b12cd70831cbcfdf31a
   languageName: node
   linkType: hard
 
@@ -150,12 +150,12 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@octokit/types@npm:^6.16.0":
-  version: 6.16.0
-  resolution: "@octokit/types@npm:6.16.0"
+"@octokit/types@npm:^6.16.2":
+  version: 6.16.2
+  resolution: "@octokit/types@npm:6.16.2"
   dependencies:
-    "@octokit/openapi-types": ^7.2.0
-  checksum: e24da19b64b6ce856b55d6e614de7675431eaecb13e507cb9e58ba3c5e288d114d10b186ad8c93c872d59de62b21b93becd96e43b284b77843745f107b627ee8
+    "@octokit/openapi-types": ^7.2.3
+  checksum: b9cf7c0482fbce388a78fb7a7b86b012091087d27e831b428abaa8fbcf9a5c255fa39ab14658b8653e8b639895c00b75849d276fc74c033ee0cdd7046d0ad0e5
   languageName: node
   linkType: hard
 
@@ -166,29 +166,22 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@octokit/webhooks-types@npm:3.75.1":
-  version: 3.75.1
-  resolution: "@octokit/webhooks-types@npm:3.75.1"
-  checksum: b5bc25a696dfc9f9cc092eecf47a8619bb9facbda65a284bf5b3b96720c9a44f08ed7ce92d4034440d3886bdc86e2fa286ef7291c4b64283802c48f2b3193601
-  languageName: node
-  linkType: hard
-
-"@octokit/webhooks-types@npm:^3.75.2":
+"@octokit/webhooks-types@npm:3.75.2, @octokit/webhooks-types@npm:^3.75.2":
   version: 3.75.2
   resolution: "@octokit/webhooks-types@npm:3.75.2"
   checksum: aaeb17a4828766d42be5363cd994405c1185bc97d47559965b625552eaaa9d2b5bd91f8de69ede4359becfa7490fbf721b158c90edf691c4c86cad97d06faaf0
   languageName: node
   linkType: hard
 
-"@octokit/webhooks@npm:^9.6.2":
-  version: 9.6.2
-  resolution: "@octokit/webhooks@npm:9.6.2"
+"@octokit/webhooks@npm:^9.6.3":
+  version: 9.6.3
+  resolution: "@octokit/webhooks@npm:9.6.3"
   dependencies:
     "@octokit/request-error": ^2.0.2
     "@octokit/webhooks-methods": ^1.0.0
-    "@octokit/webhooks-types": 3.75.1
+    "@octokit/webhooks-types": 3.75.2
     aggregate-error: ^3.1.0
-  checksum: e5a23fae74a8978327545d6c80b27f8688f437dadb042b98ab8431ab366fdac7e653ecbcbd0fc2608e35c57498c7bad23aec391b17350385a0894e48da6b13d7
+  checksum: cb9a5106efe144606ea2f7527506a1da4e76f09fcfceceb47da0578a748f0648206d08f231dbbee21ee4cba7c6ee773cb424a88b4d5a55995f60bf5e1b1279ef
   languageName: node
   linkType: hard
 
@@ -371,7 +364,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@types/koa@npm:*, @types/koa@npm:^2.13.1":
+"@types/koa@npm:*":
   version: 2.13.1
   resolution: "@types/koa@npm:2.13.1"
   dependencies:
@@ -384,6 +377,22 @@ __metadata:
     "@types/koa-compose": "*"
     "@types/node": "*"
   checksum: ba0ccaecc7132b6bdbf83da2f40456f935d04e2eb4270b2c69fc79eee5ab1dc06c9fa08525b6e4bebacc9432cbab918a00102a5f92f210a7c7e50c7b035fca78
+  languageName: node
+  linkType: hard
+
+"@types/koa@npm:^2.13.3":
+  version: 2.13.3
+  resolution: "@types/koa@npm:2.13.3"
+  dependencies:
+    "@types/accepts": "*"
+    "@types/content-disposition": "*"
+    "@types/cookies": "*"
+    "@types/http-assert": "*"
+    "@types/http-errors": "*"
+    "@types/keygrip": "*"
+    "@types/koa-compose": "*"
+    "@types/node": "*"
+  checksum: 0ad6026adefd1dbdec014d1618c153722b5d585ef346ec09cb54f745c38ad6cb9a49b5a4f2d850d549d7c28f2122a05d0ab4d6eb58781d03903cd46a24f21b31
   languageName: node
   linkType: hard
 
@@ -758,10 +767,10 @@ __metadata:
   dependencies:
     "@koa/router": ^10.0.0
     "@octokit/core": ^3.4.0
-    "@octokit/types": ^6.16.0
-    "@octokit/webhooks": ^9.6.2
+    "@octokit/types": ^6.16.2
+    "@octokit/webhooks": ^9.6.3
     "@octokit/webhooks-types": ^3.75.2
-    "@types/koa": ^2.13.1
+    "@types/koa": ^2.13.3
     "@types/koa__router": ^8.0.4
     "@types/node": ^15.6.1
     "@yarnpkg/pnpify": ^3.0.0-rc.3
