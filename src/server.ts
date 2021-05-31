@@ -92,8 +92,8 @@ const main = async (params: IParams) => {
 
   const bot = await tg(params,
     () => `Tasks running: ${semaphore.acquired}...\nTasks in queue: ${semaphore.queueLength}...\n<a href="http://213.184.249.125:8087/log">Current log...</a>`,
-    compileGedemin,
-    makeSetup
+    () => setImmediate( () => run( () => compileGedemin('master') ) ),
+    () => setImmediate( () => run( () => makeSetup('master') ) )
   );
 
   console.log('Telegram bot has been successfully started!');
@@ -131,7 +131,7 @@ const main = async (params: IParams) => {
       </html>`;
   });
 
-  const run = async (fn: () => Promise<void>) => {
+  const run = async (fn: () => Promise<any>) => {
     await semaphore.acquire();
     try {
       await fn();

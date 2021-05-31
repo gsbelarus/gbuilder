@@ -50,7 +50,7 @@ const writeBotUsers = (fn: string, botUsers: IBotUsers) => {
   writeFileSync(fn, JSON.stringify(botUsers, undefined, 2), { encoding: 'utf-8' });
 };
 
-type CompileFn = (branch: string) => Promise<boolean>;
+type CompileFn = () => void;
 
 export const tg = async (params: IParams, getStatus: () => string, compileGedemin: CompileFn, makeSetup: CompileFn): Promise<IBot> => {
   const { tgBotToken, ciDir } = params;
@@ -83,8 +83,8 @@ Send me /log command to see what is going on right now or has gone wrong.
   });
 
   bot.command('log', async (ctx) => ctx.reply(`Users subscribed: ${botUsers.data.length}...\n${getStatus()}`, { parse_mode: 'HTML' }) );
-  bot.command('compileGedemin', async () => compileGedemin('master') );
-  bot.command('makeSetup', async () => makeSetup('master') );
+  bot.command('compileGedemin', compileGedemin );
+  bot.command('makeSetup', makeSetup );
 
   await bot.launch();
 
