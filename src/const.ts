@@ -285,7 +285,7 @@ export const buildProjects: IBuildProjects = {
     cfgVariables: {
       d_switch: '+',
       o_switch: '-',
-      cond: 'SPLASH;MESSAGE;SYNEDIT;GEDEMIN;GED_LOC_RUS;FR4;WITH_INDY'
+      cond: 'SPLASH;MESSAGE;SYNEDIT;GEDEMIN;GED_LOC_RUS;FR4;WITH_INDY;GEDEMIN_LOCK'
     },
     useTDSPack: true,
     incBuildNumber: false,
@@ -303,7 +303,7 @@ export const buildProjects: IBuildProjects = {
     cfgVariables: {
       d_switch: '+',
       o_switch: '-',
-      cond: 'SPLASH;MESSAGE;SYNEDIT;GEDEMIN;GED_LOC_RUS;FR4;EXCMAGIC_GEDEMIN;WITH_INDY;DEBUG'
+      cond: 'SPLASH;MESSAGE;SYNEDIT;GEDEMIN;GED_LOC_RUS;FR4;EXCMAGIC_GEDEMIN;WITH_INDY;DEBUG;DUNIT_TEST'
     },
     useTDSPack: false,
     incBuildNumber: false,
