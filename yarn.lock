@@ -166,22 +166,22 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@octokit/webhooks-types@npm:3.75.2, @octokit/webhooks-types@npm:^3.75.2":
-  version: 3.75.2
-  resolution: "@octokit/webhooks-types@npm:3.75.2"
-  checksum: aaeb17a4828766d42be5363cd994405c1185bc97d47559965b625552eaaa9d2b5bd91f8de69ede4359becfa7490fbf721b158c90edf691c4c86cad97d06faaf0
+"@octokit/webhooks-types@npm:3.77.1, @octokit/webhooks-types@npm:^3.77.1":
+  version: 3.77.1
+  resolution: "@octokit/webhooks-types@npm:3.77.1"
+  checksum: 0c81ea4ba7f8316a463fd4f097b8723e444d4abd91a56a269f487814ab9a2b248f18b678ecef981213eaa5238d73436fced076b1413464fe590b322fec441ed9
   languageName: node
   linkType: hard
 
-"@octokit/webhooks@npm:^9.6.3":
-  version: 9.6.3
-  resolution: "@octokit/webhooks@npm:9.6.3"
+"@octokit/webhooks@npm:^9.7.0":
+  version: 9.7.0
+  resolution: "@octokit/webhooks@npm:9.7.0"
   dependencies:
     "@octokit/request-error": ^2.0.2
     "@octokit/webhooks-methods": ^1.0.0
-    "@octokit/webhooks-types": 3.75.2
+    "@octokit/webhooks-types": 3.77.1
     aggregate-error: ^3.1.0
-  checksum: cb9a5106efe144606ea2f7527506a1da4e76f09fcfceceb47da0578a748f0648206d08f231dbbee21ee4cba7c6ee773cb424a88b4d5a55995f60bf5e1b1279ef
+  checksum: b024ffd4dca15081045892117a0c3eb587f8cc6087d65bf59e5fe6c0eda44416109e47ab9f6d5ff920dcb2714b6c5910a33e8956268949ba0137d74dcd460eca
   languageName: node
   linkType: hard
 
@@ -426,10 +426,10 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@types/node@npm:^15.6.1":
-  version: 15.6.1
-  resolution: "@types/node@npm:15.6.1"
-  checksum: 07b3855bc0a1ba2215455a3ef4ed5e88711321b3cdc0ba1ea0286f6facbdf61530970b9fa7eec79eb1d46231f986c21ef3b7c1f1e0c365cf1b887d76b0addb86
+"@types/node@npm:^15.12.2":
+  version: 15.12.2
+  resolution: "@types/node@npm:15.12.2"
+  checksum: 26b9170eb825656751955e919dcea7963d1be4d1eba361c67e41b51a55436c51d69d63f49ee98aaf4fe2e0e5eb3c0038408a8f542316b7583e9badf4fdd10024
   languageName: node
   linkType: hard
 
@@ -768,11 +768,11 @@ __metadata:
     "@koa/router": ^10.0.0
     "@octokit/core": ^3.4.0
     "@octokit/types": ^6.16.2
-    "@octokit/webhooks": ^9.6.3
-    "@octokit/webhooks-types": ^3.75.2
+    "@octokit/webhooks": ^9.7.0
+    "@octokit/webhooks-types": ^3.77.1
     "@types/koa": ^2.13.3
     "@types/koa__router": ^8.0.4
-    "@types/node": ^15.6.1
+    "@types/node": ^15.12.2
     "@yarnpkg/pnpify": ^3.0.0-rc.3
     dateformat: ^4.5.1
     form-data: ^4.0.0
