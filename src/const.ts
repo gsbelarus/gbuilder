@@ -225,6 +225,8 @@ export interface IBuildParams {
   portableFilesList: string[];
   /** */
   archiveName: string;
+  gudfArchiveName?: string;
+  etalonArchiveName?: string;
   /** */
   uploadURL: string;
   /** */
@@ -308,6 +310,8 @@ export const buildProjects: IBuildProjects = {
     commitBuildNumber: false,
     portableFilesList,
     archiveName: 'gedemin_beta_noid64.rar',
+    gudfArchiveName: 'gudf_beta_noid64.rar',
+    etalonArchiveName: 'etalon_beta_noid64.rar',
     uploadURL: 'http://gsbelarus.com/gs/content/upload2.php',
     distrToFolder: 'BetaNoID64'
   }

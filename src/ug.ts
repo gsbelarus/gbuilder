@@ -24,8 +24,8 @@ export async function ug(params: IParams, log: Log) {
     buildParams, ciDir, rootGedeminDir, pathDelphi, binEditbin,
     binFirebird, upload, fbConnect, fbUser, fbPassword } = params;
   const {
-    srcBranch, commitBuildNumber, distrToFolder, cfgVariables, exeSize,
-    useTDSPack, archiveName, dccSwitches, customRcFile, dstDir, label } = buildParams;
+    srcBranch, commitBuildNumber, distrToFolder, cfgVariables, exeSize, useTDSPack,
+    archiveName, gudfArchiveName, etalonArchiveName, dccSwitches, customRcFile, dstDir, label } = buildParams;
 
   /** В процессе компиляции DCU файлы помещаются в эту папку */
   const pathDCU = path.join(rootGedeminDir, 'Gedemin', 'DCU');
@@ -65,31 +65,32 @@ export async function ug(params: IParams, log: Log) {
   /** Снятие из гита последних исходников */
   const pullSources = async () => {
     const opt = { ...basicExecOptions, cwd: rootGedeminDir };
-    // если предыдущий заход завершился с ошибкой на середине процесса,
-    // то будет конфликт изменений при выполнении git pull
-    log.log(`git stash...`);
-    const res = (await execFileAsync('git', ['stash'], opt)).stdout.trim();
-    log.log(res);
+
+    const res = (await execFileAsync('git', ['status', '-uno'], opt)).stdout.trim();
+
+    if (!res.includes('nothing to commit')) {
+      log.log(res);
+      throw new Error('There are uncommitted changes');
+    }
+
     log.log(`git checkout ${srcBranch}...`);
     log.log((await execFileAsync('git', ['checkout', srcBranch], opt)).stdout);
     log.log(`git pull...`);
     log.log((await execFileAsync('git', ['pull'], opt)).stdout);
-    if (res !== 'No local changes to save') {
-      log.log(`git stash pop...`);
-      log.log((await execFileAsync('git', ['stash', 'pop'], opt)).stdout);
-    }
   };
 
   /** */
   const pushIncBuildNumber = async () => {
+    const opt = { ...basicExecOptions, cwd: rootGedeminDir };
     if (commitBuildNumber) {
-      const opt = { ...basicExecOptions, cwd: rootGedeminDir };
       log.log(`git commit -a -m "Inc build number"...`);
       log.log((await execFileAsync('git', ['commit', '-a', '-m', 'Inc build number'], opt)).stdout);
       log.log(`git push...`);
       const s = (await execFileAsync('git', ['push'], opt)).stdout.trim();
       s && log.log(s);
     } else {
+      // discard local changes to derivative files
+      await execFileAsync('git', ['checkout', '--', '*'], opt);
       log.log('local changes are not committed...')
     }
   };
@@ -240,8 +241,8 @@ export async function ug(params: IParams, log: Log) {
 
   /** Файл архива */
   const gedeminArchiveFileName = path.join(archiveDir, archiveName);
-  const etalonArchiveFileName = path.join(archiveDir, 'etalon.rar');
-  const gudfArchiveFileName = path.join(archiveDir, 'gudf.rar');
+  const etalonArchiveFileName = path.join(archiveDir, etalonArchiveName ?? 'etalon.rar');
+  const gudfArchiveFileName = path.join(archiveDir, gudfArchiveName ?? 'gudf.rar');
 
   /**
    *  Формирование/синхронизация архива по файлу списка gedemin.lst
