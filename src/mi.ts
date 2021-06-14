@@ -139,7 +139,7 @@ async function _mi(params: IParams, log: Log) {
     log.log(`setup file ${setupFullFileName} has been created...`);
 
     const arcFullFileName = path.join(archiveDir, AFN + '.rar');
-    await packFiles(arcFullFileName, setupFullFileName, distribDir);
+    await packFiles(arcFullFileName, setupFullFileName, setupPath);
 
     // portable archive
     Promise.all(
