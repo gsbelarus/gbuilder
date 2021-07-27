@@ -126,7 +126,8 @@ async function _mi(params: IParams, log: Log) {
 
     const outputName = setupFileName || 'setup';
     const setupPath = path.join(distribDir, TFN);
-    const setupFullFileName = path.join(setupPath, outputName + '.exe');
+    const setupFileNameWithExt = outputName + '.exe';
+    const setupFullFileName = path.join(setupPath, setupFileNameWithExt);
 
     const issFileName = IFN + '.iss';
     const output = (await execAsync(
@@ -139,7 +140,7 @@ async function _mi(params: IParams, log: Log) {
     log.log(`setup file ${setupFullFileName} has been created...`);
 
     const arcFullFileName = path.join(archiveDir, AFN + '.rar');
-    await packFiles(arcFullFileName, setupFullFileName, setupPath);
+    await packFiles(arcFullFileName, setupFileNameWithExt, setupPath);
 
     // portable archive
     Promise.all(

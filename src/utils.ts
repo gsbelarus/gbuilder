@@ -22,13 +22,13 @@ export const bindLog = (params: IParams, log: Log) => ({
     log.finishProcess(true);
   },
 
-  packFiles: async (arcName: string, fileName: string, cwd: string, msg?: string) => {
+  packFiles: async (arcName: string, fileOrDirName: string, cwd: string, msg?: string) => {
     if (existsSync(arcName)) {
       await unlink(arcName);
     }
 
     const s = (await execFileAsync(path.join(params.binWinRAR, 'WinRAR.exe'),
-      [ 'a', '-u', '-as', '-ibck', arcName, fileName ],
+      [ 'a', '-u', '-as', '-ibck', arcName, fileOrDirName ],
       { ...basicExecOptions, cwd })).stdout.trim();
     s && log.log(s);
 
