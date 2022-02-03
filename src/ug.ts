@@ -69,8 +69,12 @@ export async function ug(params: IParams, log: Log) {
     const res = (await execFileAsync('git', ['status', '-uno'], opt)).stdout.trim();
 
     if (!res.includes('nothing to commit')) {
+      // обычно, незакомиченные изменения это файлы с инкрементированной версией
+      // оставшиеся от предыдущего запуска, завершившегося ошибкой
       log.log(res);
-      throw new Error('There are uncommitted changes');
+      log.log('uncommitted changes will be lost...');
+      log.log(`git reset --hard HEAD...`);
+      log.log((await execFileAsync('git', ['reset', '--hard', 'HEAD'], opt)).stdout);
     }
 
     log.log(`git checkout ${srcBranch}...`);
@@ -163,9 +167,11 @@ export async function ug(params: IParams, log: Log) {
       cfgBody = cfgBody.replace(/\.\.\//gi,'../../');
     }
 
-    await writeFile(cfgFileName, cfgBody.trim());
+    const cfg = cfgBody.trim();
+    await writeFile(cfgFileName, cfg);
 
     log.log(`Configuration file has been prepared and saved as ${cfgFileName}...`);
+    //log.log(cfg);
   };
 
   /** Компиляция проекта по заданному типу */
@@ -181,17 +187,18 @@ export async function ug(params: IParams, log: Log) {
 
     await deleteFile(destFullFileName);
 
-    log.log(`building ${destFileName}: dcc32 ${dccSwitches} ${project}.dpr...`);
+    log.log(`building ${destFileName}: dcc32 ${dccSwitches.join(' ')} ${project}.dpr...`);
     const output = (await execFileAsync(
       path.join(pathDelphi, 'Bin', 'dcc32.exe'),
-      [dccSwitches, `${project}.dpr`],
+      [...dccSwitches, `${project}.dpr`],
       { ...basicExecOptions, cwd: pathProject }
     )).stdout.trimEnd().split('\n');
     if (output.length) {
       log.log(output[0]);
       log.log(output[output.length - 1]);
     }
-    log.log(`${destFileName} has been built...`);
+    const destFileSize = (await stat(destFullFileName)).size;
+    log.log(`${destFullFileName} has been built. File size: ${destFileSize}...`);
 
     const exeOpt = { ...basicExecOptions, cwd: destDir };
 

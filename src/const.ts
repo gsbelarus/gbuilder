@@ -204,7 +204,7 @@ export interface IBuildParams {
   /** git branch */
   srcBranch: string;
   /** ключи компилятора командной строки */
-  dccSwitches: string;
+  dccSwitches: string[];
   /** */
   cfgVariables: {
     d_switch: '-' | '+';
@@ -245,7 +245,7 @@ export const buildProjects: IBuildProjects = {
     label: 'PRODUCT',
     dstDir: 'EXE',
     srcBranch: 'india',
-    dccSwitches: '-b',
+    dccSwitches: ['-b'],
     cfgVariables: {
       d_switch: '-',
       o_switch: '+',
@@ -263,7 +263,7 @@ export const buildProjects: IBuildProjects = {
     label: 'DEBUG',
     dstDir: 'EXE',
     srcBranch: 'india',
-    dccSwitches: '-b -vt',
+    dccSwitches: ['-b', '-v'],
     cfgVariables: {
       d_switch: '+',
       o_switch: '-',
@@ -281,7 +281,7 @@ export const buildProjects: IBuildProjects = {
     label: 'LOCK',
     dstDir: 'EXE',
     srcBranch: 'india',
-    dccSwitches: '-b',
+    dccSwitches: ['-b'],
     cfgVariables: {
       d_switch: '+',
       o_switch: '-',
@@ -299,15 +299,15 @@ export const buildProjects: IBuildProjects = {
     label: 'BETA_NO_ID64',
     dstDir: 'EXE',
     srcBranch: 'master',
-    dccSwitches: '-b -vt',
+    dccSwitches: ['-b', '-v'],
     cfgVariables: {
       d_switch: '+',
       o_switch: '-',
       cond: 'SPLASH;MESSAGE;SYNEDIT;GEDEMIN;GED_LOC_RUS;FR4;EXCMAGIC_GEDEMIN;WITH_INDY;DEBUG;_DUNIT_TEST'
     },
     useTDSPack: false,
-    incBuildNumber: false,
-    commitBuildNumber: false,
+    incBuildNumber: true,
+    commitBuildNumber: true,
     portableFilesList,
     archiveName: 'gedemin_beta_noid64.rar',
     gudfArchiveName: 'gudf_beta_noid64.rar',

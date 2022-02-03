@@ -11,6 +11,8 @@ import { promisify } from 'util';
 export const execFileAsync = promisify(execFile);
 export const execAsync = promisify(exec);
 
+export const sleep = (ms: number) => new Promise( resolve => setTimeout(resolve, ms) );
+
 export const bindLog = (params: IParams, log: Log) => ({
   runProcesses: async (name: string, processes: Processes) => {
     log.startProcess(name, processes.length);
@@ -67,7 +69,26 @@ export const bindLog = (params: IParams, log: Log) => ({
       mkdirSync(dir, { recursive: true });
     };
     const op = existsSync(dest) ? 'overwritten' : 'copied';
-    await copyFile(src, dest);
+    let firstTry = true;
+    // у нас параллельно гедымин может этот файл пытаться отослать по сети
+    while (true) {
+      try {
+        await copyFile(src, dest);
+        break;
+      } catch (err) {
+        if (firstTry) {
+          firstTry = false;
+          log.log(`probably file ${dest} is held by another process...`)
+          log.log(err.message);
+          log.log('will make second attempt in 30 sec...')
+          await sleep(30000);
+        } else {
+          log.error(`can't copy file ${dest}...`)
+          log.error(err.message);
+          return;
+        }
+      }
+    }
     const { size } = await stat(dest);
     log.log(`${op}: ${src} --> ${dest}, ${size.toLocaleString(undefined, { maximumFractionDigits: 0 })} bytes...`);
   },
