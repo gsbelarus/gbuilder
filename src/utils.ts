@@ -26,18 +26,26 @@ export const bindLog = (params: IParams, log: Log) => ({
 
   packFiles: async (arcName: string, fileOrDirName: string, cwd: string, msg?: string) => {
     if (existsSync(arcName)) {
+      log.log(`previous archive ${arcName} found...`);
       await unlink(arcName);
+      log.log(`previous archive ${arcName} has been deleted...`);
+    } else {
+      log.log(`previous archive ${arcName} is absent...`);
     }
 
-    const s = (await execFileAsync(path.join(params.binWinRAR, 'WinRAR.exe'),
-      [ 'a', '-u', '-as', '-ibck', arcName, fileOrDirName ],
-      { ...basicExecOptions, cwd })).stdout.trim();
-    s && log.log(s);
+    try {
+      const s = (await execFileAsync(path.join(params.binWinRAR, 'WinRAR.exe'),
+        [ 'a', '-u', '-as', '-ibck', arcName, fileOrDirName ],
+        { ...basicExecOptions, cwd })).stdout.trim();
+      s && log.log(s);
+    } catch(e) {
+      log.error(e.message);
+    }
 
     if (existsSync(arcName)) {
       log.log(msg || `archive ${arcName} has been created...`);
     } else {
-      throw new Error(`Can not create archive ${arcName}!`);
+      log.error(`archive ${arcName} has not been created...`);
     };
   },
 
@@ -94,6 +102,11 @@ export const bindLog = (params: IParams, log: Log) => ({
   },
 
   uploadFile: async (fn: string, url: string) => {
+    if (!existsSync(fn)) {
+      log.error(`file to upload ${fn} not found...`);
+      return;
+    }
+
     const form = new FormData();
     const size = (await stat(fn)).size;
 
