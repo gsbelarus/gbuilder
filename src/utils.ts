@@ -7,6 +7,7 @@ import { copyFile, stat, unlink } from 'fs/promises';
 import FormData from 'form-data';
 import { InstProject, instProjects } from './const';
 import { promisify } from 'util';
+import { IncomingMessage } from 'http';
 
 export const execFileAsync = promisify(execFile);
 export const execAsync = promisify(exec);
@@ -117,12 +118,19 @@ export const bindLog = (params: IParams, log: Log) => ({
       knownLength: size
     });
 
-    log.log(`uploading ${fn}, ${size.toLocaleString(undefined, { maximumFractionDigits: 0 })} bytes...`)
+    log.log(`uploading ${fn} via ${url}, ${size.toLocaleString(undefined, { maximumFractionDigits: 0 })} bytes...`)
 
     // исходники PHP скриптов приведены в папке PHP
     try {
-      await new Promise( res => form.submit(url, res) );
-      log.log(`${fn} has been uploaded via ${url}...`)
+      await new Promise<void>( (resolve, reject) => form.submit(url, (err, incomingMessage) => {
+        if (err) {
+          reject(err);
+        } else {
+          console.log(`${incomingMessage.statusCode}: ${incomingMessage.statusMessage}`);
+          resolve();
+        }
+      }) );
+      log.log(`${fn} has been uploaded...`)
     } catch (e) {
       log.error(e.message);
     }

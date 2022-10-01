@@ -86,16 +86,20 @@ export async function ug(params: IParams, log: Log) {
   /** */
   const pushIncBuildNumber = async () => {
     const opt = { ...basicExecOptions, cwd: rootGedeminDir };
-    if (commitBuildNumber) {
-      log.log(`git commit -a -m "Inc build number"...`);
-      log.log((await execFileAsync('git', ['commit', '-a', '-m', 'Inc build number'], opt)).stdout);
-      log.log(`git push...`);
-      const s = (await execFileAsync('git', ['push'], opt)).stdout.trim();
-      s && log.log(s);
-    } else {
-      // discard local changes to derivative files
-      await execFileAsync('git', ['checkout', '--', '*'], opt);
-      log.log('local changes are not committed...')
+    try {
+      if (commitBuildNumber) {
+        log.log(`git commit -a -m "Inc build number"...`);
+        log.log((await execFileAsync('git', ['commit', '-a', '-m', 'Inc build number'], opt)).stdout);
+        log.log(`git push...`);
+        const s = (await execFileAsync('git', ['push'], opt)).stdout.trim();
+        s && log.log(s);
+      } else {
+        // discard local changes to derivative files
+        await execFileAsync('git', ['checkout', '--', '*'], opt);
+        log.log('local changes are not committed...')
+      }
+    } catch(e) {
+      log.error(e.message);
     }
   };
 
@@ -368,11 +372,11 @@ export async function ug(params: IParams, log: Log) {
 
   const uploadArhive = async () => {
     if (upload) {
-      await uploadFile(gedeminArchiveFileName, 'http://gsbelarus.com/gs/content/upload2.php');
-      await uploadFile(gudfArchiveFileName, 'http://gsbelarus.com/gs/content/upload2.php');
-      await uploadFile(etalonArchiveFileName, 'http://gsbelarus.com/gs/content/upload2.php');
+      await uploadFile(gedeminArchiveFileName, 'https://gsbelarus.com/gs/content/upload2.php');
+      await uploadFile(gudfArchiveFileName, 'https://gsbelarus.com/gs/content/upload2.php');
+      await uploadFile(etalonArchiveFileName, 'https://gsbelarus.com/gs/content/upload2.php');
       //await Promise.all(
-      //  [gedeminArchiveFileName, gudfArchiveFileName, etalonArchiveFileName].map( arc => uploadFile(arc, 'http://gsbelarus.com/gs/content/upload2.php') )
+      //  [gedeminArchiveFileName, gudfArchiveFileName, etalonArchiveFileName].map( arc => uploadFile(arc, 'https://gsbelarus.com/gs/content/upload2.php') )
       //);
     } else {
       log.log('skip uploading...');

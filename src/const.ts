@@ -256,7 +256,7 @@ export const buildProjects: IBuildProjects = {
     commitBuildNumber: true,
     portableFilesList,
     archiveName: 'gedemin.rar',
-    uploadURL: 'http://gsbelarus.com/gs/content/upload2.php',
+    uploadURL: 'https://gsbelarus.com/gs/content/upload2.php',
     distrToFolder: 'Beta'
   },
   debug: {
@@ -274,7 +274,7 @@ export const buildProjects: IBuildProjects = {
     commitBuildNumber: false,
     portableFilesList,
     archiveName: 'gedemin_debug.rar',
-    uploadURL: 'http://gsbelarus.com/gs/content/upload2.php',
+    uploadURL: 'https://gsbelarus.com/gs/content/upload2.php',
     distrToFolder: 'Debug'
   },
   lock: {
@@ -292,7 +292,7 @@ export const buildProjects: IBuildProjects = {
     commitBuildNumber: false,
     portableFilesList,
     archiveName: 'gedemin_lock.rar',
-    uploadURL: 'http://gsbelarus.com/gs/content/upload2.php',
+    uploadURL: 'https://gsbelarus.com/gs/content/upload2.php',
     distrToFolder: 'Lock'
   },
   beta_no_id64: {
@@ -312,7 +312,7 @@ export const buildProjects: IBuildProjects = {
     archiveName: 'gedemin_beta_noid64.rar',
     gudfArchiveName: 'gudf_beta_noid64.rar',
     etalonArchiveName: 'etalon_beta_noid64.rar',
-    uploadURL: 'http://gsbelarus.com/gs/content/upload2.php',
+    uploadURL: 'https://gsbelarus.com/gs/content/upload2.php',
     distrToFolder: 'BetaNoID64'
   }
 };
