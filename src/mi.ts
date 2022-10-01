@@ -154,10 +154,12 @@ async function _mi(params: IParams, log: Log) {
     await packFiles(portableArcFullFileName, 'Gedemin', ciDir);
 
     if (upload) {
-      await Promise.all([
-        uploadFile(arcFullFileName, 'http://gsbelarus.com/gs/content/upload.php'),
-        uploadFile(portableArcFullFileName, 'http://gsbelarus.com/gs/content/upload.php')
-      ]);
+      await uploadFile(arcFullFileName, 'http://gsbelarus.com/gs/content/upload.php');
+      await uploadFile(portableArcFullFileName, 'http://gsbelarus.com/gs/content/upload.php');
+      //await Promise.all([
+      //  uploadFile(arcFullFileName, 'http://gsbelarus.com/gs/content/upload.php'),
+      //  uploadFile(portableArcFullFileName, 'http://gsbelarus.com/gs/content/upload.php')
+      //]);
     } else {
       log.log('skip uploading...');
     }

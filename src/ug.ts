@@ -368,9 +368,12 @@ export async function ug(params: IParams, log: Log) {
 
   const uploadArhive = async () => {
     if (upload) {
-      await Promise.all(
-        [gedeminArchiveFileName, gudfArchiveFileName, etalonArchiveFileName].map( arc => uploadFile(arc, 'http://gsbelarus.com/gs/content/upload2.php') )
-      );
+      await uploadFile(gedeminArchiveFileName, 'http://gsbelarus.com/gs/content/upload2.php');
+      await uploadFile(gudfArchiveFileName, 'http://gsbelarus.com/gs/content/upload2.php');
+      await uploadFile(etalonArchiveFileName, 'http://gsbelarus.com/gs/content/upload2.php');
+      //await Promise.all(
+      //  [gedeminArchiveFileName, gudfArchiveFileName, etalonArchiveFileName].map( arc => uploadFile(arc, 'http://gsbelarus.com/gs/content/upload2.php') )
+      //);
     } else {
       log.log('skip uploading...');
     }

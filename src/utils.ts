@@ -117,12 +117,15 @@ export const bindLog = (params: IParams, log: Log) => ({
       knownLength: size
     });
 
-    log.log(`uploading ${fn}...`)
+    log.log(`uploading ${fn}, ${size.toLocaleString(undefined, { maximumFractionDigits: 0 })} bytes...`)
 
     // исходники PHP скриптов приведены в папке PHP
-    await new Promise( res => form.submit(url, res) );
-
-    log.log(`${fn} has been uploaded via ${url}, ${size.toLocaleString(undefined, { maximumFractionDigits: 0 })} bytes...`)
+    try {
+      await new Promise( res => form.submit(url, res) );
+      log.log(`${fn} has been uploaded via ${url}...`)
+    } catch (e) {
+      log.error(e.message);
+    }
   },
 
   filterProjectList: (projectList: InstProject[]) => projectList.filter( pr => {
