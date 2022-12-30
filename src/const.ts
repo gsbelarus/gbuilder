@@ -452,8 +452,8 @@ export const projects: IProjects = {
   gedemin: {
     rc:
 `1 VERSIONINFO LOADONCALL MOVEABLE DISCARDABLE IMPURE
-FILEVERSION 2, 9, 5, <<BUILD_NUMBER>>
-PRODUCTVERSION 2, 9, 5, <<BUILD_NUMBER>>
+FILEVERSION 2, 9, 6, <<BUILD_NUMBER>>
+PRODUCTVERSION 2, 9, 6, <<BUILD_NUMBER>>
 FILEFLAGSMASK VS_FFI_FILEFLAGSMASK
 FILEOS VOS__WINDOWS32
 FILETYPE VFT_APP
@@ -462,9 +462,9 @@ FILETYPE VFT_APP
  {
   BLOCK "041904E3"
   {
-   VALUE "CompanyName", "Golden Software of Belarus, Ltd\\000"
+   VALUE "CompanyName", "Golden Software, Ltd\\000"
    VALUE "FileDescription", "Gedemin\\000"
-   VALUE "FileVersion", "2.9.5.<<BUILD_NUMBER>>\\000"
+   VALUE "FileVersion", "2.9.6.<<BUILD_NUMBER>>\\000"
    VALUE "InternalName", "Gedemin\\000"
    VALUE "LegalCopyright", "Copyright (c) 2000-<<YEAR>> by Golden Software of Belarus, Ltd\\000"
    VALUE "LegalTrademarks", "Gedemin\\000"
