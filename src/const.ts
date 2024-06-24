@@ -1,4 +1,5 @@
 export const gedeminSrcPath = [
+  '../ToolsAPI',
   '../queryfilter',
   '../classtree',
   '../component',
@@ -71,24 +72,24 @@ export const gedeminSrcPath = [
 ];
 
 // available switches
-// -D_QEXPORT;SPLASH;MESSAGE;_REALIZATION;SYNEDIT;_PROTECT;GEDEMIN;_LOADMODULE;_MODEM;GED_LOC_RUS;_GEDEMIN_LOCK;_DEBUG;_LOCALIZATION;_NEW_GRID;FR4;_QBUILDER;_TEECHARTPRO;_DUNIT_TEST;WITH_INDY;_FULL_MODIFY;_EXCMAGIC_GEDEMIN;ID64
+// -D_QEXPORT;SPLASH;MESSAGE;_REALIZATION;SYNEDIT;_PROTECT;GEDEMIN;_LOADMODULE;_MODEM;GED_LOC_RUS;_GEDEMIN_LOCK;_DEBUG;_LOCALIZATION;_NEW_GRID;FR4;_QBUILDER;_TEECHARTPRO;_DUNIT_TEST;WITH_INDY;_FULL_MODIFY;_EXCMAGIC_GEDEMIN;ID64;DELPHI7
 
 /*
 export const gedeminCfgVariables = {
   PRODUCT: {
     d_switch: '-',
     o_switch: '+',
-    cond: 'SPLASH;MESSAGE;SYNEDIT;GEDEMIN;GED_LOC_RUS;FR4;WITH_INDY;'
+    cond: 'SPLASH;MESSAGE;SYNEDIT;GEDEMIN;GED_LOC_RUS;FR4;WITH_INDY;DELPHI7'
   },
   DEBUG: {
     d_switch: '+',
     o_switch: '-',
-    cond: 'SPLASH;MESSAGE;SYNEDIT;GEDEMIN;GED_LOC_RUS;FR4;EXCMAGIC_GEDEMIN;WITH_INDY;DEBUG'
+    cond: 'SPLASH;MESSAGE;SYNEDIT;GEDEMIN;GED_LOC_RUS;FR4;EXCMAGIC_GEDEMIN;WITH_INDY;DEBUG;DELPHI7'
   },
   LOCK: {
     d_switch: '+',
     o_switch: '-',
-    cond: 'SPLASH;MESSAGE;SYNEDIT;GEDEMIN;GED_LOC_RUS;FR4;WITH_INDY'
+    cond: 'SPLASH;MESSAGE;SYNEDIT;GEDEMIN;GED_LOC_RUS;FR4;WITH_INDY;DELPHI7'
   },
 };
 */
@@ -244,12 +245,12 @@ export const buildProjects: IBuildProjects = {
   product: {
     label: 'PRODUCT',
     dstDir: 'EXE',
-    srcBranch: 'india',
+    srcBranch: 'delphi7',
     dccSwitches: ['-b'],
     cfgVariables: {
       d_switch: '-',
       o_switch: '+',
-      cond: 'SPLASH;MESSAGE;SYNEDIT;GEDEMIN;GED_LOC_RUS;FR4;WITH_INDY'
+      cond: 'SPLASH;MESSAGE;SYNEDIT;GEDEMIN;GED_LOC_RUS;FR4;WITH_INDY;DELPHI7'
     },
     useTDSPack: true,
     incBuildNumber: true,
@@ -262,12 +263,12 @@ export const buildProjects: IBuildProjects = {
   debug: {
     label: 'DEBUG',
     dstDir: 'EXE',
-    srcBranch: 'india',
+    srcBranch: 'delphi7',
     dccSwitches: ['-b', '-v'],
     cfgVariables: {
       d_switch: '+',
       o_switch: '-',
-      cond: 'SPLASH;MESSAGE;SYNEDIT;GEDEMIN;GED_LOC_RUS;FR4;EXCMAGIC_GEDEMIN;WITH_INDY;DEBUG'
+      cond: 'SPLASH;MESSAGE;SYNEDIT;GEDEMIN;GED_LOC_RUS;FR4;EXCMAGIC_GEDEMIN;WITH_INDY;DEBUG;DELPHI7'
     },
     useTDSPack: false,
     incBuildNumber: false,
@@ -280,12 +281,12 @@ export const buildProjects: IBuildProjects = {
   lock: {
     label: 'LOCK',
     dstDir: 'EXE',
-    srcBranch: 'india',
+    srcBranch: 'delphi7',
     dccSwitches: ['-b'],
     cfgVariables: {
       d_switch: '+',
       o_switch: '-',
-      cond: 'SPLASH;MESSAGE;SYNEDIT;GEDEMIN;GED_LOC_RUS;FR4;WITH_INDY;GEDEMIN_LOCK'
+      cond: 'SPLASH;MESSAGE;SYNEDIT;GEDEMIN;GED_LOC_RUS;FR4;WITH_INDY;GEDEMIN_LOCK;DELPHI7'
     },
     useTDSPack: true,
     incBuildNumber: false,
@@ -298,12 +299,12 @@ export const buildProjects: IBuildProjects = {
   beta_no_id64: {
     label: 'BETA_NO_ID64',
     dstDir: 'EXE',
-    srcBranch: 'master',
+    srcBranch: 'delphi7',
     dccSwitches: ['-b', '-v'],
     cfgVariables: {
       d_switch: '+',
       o_switch: '-',
-      cond: 'SPLASH;MESSAGE;SYNEDIT;GEDEMIN;GED_LOC_RUS;FR4;EXCMAGIC_GEDEMIN;WITH_INDY;DEBUG;_DUNIT_TEST'
+      cond: 'SPLASH;MESSAGE;SYNEDIT;GEDEMIN;GED_LOC_RUS;FR4;EXCMAGIC_GEDEMIN;WITH_INDY;DEBUG;_DUNIT_TEST;DELPHI7'
     },
     useTDSPack: false,
     incBuildNumber: true,
@@ -452,8 +453,8 @@ export const projects: IProjects = {
   gedemin: {
     rc:
 `1 VERSIONINFO LOADONCALL MOVEABLE DISCARDABLE IMPURE
-FILEVERSION 2, 9, 6, <<BUILD_NUMBER>>
-PRODUCTVERSION 2, 9, 6, <<BUILD_NUMBER>>
+FILEVERSION 2, 9, 7, <<BUILD_NUMBER>>
+PRODUCTVERSION 2, 9, 7, <<BUILD_NUMBER>>
 FILEFLAGSMASK VS_FFI_FILEFLAGSMASK
 FILEOS VOS__WINDOWS32
 FILETYPE VFT_APP
@@ -464,7 +465,7 @@ FILETYPE VFT_APP
   {
    VALUE "CompanyName", "Golden Software, Ltd\\000"
    VALUE "FileDescription", "Gedemin\\000"
-   VALUE "FileVersion", "2.9.6.<<BUILD_NUMBER>>\\000"
+   VALUE "FileVersion", "2.9.7.<<BUILD_NUMBER>>\\000"
    VALUE "InternalName", "Gedemin\\000"
    VALUE "LegalCopyright", "Copyright (c) 2000-<<YEAR>> by Golden Software of Belarus, Ltd\\000"
    VALUE "LegalTrademarks", "Gedemin\\000"

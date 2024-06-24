@@ -164,7 +164,7 @@ export async function ug(params: IParams, log: Log) {
     } else {
       cfgBody = cfgBody.replace('<<D_SWITCH>>', '-');
       cfgBody = cfgBody.replace('<<O_SWITCH>>', '+');
-      cfgBody = cfgBody.replace('<<COND>>', '');
+      cfgBody = cfgBody.replace('<<COND>>', 'DELPHI7');
     };
 
     if (loc && loc.indexOf('/') > -1) {
