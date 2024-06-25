@@ -348,7 +348,7 @@ interface IInstProjects {
   plat: IInstProject;
   menuback: IInstProject;
   hotel: IInstProject;
-  san: IInstProject;
+  //san: IInstProject;
 };
 
 export const instProjects: IInstProjects = {
@@ -422,14 +422,14 @@ export const instProjects: IInstProjects = {
     TFN: 'Гостиница',
     buildParams: buildProjects.product,
   },
-  san: {
-    FSFN: 'Санаторий\\GS.Санаторий.yml',
-    SFN: 'doc.jpg',
-    IFN: 'sanlocal',
-    AFN: 'san_setup',
-    TFN: 'Санаторий',
-    buildParams: buildProjects.product,
-  }
+  //san: {
+  //  FSFN: 'Санаторий\\GS.Санаторий.yml',
+  //  SFN: 'doc.jpg',
+  //  IFN: 'sanlocal',
+  //  AFN: 'san_setup',
+  //  TFN: 'Санаторий',
+  //  buildParams: buildProjects.product,
+  //}
 } as const;
 
 export type InstProject = keyof typeof instProjects;
