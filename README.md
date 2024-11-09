@@ -1,5 +1,11 @@
 # gbuilder
 
+We use yarn 1 for package management. 
+
+## github webhook setup
+
+
+
 ## params
 
 Change dir to the params and make a copy of `params.sample.json`. Name it `params.json`.
