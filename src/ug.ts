@@ -192,15 +192,22 @@ export async function ug(params: IParams, log: Log) {
     await deleteFile(destFullFileName);
 
     log.log(`building ${destFileName}: dcc32 ${dccSwitches.join(' ')} ${project}.dpr...`);
-    const output = (await execFileAsync(
+    const outputStreams = (await execFileAsync(
       path.join(pathDelphi, 'Bin', 'dcc32.exe'),
       [...dccSwitches, `${project}.dpr`],
       { ...basicExecOptions, cwd: pathProject }
-    )).stdout.trimEnd().split('\n');
+    ));
+    const output = outputStreams.stdout.trimEnd().split('\n');
     if (output.length) {
       log.log(output[0]);
       log.log(output[output.length - 1]);
     }
+
+    const outputError = outputStreams.stderr.trimEnd();
+    if (outputError) {
+      log.error(outputError);
+    }
+
     const destFileSize = (await stat(destFullFileName)).size;
     log.log(`${destFullFileName} has been built. File size: ${destFileSize}...`);
 
