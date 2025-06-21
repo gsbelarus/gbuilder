@@ -356,7 +356,7 @@ export const instProjects: IInstProjects = {
     IFN: 'kkc_positive_cash',
     AFN: 'cash_setup',
     TFN: 'Касса',
-    buildParams: { ...buildProjects.lock, exeSize: 20774976, customRcFile: 'gedemin_positive_cash_ver.rc' },
+    buildParams: buildProjects.lock, //{ ...buildProjects.lock, exeSize: 20774976, customRcFile: 'gedemin_positive_cash_ver.rc' },
     copyCashFiles: true
   },
   cash_server: {
@@ -365,7 +365,7 @@ export const instProjects: IInstProjects = {
     IFN: 'kkc_cash_server',
     AFN: 'cash_server_setup',
     TFN: 'Касса',
-    buildParams: { ...buildProjects.lock, exeSize: 20774976, customRcFile: 'gedemin_positive_cash_ver.rc' },
+    buildParams: buildProjects.lock, //{ ...buildProjects.lock, exeSize: 20774976, customRcFile: 'gedemin_positive_cash_ver.rc' },
     setupFileName: 'setup_server'
   },
   menufront: {
@@ -374,7 +374,7 @@ export const instProjects: IInstProjects = {
     IFN: 'kkc_positive_check',
     AFN: 'menufront_setup',
     TFN: 'Меню',
-    buildParams: { ...buildProjects.lock, exeSize: 20774976, customRcFile: 'gedemin_positive_check_ver.rc' },
+    buildParams: buildProjects.lock, //{ ...buildProjects.lock, exeSize: 20774976, customRcFile: 'gedemin_positive_cash_ver.rc' },
     setupFileName: 'setup_front',
     copyCashFiles: true
   },
